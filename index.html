@@ -1,0 +1,706 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Relatório de Lucro Shopee — Acelera Shopee</title>
+<script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
+<style>
+:root {
+  --orange:       #ee4d2d;
+  --orange-d:     #c73d1f;
+  --orange-light: #fff3f0;
+  --green:        #16a34a;
+  --red:          #dc2626;
+  --blue:         #2563eb;
+  --gray-50:  #f8fafc;
+  --gray-100: #f1f5f9;
+  --gray-200: #e2e8f0;
+  --gray-400: #94a3b8;
+  --gray-500: #64748b;
+  --gray-600: #475569;
+  --gray-700: #334155;
+  --gray-800: #1e293b;
+  --shadow-sm: 0 1px 3px rgba(0,0,0,.08), 0 1px 2px rgba(0,0,0,.06);
+  --shadow:    0 4px 16px rgba(0,0,0,.08);
+  --radius:    16px;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f0f4f8; color: var(--gray-800); min-height: 100vh; }
+
+/* HEADER */
+header {
+  background: linear-gradient(135deg, var(--orange) 0%, var(--orange-d) 100%);
+  color: #fff; padding: 14px 24px;
+  display: flex; align-items: center; gap: 14px;
+  box-shadow: 0 4px 20px rgba(238,77,45,.3);
+  position: sticky; top: 0; z-index: 100;
+}
+header img  { width: 44px; height: 44px; border-radius: 50%; box-shadow: 0 2px 8px rgba(0,0,0,.3); flex-shrink: 0; }
+header h1   { font-size: 17px; font-weight: 800; letter-spacing: -.3px; }
+header p    { font-size: 12px; opacity: .8; margin-top: 1px; }
+.hdr-badge  { margin-left: auto; background: rgba(255,255,255,.15); border: 1px solid rgba(255,255,255,.25); padding: 5px 12px; border-radius: 20px; font-size: 11px; font-weight: 600; white-space: nowrap; }
+
+.wrap { max-width: 860px; margin: 0 auto; padding: 32px 16px 56px; }
+
+#state-upload { }
+#state-result { display: none; }
+
+/* HERO */
+.hero { background: #fff; border-radius: var(--radius); padding: 40px 28px 36px; text-align: center; box-shadow: var(--shadow); margin-bottom: 20px; }
+.hero-logo { width: 76px; height: 76px; border-radius: 50%; margin: 0 auto 20px; display: block; box-shadow: 0 6px 20px rgba(238,77,45,.25); }
+.hero h2 { font-size: 24px; font-weight: 800; letter-spacing: -.4px; margin-bottom: 10px; }
+.hero p  { font-size: 14px; color: var(--gray-500); max-width: 420px; margin: 0 auto; line-height: 1.65; }
+.hero-feats { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; margin-top: 24px; }
+.feat { display: flex; align-items: center; gap: 7px; background: var(--gray-50); border: 1px solid var(--gray-200); padding: 7px 14px; border-radius: 20px; font-size: 12px; font-weight: 600; color: var(--gray-700); }
+
+/* INSTRUCOES */
+.inst-card { background: #fff; border-radius: var(--radius); padding: 22px 24px; box-shadow: var(--shadow); margin-bottom: 20px; }
+.inst-toggle { display: flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 700; color: var(--gray-700); cursor: pointer; user-select: none; }
+.inst-toggle .chevron { font-size: 11px; color: var(--orange); transition: transform .2s; }
+.inst-toggle.open .chevron { transform: rotate(90deg); }
+.inst-body { display: none; margin-top: 18px; }
+.inst-body.open { display: block; }
+.inst-steps { display: grid; grid-template-columns: repeat(auto-fit, minmax(165px, 1fr)); gap: 12px; }
+.inst-step { background: var(--gray-50); border: 1.5px solid var(--gray-200); border-radius: 12px; padding: 16px 14px; }
+.ist-n { width: 24px; height: 24px; background: var(--orange); color: #fff; border-radius: 7px; font-size: 12px; font-weight: 800; display: flex; align-items: center; justify-content: center; margin-bottom: 10px; }
+.inst-step h4 { font-size: 13px; font-weight: 700; margin-bottom: 5px; }
+.inst-step p  { font-size: 12px; color: var(--gray-500); line-height: 1.5; }
+.path-tag { display: inline-block; margin-top: 7px; background: var(--orange-light); color: var(--orange-d); font-size: 11px; font-weight: 700; padding: 2px 9px; border-radius: 5px; }
+
+/* UPLOAD */
+.upload-card { background: #fff; border-radius: var(--radius); box-shadow: var(--shadow); margin-bottom: 20px; overflow: hidden; }
+.upload-zone {
+  border: 2.5px dashed var(--gray-200); border-radius: 14px; margin: 20px;
+  padding: 48px 24px; text-align: center; cursor: pointer;
+  transition: border-color .2s, background .2s;
+}
+.upload-zone:hover, .upload-zone.drag { border-color: var(--orange); background: var(--orange-light); }
+.upload-zone.done { border-color: var(--green); border-style: solid; background: #f0fdf4; cursor: default; }
+.uz-icon  { font-size: 44px; margin-bottom: 14px; }
+.uz-title { font-size: 18px; font-weight: 800; margin-bottom: 6px; }
+.uz-sub   { font-size: 13px; color: var(--gray-500); }
+.uz-btn {
+  display: inline-block; margin-top: 18px;
+  background: var(--orange); color: #fff;
+  padding: 12px 28px; border-radius: 10px;
+  font-size: 14px; font-weight: 700;
+  box-shadow: 0 4px 12px rgba(238,77,45,.3);
+  transition: background .2s, transform .15s; cursor: pointer;
+}
+.uz-btn:hover { background: var(--orange-d); transform: translateY(-1px); }
+.upload-zone.done .uz-btn { background: var(--green); box-shadow: 0 4px 12px rgba(22,163,74,.25); }
+.uz-hint { margin-top: 14px; font-size: 11px; color: var(--gray-400); }
+input[type=file] { display: none; }
+.upload-footer { padding: 14px 24px; border-top: 1px solid var(--gray-100); display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; }
+.btn-gerar {
+  background: linear-gradient(135deg, var(--orange), #ff7043); color: #fff; border: none;
+  padding: 13px 32px; border-radius: 10px; font-size: 15px; font-weight: 800;
+  cursor: pointer; box-shadow: 0 4px 14px rgba(238,77,45,.35);
+  transition: transform .15s, box-shadow .15s;
+}
+.btn-gerar:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(238,77,45,.4); }
+.btn-gerar:disabled { background: var(--gray-200); color: var(--gray-400); box-shadow: none; cursor: not-allowed; }
+.btn-clear-file { background: none; border: 1.5px solid var(--gray-200); color: var(--gray-500); padding: 8px 16px; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; display: none; transition: all .2s; }
+.btn-clear-file:hover { border-color: var(--red); color: var(--red); }
+
+/* RESULT BAR */
+.result-bar {
+  background: #fff; border-radius: var(--radius); padding: 16px 22px;
+  display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px;
+  box-shadow: var(--shadow-sm); margin-bottom: 16px;
+}
+.rb-left { display: flex; align-items: center; gap: 12px; }
+.rb-icon { width: 38px; height: 38px; background: var(--orange-light); border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0; }
+.rb-label { font-size: 11px; color: var(--gray-400); text-transform: uppercase; letter-spacing: .5px; }
+.rb-value { font-size: 15px; font-weight: 800; }
+.btn-novo { background: none; border: 1.5px solid var(--gray-200); color: var(--gray-500); padding: 8px 16px; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; transition: all .2s; }
+.btn-novo:hover { border-color: var(--orange); color: var(--orange); }
+
+/* TABS */
+.tabs { display: flex; background: #fff; border-radius: var(--radius); padding: 6px; box-shadow: var(--shadow-sm); margin-bottom: 20px; gap: 6px; }
+.tab-btn { flex: 1; padding: 11px 16px; border: none; background: transparent; border-radius: 10px; font-size: 13px; font-weight: 700; cursor: pointer; color: var(--gray-500); transition: all .2s; }
+.tab-btn.active { background: var(--orange); color: #fff; box-shadow: 0 3px 10px rgba(238,77,45,.3); }
+.tab-btn:hover:not(.active) { background: var(--gray-100); color: var(--gray-700); }
+
+/* CARDS */
+.cards { display: grid; grid-template-columns: repeat(2,1fr); gap: 14px; margin-bottom: 18px; }
+@media(min-width:560px) { .cards { grid-template-columns: repeat(4,1fr); } }
+.card { background: #fff; border-radius: var(--radius); padding: 20px 16px 16px; box-shadow: var(--shadow-sm); border-top: 4px solid transparent; transition: transform .15s, box-shadow .15s; }
+.card:hover { transform: translateY(-2px); box-shadow: var(--shadow); }
+.c-blue   { border-color: #60a5fa; }
+.c-green  { border-color: #4ade80; }
+.c-red    { border-color: #f87171; }
+.c-orange { border-color: var(--orange); }
+.card .ci { font-size: 22px; margin-bottom: 10px; }
+.card .cl { font-size: 10px; color: var(--gray-400); text-transform: uppercase; letter-spacing: .6px; margin-bottom: 5px; }
+.card .cv { font-size: 21px; font-weight: 900; line-height: 1.1; letter-spacing: -.5px; }
+.card .cs { font-size: 11px; color: var(--gray-400); margin-top: 5px; }
+
+/* SECTION */
+.sec { background: #fff; border-radius: var(--radius); padding: 22px; margin-bottom: 16px; box-shadow: var(--shadow-sm); }
+.sec-hd { display: flex; align-items: center; gap: 10px; font-size: 14px; font-weight: 800; margin-bottom: 18px; padding-bottom: 12px; border-bottom: 1.5px solid var(--gray-100); }
+.sec-ico { width: 30px; height: 30px; background: var(--orange-light); border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 15px; flex-shrink: 0; }
+
+/* BREAKDOWN TABLE */
+.tbl { width: 100%; border-collapse: collapse; font-size: 14px; }
+.tbl td { padding: 10px 6px; }
+.tbl tr:not(:last-child) td { border-bottom: 1px solid var(--gray-100); }
+.tl  { color: var(--gray-600); }
+.tl small { display: block; font-size: 11px; color: var(--gray-400); margin-top: 1px; }
+.tv  { text-align: right; font-weight: 700; }
+.pos { color: var(--green); }
+.neg { color: var(--red); }
+.neu { color: var(--gray-600); }
+.tbl .ttotal td { font-size: 15px; font-weight: 800; padding-top: 14px; border-top: 2px solid var(--gray-200) !important; }
+.tbl .ttotal .tv { font-size: 18px; color: var(--green); }
+
+/* PILLS */
+.pill { display: inline-flex; align-items: center; gap: 5px; padding: 4px 11px; border-radius: 20px; font-size: 12px; font-weight: 700; }
+.pill::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+.pg { background: #dcfce7; color: #166534; }
+.pr { background: #fee2e2; color: #991b1b; }
+.py { background: #fef9c3; color: #854d0e; }
+.pp { background: var(--gray-100); color: var(--gray-500); }
+
+/* PRODUTOS (resumo) */
+.prod { display: flex; align-items: center; gap: 12px; padding: 11px 0; border-bottom: 1px solid var(--gray-100); }
+.prod:last-child { border: none; }
+.rnk { width: 30px; height: 30px; border-radius: 9px; font-size: 13px; font-weight: 800; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.r1 { background: #fef9c3; color: #a16207; }
+.r2 { background: #f1f5f9; color: #475569; }
+.r3 { background: #ffedd5; color: #9a3412; }
+.rn { background: var(--gray-100); color: var(--gray-400); }
+.prod-info { flex: 1; min-width: 0; }
+.pname { font-size: 13px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pqty  { font-size: 11px; color: var(--gray-400); margin-top: 1px; }
+.pval  { font-size: 14px; font-weight: 800; color: var(--green); white-space: nowrap; }
+
+/* BARS */
+.bar { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--gray-100); }
+.bar:last-child { border: none; }
+.blbl { width: 30px; font-size: 12px; font-weight: 700; color: var(--gray-600); flex-shrink: 0; }
+.btrk { flex: 1; height: 8px; background: var(--gray-100); border-radius: 4px; overflow: hidden; }
+.bfil { height: 100%; background: linear-gradient(90deg, var(--orange), #ff7043); border-radius: 4px; transition: width .7s cubic-bezier(.4,0,.2,1); }
+.bval { font-size: 12px; font-weight: 700; white-space: nowrap; }
+.bqty { font-size: 11px; color: var(--gray-400); white-space: nowrap; }
+
+/* COST TABLE */
+.cost-hint { font-size: 13px; color: var(--gray-500); margin-bottom: 18px; line-height: 1.55; }
+.cost-tbl { width: 100%; border-collapse: collapse; font-size: 13px; }
+.cost-tbl th { font-size: 10px; text-transform: uppercase; letter-spacing: .6px; color: var(--gray-400); font-weight: 700; padding: 0 8px 12px; text-align: right; border-bottom: 1.5px solid var(--gray-100); }
+.cost-tbl th:first-child { text-align: left; }
+.cost-tbl td { padding: 11px 8px; border-bottom: 1px solid var(--gray-100); vertical-align: middle; }
+.cost-tbl tr:last-child td { border-bottom: none; }
+.cost-input {
+  width: 110px; padding: 8px 10px; border: 1.5px solid var(--gray-200); border-radius: 8px;
+  font-size: 13px; font-weight: 700; text-align: right; outline: none;
+  transition: border-color .2s, box-shadow .2s; background: var(--gray-50);
+}
+.cost-input:focus { border-color: var(--orange); background: #fff; box-shadow: 0 0 0 3px rgba(238,77,45,.1); }
+.cost-input::placeholder { color: var(--gray-400); font-weight: 400; }
+
+/* LUCRO BOX */
+.lucro-box {
+  background: linear-gradient(135deg, #f0fdf4, #dcfce7); border: 2px solid #86efac;
+  border-radius: var(--radius); padding: 22px 24px; margin-top: 20px;
+}
+.lb-row { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; font-size: 14px; }
+.lb-row:not(:last-child) { border-bottom: 1px solid rgba(134,239,172,.4); }
+.lb-final { margin-top: 4px; padding-top: 14px !important; border-top: 2px solid rgba(74,222,128,.5) !important; }
+.lb-lbl { color: var(--gray-600); font-weight: 600; }
+.lb-val { font-weight: 800; }
+.lb-val.pos { color: var(--green); }
+.lb-val.neg { color: var(--red); }
+.lb-final .lb-lbl { font-size: 15px; font-weight: 800; }
+.lb-final .lb-val { font-size: 20px; }
+
+/* PRINT */
+.print-wrap { text-align: center; margin-top: 24px; }
+.btn-pdf { background: linear-gradient(135deg, var(--orange), #ff7043); color: #fff; border: none; padding: 15px 36px; border-radius: 12px; font-size: 15px; font-weight: 800; cursor: pointer; box-shadow: 0 4px 16px rgba(238,77,45,.35); transition: transform .15s, box-shadow .15s; }
+.btn-pdf:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(238,77,45,.4); }
+.sec-note { text-align: center; font-size: 12px; color: var(--gray-400); margin-top: 16px; }
+
+footer { text-align: center; padding: 24px 0 16px; font-size: 12px; color: var(--gray-400); }
+footer strong { color: var(--orange); }
+
+@media print {
+  body { background: #fff; }
+  header { position: static; box-shadow: none; }
+  #state-upload, .btn-novo, .btn-pdf, .print-wrap, .sec-note, .tabs { display: none !important; }
+  #tab-custos { display: block !important; }
+  .sec, .card { box-shadow: none; border: 1px solid #e2e8f0; }
+}
+</style>
+</head>
+<body>
+
+<header>
+  <img src="logo.png" alt="Acelera Shopee">
+  <div>
+    <h1>Relatório de Lucro Shopee</h1>
+    <p>Veja quanto você realmente está ganhando</p>
+  </div>
+  <div class="hdr-badge">🔒 100% local</div>
+</header>
+
+<div class="wrap">
+
+  <!-- ── UPLOAD ── -->
+  <div id="state-upload">
+
+    <div class="hero">
+      <img src="logo.png" class="hero-logo" alt="Acelera Shopee">
+      <h2>Seu lucro real em segundos</h2>
+      <p>Faça o upload do arquivo de pedidos exportado do Seller Center e descubra exatamente quanto sobrou depois de todas as taxas.</p>
+      <div class="hero-feats">
+        <div class="feat">💰 Lucro líquido real</div>
+        <div class="feat">📊 Taxas detalhadas</div>
+        <div class="feat">💸 Custo dos produtos</div>
+        <div class="feat">🔒 Dados no seu PC</div>
+      </div>
+    </div>
+
+    <div class="inst-card">
+      <div class="inst-toggle" onclick="toggleInst(this)">
+        <span class="chevron">▶</span>
+        Como exportar o relatório de pedidos da Shopee
+      </div>
+      <div class="inst-body">
+        <div class="inst-steps">
+          <div class="inst-step">
+            <div class="ist-n">1</div>
+            <h4>🖥️ Seller Center</h4>
+            <p>Acesse <strong>seller.shopee.com.br</strong> com sua conta</p>
+          </div>
+          <div class="inst-step">
+            <div class="ist-n">2</div>
+            <h4>📦 Meus Pedidos</h4>
+            <p>No menu lateral clique em <strong>Pedidos → Meus Pedidos</strong></p>
+            <span class="path-tag">Pedidos → Meus Pedidos</span>
+          </div>
+          <div class="inst-step">
+            <div class="ist-n">3</div>
+            <h4>📅 Período</h4>
+            <p>Selecione o intervalo desejado. Máximo de <strong>1 mês</strong> por exportação</p>
+          </div>
+          <div class="inst-step">
+            <div class="ist-n">4</div>
+            <h4>⬇️ Exportar</h4>
+            <p>Clique em <strong>"Exportar"</strong> — baixe o arquivo <strong>Order.all.xxx.xlsx</strong></p>
+            <span class="path-tag">Exportar → .xlsx</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="upload-card">
+      <div class="upload-zone" id="dropzone"
+           ondragover="event.preventDefault();this.classList.add('drag')"
+           ondragleave="this.classList.remove('drag')"
+           ondrop="onDrop(event)">
+        <div class="uz-icon" id="uz-icon">📂</div>
+        <div class="uz-title" id="uz-title">Arraste o arquivo aqui</div>
+        <div class="uz-sub" id="uz-sub">Arquivo <strong>Order.all.xxx.xlsx</strong> exportado do Seller Center</div>
+        <label class="uz-btn" for="file-input" id="uz-lbl">Selecionar arquivo</label>
+        <input type="file" id="file-input" accept=".xlsx,.xls">
+        <div class="uz-hint">🔒 Seus dados não saem do seu computador</div>
+      </div>
+      <div class="upload-footer">
+        <button class="btn-clear-file" id="btn-clear" onclick="clearFile()">✕ Remover arquivo</button>
+        <button class="btn-gerar" id="btn-gerar" onclick="gerar()" disabled>Gerar Relatório →</button>
+      </div>
+    </div>
+
+  </div><!-- /state-upload -->
+
+  <!-- ── RESULTADO ── -->
+  <div id="state-result">
+
+    <div class="result-bar">
+      <div class="rb-left">
+        <div class="rb-icon">📅</div>
+        <div>
+          <div class="rb-label">Período analisado</div>
+          <div class="rb-value" id="rb-periodo">—</div>
+        </div>
+        <div style="width:1px;height:32px;background:var(--gray-200);margin:0 4px"></div>
+        <div>
+          <div class="rb-label">Arquivo</div>
+          <div class="rb-value" id="rb-arquivo" style="font-size:13px;max-width:220px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">—</div>
+        </div>
+      </div>
+      <button class="btn-novo" onclick="resetar()">↩ Novo relatório</button>
+    </div>
+
+    <!-- TABS -->
+    <div class="tabs">
+      <button class="tab-btn active" id="tab-btn-resumo" onclick="switchTab('resumo')">📊 Resumo financeiro</button>
+      <button class="tab-btn" id="tab-btn-custos" onclick="switchTab('custos')">💸 Custo dos produtos</button>
+    </div>
+
+    <!-- TAB: RESUMO -->
+    <div id="tab-resumo">
+
+      <div class="cards">
+        <div class="card c-blue">
+          <div class="ci">📦</div>
+          <div class="cl">Pedidos válidos</div>
+          <div class="cv" id="c-ped">0</div>
+          <div class="cs" id="c-ped-sub"></div>
+        </div>
+        <div class="card c-green">
+          <div class="ci">💵</div>
+          <div class="cl">Faturamento bruto</div>
+          <div class="cv" id="c-bruto">—</div>
+          <div class="cs" id="c-ticket"></div>
+        </div>
+        <div class="card c-red">
+          <div class="ci">🏷️</div>
+          <div class="cl">Taxas Shopee</div>
+          <div class="cv" id="c-taxas">—</div>
+          <div class="cs" id="c-taxas-pct"></div>
+        </div>
+        <div class="card c-orange">
+          <div class="ci">💰</div>
+          <div class="cl">Líquido Shopee</div>
+          <div class="cv" id="c-liq">—</div>
+          <div class="cs" id="c-liq-pct"></div>
+        </div>
+      </div>
+
+      <div class="sec">
+        <div class="sec-hd"><div class="sec-ico">📋</div>Detalhamento financeiro</div>
+        <table class="tbl">
+          <tr><td class="tl">Subtotal dos produtos<small>Valor dos itens vendidos</small></td><td class="tv pos" id="b-sub">—</td></tr>
+          <tr><td class="tl">Frete pago pelos compradores</td><td class="tv pos" id="b-frete">—</td></tr>
+          <tr><td class="tl" style="color:var(--gray-400)">Descontos do vendedor</td><td class="tv neg" id="b-desc">—</td></tr>
+          <tr><td class="tl" style="color:var(--gray-400)">Taxa de comissão Shopee</td><td class="tv neg" id="b-com">—</td></tr>
+          <tr><td class="tl" style="color:var(--gray-400)">Taxa de serviço Shopee</td><td class="tv neg" id="b-svc">—</td></tr>
+          <tr><td class="tl" style="color:var(--gray-400)">Taxa de transação</td><td class="tv neg" id="b-trx">—</td></tr>
+          <tr class="ttotal"><td class="tl">💰 Líquido estimado (após taxas Shopee)</td><td class="tv pos" id="b-liq">—</td></tr>
+        </table>
+      </div>
+
+      <div class="sec">
+        <div class="sec-hd"><div class="sec-ico">📦</div>Status dos pedidos</div>
+        <table class="tbl"><tbody id="t-status"></tbody></table>
+      </div>
+
+      <div class="sec">
+        <div class="sec-hd"><div class="sec-ico">🏆</div>Produtos mais vendidos</div>
+        <div id="t-prods"></div>
+      </div>
+
+      <div class="sec">
+        <div class="sec-hd"><div class="sec-ico">📍</div>Vendas por estado</div>
+        <div id="t-ufs"></div>
+      </div>
+
+      <div class="print-wrap">
+        <button class="btn-pdf" onclick="window.print()">🖨️ Salvar como PDF</button>
+      </div>
+      <p class="sec-note">🔒 Seus dados ficam 100% no seu dispositivo — nada é enviado para a internet</p>
+
+    </div><!-- /tab-resumo -->
+
+    <!-- TAB: CUSTO DOS PRODUTOS -->
+    <div id="tab-custos" style="display:none">
+      <!-- preenchido via renderCustos() -->
+    </div>
+
+  </div><!-- /state-result -->
+
+</div><!-- /wrap -->
+
+<footer>Feito com ❤️ por <strong>Acelera Shopee</strong></footer>
+
+<script>
+let ordersData = null, ordersFile = '';
+let liqShopee  = 0, prodMap = {};
+
+const fmt = v => 'R$ ' + Math.abs(+v).toFixed(2).replace('.', ',').replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+
+function pn(v) {
+  if (v == null || v === '' || v === '-') return 0;
+  if (typeof v === 'number') return isNaN(v) ? 0 : v;
+  const f = parseFloat(String(v).replace(/\s/g,'').replace(',','.'));
+  return isNaN(f) ? 0 : f;
+}
+
+function pd(v) {
+  if (!v) return null;
+  const d = new Date(v);
+  return isNaN(d) ? null : d;
+}
+
+// ── UPLOAD ──
+document.getElementById('file-input').onchange = e => { if (e.target.files[0]) loadFile(e.target.files[0]); };
+
+function onDrop(e) {
+  e.preventDefault();
+  document.getElementById('dropzone').classList.remove('drag');
+  if (e.dataTransfer.files[0]) loadFile(e.dataTransfer.files[0]);
+}
+
+function loadFile(file) {
+  const r = new FileReader();
+  r.onload = e => {
+    const wb = XLSX.read(new Uint8Array(e.target.result), { type: 'array' });
+    ordersData = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { defval: '' });
+    ordersFile = file.name;
+    const dz = document.getElementById('dropzone');
+    dz.classList.add('done');
+    document.getElementById('uz-icon').textContent  = '✅';
+    document.getElementById('uz-title').textContent = 'Arquivo carregado!';
+    document.getElementById('uz-sub').innerHTML     = `<strong>${file.name}</strong>`;
+    document.getElementById('uz-lbl').textContent   = 'Trocar arquivo';
+    document.getElementById('btn-clear').style.display = 'inline-block';
+    document.getElementById('btn-gerar').disabled   = false;
+  };
+  r.readAsArrayBuffer(file);
+}
+
+function clearFile() {
+  ordersData = null; ordersFile = '';
+  const dz = document.getElementById('dropzone');
+  dz.classList.remove('done');
+  document.getElementById('uz-icon').textContent  = '📂';
+  document.getElementById('uz-title').textContent = 'Arraste o arquivo aqui';
+  document.getElementById('uz-sub').innerHTML     = 'Arquivo <strong>Order.all.xxx.xlsx</strong> exportado do Seller Center';
+  document.getElementById('uz-lbl').textContent   = 'Selecionar arquivo';
+  document.getElementById('btn-clear').style.display = 'none';
+  document.getElementById('btn-gerar').disabled   = true;
+  document.getElementById('file-input').value     = '';
+}
+
+// ── GERAR ──
+function gerar() {
+  const rows = ordersData;
+
+  const datas = rows.map(r => pd(r['Data de criação do pedido'])).filter(Boolean).sort((a,b) => a-b);
+  const d1 = datas.length ? datas[0].toLocaleDateString('pt-BR') : '—';
+  const d2 = datas.length ? datas[datas.length-1].toLocaleDateString('pt-BR') : '—';
+  document.getElementById('rb-periodo').textContent = d1 === d2 ? d1 : `${d1} a ${d2}`;
+  document.getElementById('rb-arquivo').textContent = ordersFile;
+
+  const validos = rows.filter(r => String(r['Status do pedido']||'').trim() !== 'Cancelado' && String(r['Status do pedido']||'').trim() !== '');
+  const canc    = rows.filter(r => String(r['Status do pedido']||'').trim() === 'Cancelado');
+
+  let sub=0, frt=0, dsc=0, com=0, svc=0, trx=0;
+  for (const r of validos) {
+    sub += pn(r['Subtotal do produto']);
+    frt += pn(r['Taxa de envio pagas pelo comprador']);
+    dsc += pn(r['Desconto do vendedor']) + pn(r['Desconto do vendedor.1']);
+    com += pn(r['Taxa de comissão líquida']);
+    svc += pn(r['Taxa de serviço líquida']);
+    trx += pn(r['Taxa de transação']);
+  }
+  const taxas = dsc + com + svc + trx;
+  const liq   = sub + frt - taxas;
+  liqShopee   = liq;
+
+  const ticket = validos.length ? sub / validos.length : 0;
+  const txPct  = sub > 0 ? taxas / sub * 100 : 0;
+
+  // Cards
+  document.getElementById('c-ped').textContent      = validos.length.toLocaleString('pt-BR');
+  document.getElementById('c-ped-sub').textContent  = `${canc.length} cancelado${canc.length!==1?'s':''} no período`;
+  document.getElementById('c-bruto').textContent    = fmt(sub);
+  document.getElementById('c-ticket').textContent   = `ticket médio ${fmt(ticket)}`;
+  document.getElementById('c-taxas').textContent    = fmt(taxas);
+  document.getElementById('c-taxas-pct').textContent= `${txPct.toFixed(1)}% do faturamento`;
+  document.getElementById('c-liq').textContent      = fmt(liq);
+  document.getElementById('c-liq-pct').textContent  = sub > 0 ? `${(liq/sub*100).toFixed(1)}% do bruto` : '';
+
+  // Breakdown
+  document.getElementById('b-sub').textContent    = `+ ${fmt(sub)}`;
+  document.getElementById('b-frete').textContent  = `+ ${fmt(frt)}`;
+  document.getElementById('b-desc').textContent   = dsc > 0 ? `- ${fmt(dsc)}` : 'R$ 0,00';
+  document.getElementById('b-com').textContent    = `- ${fmt(com)}`;
+  document.getElementById('b-svc').textContent    = `- ${fmt(svc)}`;
+  document.getElementById('b-trx').textContent    = trx > 0 ? `- ${fmt(trx)}` : 'R$ 0,00';
+  document.getElementById('b-liq').textContent    = fmt(liq);
+
+  // Status
+  const sm = {};
+  for (const r of rows) {
+    const s = String(r['Status do pedido']||'Desconhecido').trim();
+    if (!sm[s]) sm[s] = { n:0, v:0 };
+    sm[s].n++; sm[s].v += pn(r['Subtotal do produto']);
+  }
+  document.getElementById('t-status').innerHTML = Object.entries(sm)
+    .sort((a,b) => b[1].n - a[1].n)
+    .map(([s, d]) => {
+      const c = s.includes('Conclu')||s.includes('Entregue') ? 'pg'
+              : s.includes('Cancel') ? 'pr'
+              : s.includes('Enviado') ? 'py' : 'pp';
+      return `<tr>
+        <td><span class="pill ${c}">${s}</span></td>
+        <td class="tv neu" style="text-align:right">${d.n.toLocaleString('pt-BR')}</td>
+        <td class="tv pos" style="text-align:right">${fmt(d.v)}</td>
+      </tr>`;
+    }).join('');
+
+  // Produtos (global + top 5 no resumo)
+  prodMap = {};
+  for (const r of validos) {
+    const n = String(r['Nome do Produto']||'Sem nome').trim();
+    if (!prodMap[n]) prodMap[n] = { q:0, v:0 };
+    prodMap[n].q += Math.max(1, pn(r['Quantidade']));
+    prodMap[n].v += pn(r['Subtotal do produto']);
+  }
+  const rc = ['r1','r2','r3','rn','rn'];
+  document.getElementById('t-prods').innerHTML = Object.entries(prodMap)
+    .sort((a,b) => b[1].q - a[1].q).slice(0,5)
+    .map(([n,d],i) => `<div class="prod">
+      <div class="rnk ${rc[i]}">${i+1}</div>
+      <div class="prod-info">
+        <div class="pname">${n}</div>
+        <div class="pqty">${Math.round(d.q).toLocaleString('pt-BR')} unidades</div>
+      </div>
+      <div class="pval">${fmt(d.v)}</div>
+    </div>`).join('');
+
+  // Estados
+  const um = {};
+  for (const r of validos) {
+    const u = String(r['UF']||'N/D').trim()||'N/D';
+    if (!um[u]) um[u] = { n:0, v:0 };
+    um[u].n++; um[u].v += pn(r['Subtotal do produto']);
+  }
+  const topUFs = Object.entries(um).sort((a,b) => b[1].n - a[1].n).slice(0,8);
+  const mx = topUFs[0]?.[1].n || 1;
+  document.getElementById('t-ufs').innerHTML = topUFs.map(([u,d]) =>
+    `<div class="bar">
+      <div class="blbl">${u}</div>
+      <div class="btrk"><div class="bfil" style="width:${(d.n/mx*100).toFixed(0)}%"></div></div>
+      <div class="bval">&nbsp;${fmt(d.v)}</div>
+      <div class="bqty">&nbsp;· ${d.n} ped.</div>
+    </div>`).join('');
+
+  // Mostra resultado
+  document.getElementById('state-upload').style.display = 'none';
+  document.getElementById('state-result').style.display = 'block';
+  switchTab('resumo');
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+// ── TABS ──
+function switchTab(t) {
+  const isResumo = t === 'resumo';
+  document.getElementById('tab-resumo').style.display = isResumo ? 'block' : 'none';
+  document.getElementById('tab-custos').style.display = isResumo ? 'none'  : 'block';
+  document.getElementById('tab-btn-resumo').classList.toggle('active',  isResumo);
+  document.getElementById('tab-btn-custos').classList.toggle('active', !isResumo);
+  if (!isResumo) renderCustos();
+}
+
+// ── CUSTO DOS PRODUTOS ──
+function renderCustos() {
+  const prods = Object.entries(prodMap).sort((a,b) => b[1].q - a[1].q);
+  const rc = ['r1','r2','r3'];
+
+  const rows = prods.map(([name, d], i) => {
+    const rnkCls = i < 3 ? rc[i] : 'rn';
+    return `<tr>
+      <td>
+        <div style="display:flex;align-items:center;gap:10px">
+          <div class="rnk ${rnkCls}" style="flex-shrink:0">${i+1}</div>
+          <div style="min-width:0">
+            <div style="font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:260px">${name}</div>
+            <div style="font-size:11px;color:var(--gray-400)">${Math.round(d.q)} un.</div>
+          </div>
+        </div>
+      </td>
+      <td style="text-align:right;font-weight:700;white-space:nowrap">${fmt(d.v)}</td>
+      <td style="text-align:right">
+        <input class="cost-input" id="ci_${i}" type="number" min="0" step="0.01"
+               placeholder="0,00" oninput="recalcCustos()">
+      </td>
+      <td style="text-align:right;font-weight:700" id="ct_${i}">—</td>
+      <td style="text-align:right;font-weight:700;color:var(--green)" id="mg_${i}">${fmt(d.v)}</td>
+    </tr>`;
+  }).join('');
+
+  document.getElementById('tab-custos').innerHTML = `
+    <div class="sec">
+      <div class="sec-hd"><div class="sec-ico">💸</div>Custo dos produtos</div>
+      <p class="cost-hint">Insira o <strong>custo unitário</strong> de cada produto. O sistema calcula automaticamente o custo total e o lucro real após descontar a mercadoria.</p>
+      <div style="overflow-x:auto">
+        <table class="cost-tbl">
+          <thead><tr>
+            <th style="text-align:left">Produto</th>
+            <th>Faturamento</th>
+            <th>Custo unitário</th>
+            <th>Custo total</th>
+            <th>Margem bruta</th>
+          </tr></thead>
+          <tbody>${rows}</tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="lucro-box">
+      <div class="lb-row">
+        <span class="lb-lbl">💰 Líquido Shopee <small style="font-weight:400;color:var(--gray-400)">(após taxas Shopee)</small></span>
+        <span class="lb-val pos">${fmt(liqShopee)}</span>
+      </div>
+      <div class="lb-row">
+        <span class="lb-lbl">📦 Total custo dos produtos</span>
+        <span class="lb-val neg" id="lbv-custo">—</span>
+      </div>
+      <div class="lb-row lb-final">
+        <span class="lb-lbl">🏆 Lucro real (após mercadoria)</span>
+        <span class="lb-val pos" id="lbv-lucro">${fmt(liqShopee)}</span>
+      </div>
+    </div>
+    <p class="sec-note" style="margin-top:16px">Margem bruta = faturamento do produto − custo da mercadoria · Lucro real = Líquido Shopee − total custos</p>
+  `;
+}
+
+function recalcCustos() {
+  const prods = Object.entries(prodMap).sort((a,b) => b[1].q - a[1].q);
+  let totalCusto = 0;
+
+  prods.forEach(([, d], i) => {
+    const inp = document.getElementById('ci_' + i);
+    const custoUnit  = inp ? pn(inp.value) : 0;
+    const custoTotal = d.q * custoUnit;
+    const margem     = d.v - custoTotal;
+    totalCusto += custoTotal;
+
+    const ctEl = document.getElementById('ct_' + i);
+    const mgEl = document.getElementById('mg_' + i);
+    if (ctEl) ctEl.textContent = custoUnit > 0 ? `- ${fmt(custoTotal)}` : '—';
+    if (mgEl) {
+      mgEl.textContent = fmt(margem);
+      mgEl.style.color = margem >= 0 ? 'var(--green)' : 'var(--red)';
+    }
+  });
+
+  const lucroReal = liqShopee - totalCusto;
+  const lbCusto = document.getElementById('lbv-custo');
+  const lbLucro = document.getElementById('lbv-lucro');
+  if (lbCusto) lbCusto.textContent = totalCusto > 0 ? `- ${fmt(totalCusto)}` : '—';
+  if (lbLucro) {
+    lbLucro.textContent = fmt(lucroReal);
+    lbLucro.style.color = lucroReal >= 0 ? 'var(--green)' : 'var(--red)';
+  }
+}
+
+function resetar() {
+  document.getElementById('state-result').style.display = 'none';
+  document.getElementById('state-upload').style.display = 'block';
+  document.getElementById('tab-custos').innerHTML = '';
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function toggleInst(el) {
+  el.classList.toggle('open');
+  el.nextElementSibling.classList.toggle('open');
+}
+</script>
+</body>
+</html>
