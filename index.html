@@ -29,6 +29,25 @@
 * { box-sizing: border-box; margin: 0; padding: 0; }
 body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f0f4f8; color: var(--gray-800); min-height: 100vh; }
 
+/* AUTH */
+.auth-screen { min-height: 100vh; display: flex; align-items: center; justify-content: center; background: #f0f4f8; padding: 24px; }
+.auth-card { background: #fff; border-radius: 20px; padding: 36px 32px; width: 100%; max-width: 400px; box-shadow: 0 8px 40px rgba(0,0,0,.1); }
+.auth-logo { width: 64px; height: 64px; border-radius: 50%; margin: 0 auto 16px; display: block; box-shadow: 0 4px 16px rgba(238,77,45,.25); }
+.auth-title { text-align: center; font-size: 20px; font-weight: 800; margin-bottom: 4px; }
+.auth-sub { text-align: center; font-size: 13px; color: var(--gray-500); margin-bottom: 24px; }
+.atab-wrap { display: flex; background: var(--gray-100); border-radius: 10px; padding: 4px; margin-bottom: 24px; gap: 4px; }
+.atab { flex: 1; padding: 9px; border: none; background: transparent; border-radius: 8px; font-size: 13px; font-weight: 700; cursor: pointer; color: var(--gray-500); transition: all .2s; }
+.atab.active { background: #fff; color: var(--gray-800); box-shadow: 0 1px 4px rgba(0,0,0,.1); }
+.auth-field { margin-bottom: 14px; }
+.auth-field label { display: block; font-size: 11px; font-weight: 700; color: var(--gray-600); margin-bottom: 6px; letter-spacing: .5px; text-transform: uppercase; }
+.auth-input { width: 100%; padding: 12px 14px; border: 1.5px solid var(--gray-200); border-radius: 10px; font-size: 14px; outline: none; transition: border-color .2s, box-shadow .2s; font-family: inherit; }
+.auth-input:focus { border-color: var(--orange); box-shadow: 0 0 0 3px rgba(238,77,45,.1); }
+.auth-btn { width: 100%; padding: 14px; background: linear-gradient(135deg, var(--orange), #ff7043); color: #fff; border: none; border-radius: 10px; font-size: 15px; font-weight: 800; cursor: pointer; margin-top: 6px; box-shadow: 0 4px 14px rgba(238,77,45,.3); transition: transform .15s, box-shadow .15s; font-family: inherit; }
+.auth-btn:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(238,77,45,.35); }
+.auth-btn:disabled { background: var(--gray-200); color: var(--gray-400); box-shadow: none; cursor: not-allowed; }
+.auth-msg { margin-top: 12px; padding: 10px 14px; border-radius: 8px; font-size: 13px; display: none; }
+.auth-footer { text-align: center; margin-top: 20px; font-size: 12px; color: var(--gray-400); }
+
 /* HEADER */
 header {
   background: linear-gradient(135deg, var(--orange) 0%, var(--orange-d) 100%);
@@ -40,7 +59,12 @@ header {
 header img  { width: 44px; height: 44px; border-radius: 50%; box-shadow: 0 2px 8px rgba(0,0,0,.3); flex-shrink: 0; }
 header h1   { font-size: 17px; font-weight: 800; letter-spacing: -.3px; }
 header p    { font-size: 12px; opacity: .8; margin-top: 1px; }
-.hdr-badge  { margin-left: auto; background: rgba(255,255,255,.15); border: 1px solid rgba(255,255,255,.25); padding: 5px 12px; border-radius: 20px; font-size: 11px; font-weight: 600; white-space: nowrap; }
+.hdr-right  { margin-left: auto; display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+.hdr-email  { text-align: right; }
+.hdr-email span { display: block; font-size: 10px; opacity: .7; text-transform: uppercase; letter-spacing: .4px; }
+.hdr-email strong { display: block; font-size: 12px; max-width: 160px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.btn-logout { background: rgba(255,255,255,.15); border: 1px solid rgba(255,255,255,.3); color: #fff; padding: 7px 14px; border-radius: 8px; font-size: 12px; font-weight: 700; cursor: pointer; white-space: nowrap; font-family: inherit; transition: background .2s; }
+.btn-logout:hover { background: rgba(255,255,255,.25); }
 
 .wrap { max-width: 860px; margin: 0 auto; padding: 32px 16px 56px; }
 
@@ -98,11 +122,11 @@ input[type=file] { display: none; }
   background: linear-gradient(135deg, var(--orange), #ff7043); color: #fff; border: none;
   padding: 13px 32px; border-radius: 10px; font-size: 15px; font-weight: 800;
   cursor: pointer; box-shadow: 0 4px 14px rgba(238,77,45,.35);
-  transition: transform .15s, box-shadow .15s;
+  transition: transform .15s, box-shadow .15s; font-family: inherit;
 }
 .btn-gerar:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(238,77,45,.4); }
 .btn-gerar:disabled { background: var(--gray-200); color: var(--gray-400); box-shadow: none; cursor: not-allowed; }
-.btn-clear-file { background: none; border: 1.5px solid var(--gray-200); color: var(--gray-500); padding: 8px 16px; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; display: none; transition: all .2s; }
+.btn-clear-file { background: none; border: 1.5px solid var(--gray-200); color: var(--gray-500); padding: 8px 16px; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; display: none; transition: all .2s; font-family: inherit; }
 .btn-clear-file:hover { border-color: var(--red); color: var(--red); }
 
 /* RESULT BAR */
@@ -115,12 +139,12 @@ input[type=file] { display: none; }
 .rb-icon { width: 38px; height: 38px; background: var(--orange-light); border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0; }
 .rb-label { font-size: 11px; color: var(--gray-400); text-transform: uppercase; letter-spacing: .5px; }
 .rb-value { font-size: 15px; font-weight: 800; }
-.btn-novo { background: none; border: 1.5px solid var(--gray-200); color: var(--gray-500); padding: 8px 16px; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; transition: all .2s; }
+.btn-novo { background: none; border: 1.5px solid var(--gray-200); color: var(--gray-500); padding: 8px 16px; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; transition: all .2s; font-family: inherit; }
 .btn-novo:hover { border-color: var(--orange); color: var(--orange); }
 
 /* TABS */
 .tabs { display: flex; background: #fff; border-radius: var(--radius); padding: 6px; box-shadow: var(--shadow-sm); margin-bottom: 20px; gap: 6px; }
-.tab-btn { flex: 1; padding: 11px 16px; border: none; background: transparent; border-radius: 10px; font-size: 13px; font-weight: 700; cursor: pointer; color: var(--gray-500); transition: all .2s; }
+.tab-btn { flex: 1; padding: 11px 16px; border: none; background: transparent; border-radius: 10px; font-size: 13px; font-weight: 700; cursor: pointer; color: var(--gray-500); transition: all .2s; font-family: inherit; }
 .tab-btn.active { background: var(--orange); color: #fff; box-shadow: 0 3px 10px rgba(238,77,45,.3); }
 .tab-btn:hover:not(.active) { background: var(--gray-100); color: var(--gray-700); }
 
@@ -155,6 +179,12 @@ input[type=file] { display: none; }
 .neu { color: var(--gray-600); }
 .tbl .ttotal td { font-size: 15px; font-weight: 800; padding-top: 14px; border-top: 2px solid var(--gray-200) !important; }
 .tbl .ttotal .tv { font-size: 18px; color: var(--green); }
+
+/* ADS SECTION */
+.ads-row { display: flex; align-items: center; gap: 16px; margin-bottom: 18px; flex-wrap: wrap; }
+.ads-input { width: 160px; padding: 11px 14px; border: 1.5px solid var(--gray-200); border-radius: 10px; font-size: 15px; font-weight: 700; text-align: right; outline: none; transition: border-color .2s, box-shadow .2s; background: var(--gray-50); font-family: inherit; }
+.ads-input:focus { border-color: var(--orange); background: #fff; box-shadow: 0 0 0 3px rgba(238,77,45,.1); }
+.ads-saved { font-size: 11px; font-weight: 700; color: var(--green); opacity: 0; transition: opacity .5s; }
 
 /* PILLS */
 .pill { display: inline-flex; align-items: center; gap: 5px; padding: 4px 11px; border-radius: 20px; font-size: 12px; font-weight: 700; }
@@ -196,7 +226,7 @@ input[type=file] { display: none; }
 .cost-input {
   width: 110px; padding: 8px 10px; border: 1.5px solid var(--gray-200); border-radius: 8px;
   font-size: 13px; font-weight: 700; text-align: right; outline: none;
-  transition: border-color .2s, box-shadow .2s; background: var(--gray-50);
+  transition: border-color .2s, box-shadow .2s; background: var(--gray-50); font-family: inherit;
 }
 .cost-input:focus { border-color: var(--orange); background: #fff; box-shadow: 0 0 0 3px rgba(238,77,45,.1); }
 .cost-input::placeholder { color: var(--gray-400); font-weight: 400; }
@@ -218,7 +248,7 @@ input[type=file] { display: none; }
 
 /* PRINT */
 .print-wrap { text-align: center; margin-top: 24px; }
-.btn-pdf { background: linear-gradient(135deg, var(--orange), #ff7043); color: #fff; border: none; padding: 15px 36px; border-radius: 12px; font-size: 15px; font-weight: 800; cursor: pointer; box-shadow: 0 4px 16px rgba(238,77,45,.35); transition: transform .15s, box-shadow .15s; }
+.btn-pdf { background: linear-gradient(135deg, var(--orange), #ff7043); color: #fff; border: none; padding: 15px 36px; border-radius: 12px; font-size: 15px; font-weight: 800; cursor: pointer; box-shadow: 0 4px 16px rgba(238,77,45,.35); transition: transform .15s, box-shadow .15s; font-family: inherit; }
 .btn-pdf:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(238,77,45,.4); }
 .sec-note { text-align: center; font-size: 12px; color: var(--gray-400); margin-top: 16px; }
 
@@ -236,13 +266,53 @@ footer strong { color: var(--orange); }
 </head>
 <body>
 
+<!-- ── AUTH ── -->
+<div id="state-auth" class="auth-screen">
+  <div class="auth-card">
+    <img src="logo.png" class="auth-logo" alt="Acelera Shopee">
+    <div class="auth-title">Relatório de Lucro</div>
+    <div class="auth-sub">Acelera Shopee</div>
+
+    <div class="atab-wrap">
+      <button class="atab active" id="atab-login" onclick="switchAuthTab('login')">Entrar</button>
+      <button class="atab" id="atab-reg" onclick="switchAuthTab('reg')">Criar conta</button>
+    </div>
+
+    <div class="auth-field">
+      <label>Email</label>
+      <input type="email" id="auth-email" class="auth-input" placeholder="seu@email.com"
+             onkeydown="if(event.key==='Enter')authAction()">
+    </div>
+    <div class="auth-field">
+      <label>Senha</label>
+      <input type="password" id="auth-pass" class="auth-input" placeholder="••••••••"
+             onkeydown="if(event.key==='Enter')authAction()">
+    </div>
+
+    <button class="auth-btn" id="auth-btn" onclick="authAction()">Entrar</button>
+
+    <div class="auth-msg" id="auth-msg"></div>
+
+    <div class="auth-footer">🔒 Pedidos processados no seu dispositivo</div>
+  </div>
+</div>
+
+<!-- ── APP ── -->
+<div id="state-app" style="display:none">
+
 <header>
   <img src="logo.png" alt="Acelera Shopee">
   <div>
     <h1>Relatório de Lucro Shopee</h1>
     <p>Veja quanto você realmente está ganhando</p>
   </div>
-  <div class="hdr-badge">🔒 100% local</div>
+  <div class="hdr-right">
+    <div class="hdr-email" id="hdr-user-info" style="display:none">
+      <span>Conta</span>
+      <strong id="hdr-email">—</strong>
+    </div>
+    <button class="btn-logout" onclick="logoutUser()">Sair</button>
+  </div>
 </header>
 
 <div class="wrap">
@@ -257,8 +327,8 @@ footer strong { color: var(--orange); }
       <div class="hero-feats">
         <div class="feat">💰 Lucro líquido real</div>
         <div class="feat">📊 Taxas detalhadas</div>
-        <div class="feat">💸 Custo dos produtos</div>
-        <div class="feat">🔒 Dados no seu PC</div>
+        <div class="feat">📣 Resultado com ADS</div>
+        <div class="feat">☁️ Custos salvos na nuvem</div>
       </div>
     </div>
 
@@ -383,6 +453,24 @@ footer strong { color: var(--orange); }
         </table>
       </div>
 
+      <!-- RESULTADO COM ADS -->
+      <div class="sec">
+        <div class="sec-hd"><div class="sec-ico">📣</div>Resultado com ADS</div>
+        <div class="ads-row">
+          <div>
+            <div style="font-size:12px;font-weight:700;color:var(--gray-600);margin-bottom:8px">Gasto mensal com ADS (R$)</div>
+            <input type="number" id="ads-input" class="ads-input" placeholder="0,00" min="0" step="0.01"
+                   oninput="updateAds(this.value)">
+          </div>
+          <div id="ads-saved" class="ads-saved">✓ Salvo</div>
+        </div>
+        <table class="tbl">
+          <tr><td class="tl">💰 Líquido Shopee</td><td class="tv pos" id="ads-liq">—</td></tr>
+          <tr><td class="tl" style="color:var(--gray-400)">📣 Gasto com ADS</td><td class="tv neg" id="ads-val">—</td></tr>
+          <tr class="ttotal"><td class="tl">🏆 Resultado com ADS</td><td class="tv" id="ads-result">—</td></tr>
+        </table>
+      </div>
+
       <div class="sec">
         <div class="sec-hd"><div class="sec-ico">📦</div>Status dos pedidos</div>
         <table class="tbl"><tbody id="t-status"></tbody></table>
@@ -401,7 +489,7 @@ footer strong { color: var(--orange); }
       <div class="print-wrap">
         <button class="btn-pdf" onclick="window.print()">🖨️ Salvar como PDF</button>
       </div>
-      <p class="sec-note">🔒 Seus dados ficam 100% no seu dispositivo — nada é enviado para a internet</p>
+      <p class="sec-note">🔒 Pedidos processados no seu dispositivo — custos salvos com segurança na sua conta</p>
 
     </div><!-- /tab-resumo -->
 
@@ -416,10 +504,154 @@ footer strong { color: var(--orange); }
 
 <footer>Feito com ❤️ por <strong>Acelera Shopee</strong></footer>
 
+</div><!-- /state-app -->
+
+<!-- Firebase -->
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+
 <script>
+// ─── CONFIGURAÇÃO FIREBASE ──────────────────────────────────────────────────
+// Substitua pelos dados do seu projeto Firebase
+const FIREBASE_CONFIG = {
+  apiKey:            "COLE_AQUI",
+  authDomain:        "COLE_AQUI",
+  projectId:         "COLE_AQUI",
+  storageBucket:     "COLE_AQUI",
+  messagingSenderId: "COLE_AQUI",
+  appId:             "COLE_AQUI"
+};
+// ───────────────────────────────────────────────────────────────────────────
+
+firebase.initializeApp(FIREBASE_CONFIG);
+const auth = firebase.auth();
+const db   = firebase.firestore();
+
+// ── ESTADO GLOBAL ──
 let ordersData = null, ordersFile = '';
 let liqShopee  = 0, prodMap = {};
+let currentProds = [];
+let totalCustoProdutos = 0;
+let adsGasto    = 0;
+let savedCustos = {};
+let saveTimer   = null;
+let currentUser = null;
 
+// ── AUTH STATE ──
+auth.onAuthStateChanged(async user => {
+  if (user) {
+    currentUser = user;
+    document.getElementById('hdr-email').textContent      = user.email;
+    document.getElementById('hdr-user-info').style.display = 'block';
+    await loadUserData();
+    document.getElementById('state-auth').style.display = 'none';
+    document.getElementById('state-app').style.display  = 'block';
+  } else {
+    currentUser = null;
+    document.getElementById('state-auth').style.display = 'flex';
+    document.getElementById('state-app').style.display  = 'none';
+  }
+});
+
+// ── FIRESTORE ──
+async function loadUserData() {
+  if (!currentUser) return;
+  try {
+    const doc = await db.collection('shopee_users').doc(currentUser.uid).get();
+    if (doc.exists) {
+      const data  = doc.data();
+      adsGasto    = data.adsGasto  || 0;
+      savedCustos = data.custos    || {};
+    }
+  } catch(e) { console.error('loadUserData:', e); }
+}
+
+function autoSave() {
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(saveUserData, 800);
+}
+
+async function saveUserData() {
+  if (!currentUser) return;
+  try {
+    await db.collection('shopee_users').doc(currentUser.uid).set({
+      adsGasto,
+      custos: savedCustos,
+      updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+    }, { merge: true });
+    const el = document.getElementById('ads-saved');
+    if (el) { el.style.opacity = '1'; setTimeout(() => el.style.opacity = '0', 2000); }
+  } catch(e) { console.error('saveUserData:', e); }
+}
+
+// ── AUTH UI ──
+let authMode = 'login';
+
+function switchAuthTab(mode) {
+  authMode = mode;
+  document.getElementById('atab-login').classList.toggle('active', mode === 'login');
+  document.getElementById('atab-reg').classList.toggle('active',   mode === 'reg');
+  document.getElementById('auth-btn').textContent = mode === 'login' ? 'Entrar' : 'Criar conta';
+  const msg = document.getElementById('auth-msg');
+  msg.style.display = 'none';
+}
+
+async function authAction() {
+  const email = document.getElementById('auth-email').value.trim();
+  const pass  = document.getElementById('auth-pass').value;
+  const msg   = document.getElementById('auth-msg');
+  msg.style.display = 'none';
+
+  if (!email || !pass) { showAuthMsg('Preencha email e senha.', false); return; }
+
+  const btn = document.getElementById('auth-btn');
+  btn.textContent = 'Aguarde...';
+  btn.disabled    = true;
+
+  try {
+    if (authMode === 'login') {
+      await auth.signInWithEmailAndPassword(email, pass);
+    } else {
+      await auth.createUserWithEmailAndPassword(email, pass);
+    }
+  } catch(e) {
+    showAuthMsg(translateAuthError(e.code), false);
+    btn.textContent = authMode === 'login' ? 'Entrar' : 'Criar conta';
+    btn.disabled    = false;
+  }
+}
+
+function showAuthMsg(txt, success) {
+  const el = document.getElementById('auth-msg');
+  el.textContent    = txt;
+  el.style.background = success ? '#dcfce7' : '#fee2e2';
+  el.style.color      = success ? '#166534' : '#991b1b';
+  el.style.display    = 'block';
+}
+
+function translateAuthError(code) {
+  const m = {
+    'auth/invalid-email':         'Email inválido.',
+    'auth/user-not-found':        'Usuário não encontrado.',
+    'auth/wrong-password':        'Senha incorreta.',
+    'auth/email-already-in-use':  'Este email já está cadastrado.',
+    'auth/weak-password':         'Senha muito fraca (mínimo 6 caracteres).',
+    'auth/too-many-requests':     'Muitas tentativas. Aguarde e tente novamente.',
+    'auth/invalid-credential':    'Email ou senha incorretos.',
+    'auth/network-request-failed':'Sem conexão. Verifique sua internet.'
+  };
+  return m[code] || 'Erro inesperado. Tente novamente.';
+}
+
+function logoutUser() {
+  auth.signOut();
+  resetar();
+  adsGasto = 0; savedCustos = {}; currentProds = []; totalCustoProdutos = 0;
+  ordersData = null; ordersFile = ''; liqShopee = 0; prodMap = {};
+}
+
+// ── UTILS ──
 const fmt = v => 'R$ ' + Math.abs(+v).toFixed(2).replace('.', ',').replace(/\B(?=(\d{3})+(?!\d))/g, '.');
 
 function pn(v) {
@@ -468,7 +700,7 @@ function clearFile() {
   dz.classList.remove('done');
   document.getElementById('uz-icon').textContent  = '📂';
   document.getElementById('uz-title').textContent = 'Arraste o arquivo aqui';
-  document.getElementById('uz-sub').innerHTML     = 'Arquivo <strong>Order.all.xxx.xlsx</strong> exportado do Seller Center';
+  document.getElementById('uz-sub').innerHTML     = 'Arquivo <strong>Order.all.xlsx</strong> exportado do Seller Center';
   document.getElementById('uz-lbl').textContent   = 'Selecionar arquivo';
   document.getElementById('btn-clear').style.display = 'none';
   document.getElementById('btn-gerar').disabled   = true;
@@ -505,23 +737,26 @@ function gerar() {
   const txPct  = sub > 0 ? taxas / sub * 100 : 0;
 
   // Cards
-  document.getElementById('c-ped').textContent      = validos.length.toLocaleString('pt-BR');
-  document.getElementById('c-ped-sub').textContent  = `${canc.length} cancelado${canc.length!==1?'s':''} no período`;
-  document.getElementById('c-bruto').textContent    = fmt(sub);
-  document.getElementById('c-ticket').textContent   = `ticket médio ${fmt(ticket)}`;
-  document.getElementById('c-taxas').textContent    = fmt(taxas);
-  document.getElementById('c-taxas-pct').textContent= `${txPct.toFixed(1)}% do faturamento`;
-  document.getElementById('c-liq').textContent      = fmt(liq);
-  document.getElementById('c-liq-pct').textContent  = sub > 0 ? `${(liq/sub*100).toFixed(1)}% do bruto` : '';
+  document.getElementById('c-ped').textContent       = validos.length.toLocaleString('pt-BR');
+  document.getElementById('c-ped-sub').textContent   = `${canc.length} cancelado${canc.length!==1?'s':''} no período`;
+  document.getElementById('c-bruto').textContent     = fmt(sub);
+  document.getElementById('c-ticket').textContent    = `ticket médio ${fmt(ticket)}`;
+  document.getElementById('c-taxas').textContent     = fmt(taxas);
+  document.getElementById('c-taxas-pct').textContent = `${txPct.toFixed(1)}% do faturamento`;
+  document.getElementById('c-liq').textContent       = fmt(liq);
+  document.getElementById('c-liq-pct').textContent   = sub > 0 ? `${(liq/sub*100).toFixed(1)}% do bruto` : '';
 
   // Breakdown
-  document.getElementById('b-sub').textContent    = `+ ${fmt(sub)}`;
-  document.getElementById('b-frete').textContent  = `+ ${fmt(frt)}`;
-  document.getElementById('b-desc').textContent   = dsc > 0 ? `- ${fmt(dsc)}` : 'R$ 0,00';
-  document.getElementById('b-com').textContent    = `- ${fmt(com)}`;
-  document.getElementById('b-svc').textContent    = `- ${fmt(svc)}`;
-  document.getElementById('b-trx').textContent    = trx > 0 ? `- ${fmt(trx)}` : 'R$ 0,00';
-  document.getElementById('b-liq').textContent    = fmt(liq);
+  document.getElementById('b-sub').textContent   = `+ ${fmt(sub)}`;
+  document.getElementById('b-frete').textContent = `+ ${fmt(frt)}`;
+  document.getElementById('b-desc').textContent  = dsc > 0 ? `- ${fmt(dsc)}` : 'R$ 0,00';
+  document.getElementById('b-com').textContent   = `- ${fmt(com)}`;
+  document.getElementById('b-svc').textContent   = `- ${fmt(svc)}`;
+  document.getElementById('b-trx').textContent   = trx > 0 ? `- ${fmt(trx)}` : 'R$ 0,00';
+  document.getElementById('b-liq').textContent   = fmt(liq);
+
+  // ADS
+  updateAdsResumo();
 
   // Status
   const sm = {};
@@ -543,7 +778,7 @@ function gerar() {
       </tr>`;
     }).join('');
 
-  // Produtos (global + top 5 no resumo)
+  // Produtos
   prodMap = {};
   for (const r of validos) {
     const n = String(r['Nome do Produto']||'Sem nome').trim();
@@ -580,11 +815,54 @@ function gerar() {
       <div class="bqty">&nbsp;· ${d.n} ped.</div>
     </div>`).join('');
 
-  // Mostra resultado
   document.getElementById('state-upload').style.display = 'none';
   document.getElementById('state-result').style.display = 'block';
   switchTab('resumo');
   window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+// ── ADS ──
+function updateAds(val) {
+  adsGasto = pn(val);
+  updateAdsResumo();
+  updateLucroBox();
+  autoSave();
+}
+
+function updateAdsResumo() {
+  const resultado = liqShopee - adsGasto;
+  const liqEl = document.getElementById('ads-liq');
+  const valEl = document.getElementById('ads-val');
+  const resEl = document.getElementById('ads-result');
+  const inp   = document.getElementById('ads-input');
+  if (inp && document.activeElement !== inp) inp.value = adsGasto > 0 ? adsGasto.toFixed(2) : '';
+  if (liqEl) liqEl.textContent = fmt(liqShopee);
+  if (valEl) valEl.textContent = adsGasto > 0 ? `- ${fmt(adsGasto)}` : 'R$ 0,00';
+  if (resEl) {
+    resEl.textContent = fmt(resultado);
+    resEl.style.color = resultado >= 0 ? 'var(--green)' : 'var(--red)';
+  }
+}
+
+function updateLucroBox() {
+  const lucroAposProd = liqShopee - totalCustoProdutos;
+  const lucroFinal    = lucroAposProd - adsGasto;
+
+  const lbCusto = document.getElementById('lbv-custo');
+  const lbAds   = document.getElementById('lbv-ads');
+  const lbLucro = document.getElementById('lbv-lucro');
+  const lbFinal = document.getElementById('lbv-final');
+
+  if (lbCusto) lbCusto.textContent = totalCustoProdutos > 0 ? `- ${fmt(totalCustoProdutos)}` : '—';
+  if (lbAds)   lbAds.textContent   = adsGasto > 0 ? `- ${fmt(adsGasto)}` : '—';
+  if (lbLucro) {
+    lbLucro.textContent = fmt(lucroAposProd);
+    lbLucro.style.color = lucroAposProd >= 0 ? 'var(--green)' : 'var(--red)';
+  }
+  if (lbFinal) {
+    lbFinal.textContent = fmt(lucroFinal);
+    lbFinal.style.color = lucroFinal >= 0 ? 'var(--green)' : 'var(--red)';
+  }
 }
 
 // ── TABS ──
@@ -599,11 +877,12 @@ function switchTab(t) {
 
 // ── CUSTO DOS PRODUTOS ──
 function renderCustos() {
-  const prods = Object.entries(prodMap).sort((a,b) => b[1].q - a[1].q);
+  currentProds = Object.entries(prodMap).sort((a,b) => b[1].q - a[1].q);
   const rc = ['r1','r2','r3'];
 
-  const rows = prods.map(([name, d], i) => {
-    const rnkCls = i < 3 ? rc[i] : 'rn';
+  const rows = currentProds.map(([name, d], i) => {
+    const rnkCls  = i < 3 ? rc[i] : 'rn';
+    const savedVal = savedCustos[name] || 0;
     return `<tr>
       <td>
         <div style="display:flex;align-items:center;gap:10px">
@@ -617,7 +896,8 @@ function renderCustos() {
       <td style="text-align:right;font-weight:700;white-space:nowrap">${fmt(d.v)}</td>
       <td style="text-align:right">
         <input class="cost-input" id="ci_${i}" type="number" min="0" step="0.01"
-               placeholder="0,00" oninput="recalcCustos()">
+               placeholder="0,00" value="${savedVal > 0 ? savedVal.toFixed(2) : ''}"
+               oninput="recalcCustos()">
       </td>
       <td style="text-align:right;font-weight:700" id="ct_${i}">—</td>
       <td style="text-align:right;font-weight:700;color:var(--green)" id="mg_${i}">${fmt(d.v)}</td>
@@ -627,7 +907,7 @@ function renderCustos() {
   document.getElementById('tab-custos').innerHTML = `
     <div class="sec">
       <div class="sec-hd"><div class="sec-ico">💸</div>Custo dos produtos</div>
-      <p class="cost-hint">Insira o <strong>custo unitário</strong> de cada produto. O sistema calcula automaticamente o custo total e o lucro real após descontar a mercadoria.</p>
+      <p class="cost-hint">Insira o <strong>custo unitário</strong> de cada produto. Os valores são salvos automaticamente na sua conta.</p>
       <div style="overflow-x:auto">
         <table class="cost-tbl">
           <thead><tr>
@@ -651,22 +931,32 @@ function renderCustos() {
         <span class="lb-lbl">📦 Total custo dos produtos</span>
         <span class="lb-val neg" id="lbv-custo">—</span>
       </div>
+      <div class="lb-row">
+        <span class="lb-lbl">📣 Gasto com ADS <small style="font-weight:400;color:var(--gray-400)">(definido em Resumo)</small></span>
+        <span class="lb-val neg" id="lbv-ads">—</span>
+      </div>
+      <div class="lb-row" style="border-bottom:1px solid rgba(134,239,172,.4)">
+        <span class="lb-lbl">💵 Lucro após mercadoria</span>
+        <span class="lb-val" id="lbv-lucro">${fmt(liqShopee)}</span>
+      </div>
       <div class="lb-row lb-final">
-        <span class="lb-lbl">🏆 Lucro real (após mercadoria)</span>
-        <span class="lb-val pos" id="lbv-lucro">${fmt(liqShopee)}</span>
+        <span class="lb-lbl">🏆 Lucro real (após tudo)</span>
+        <span class="lb-val pos" id="lbv-final">${fmt(liqShopee)}</span>
       </div>
     </div>
-    <p class="sec-note" style="margin-top:16px">Margem bruta = faturamento do produto − custo da mercadoria · Lucro real = Líquido Shopee − total custos</p>
+    <p class="sec-note" style="margin-top:16px">Lucro real = Líquido Shopee − custo dos produtos − gasto com ADS</p>
   `;
+
+  recalcCustos(false);
 }
 
-function recalcCustos() {
-  const prods = Object.entries(prodMap).sort((a,b) => b[1].q - a[1].q);
+function recalcCustos(shouldSave = true) {
   let totalCusto = 0;
 
-  prods.forEach(([, d], i) => {
-    const inp = document.getElementById('ci_' + i);
+  currentProds.forEach(([name, d], i) => {
+    const inp      = document.getElementById('ci_' + i);
     const custoUnit  = inp ? pn(inp.value) : 0;
+    savedCustos[name] = custoUnit;
     const custoTotal = d.q * custoUnit;
     const margem     = d.v - custoTotal;
     totalCusto += custoTotal;
@@ -680,20 +970,16 @@ function recalcCustos() {
     }
   });
 
-  const lucroReal = liqShopee - totalCusto;
-  const lbCusto = document.getElementById('lbv-custo');
-  const lbLucro = document.getElementById('lbv-lucro');
-  if (lbCusto) lbCusto.textContent = totalCusto > 0 ? `- ${fmt(totalCusto)}` : '—';
-  if (lbLucro) {
-    lbLucro.textContent = fmt(lucroReal);
-    lbLucro.style.color = lucroReal >= 0 ? 'var(--green)' : 'var(--red)';
-  }
+  totalCustoProdutos = totalCusto;
+  updateLucroBox();
+  if (shouldSave) autoSave();
 }
 
 function resetar() {
   document.getElementById('state-result').style.display = 'none';
   document.getElementById('state-upload').style.display = 'block';
   document.getElementById('tab-custos').innerHTML = '';
+  clearFile();
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
