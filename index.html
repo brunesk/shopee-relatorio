@@ -709,13 +709,14 @@ function renderDashboard() {
   const chartVals = chartKeys.map(k => calcLucroMes(allMonths[k]));
   const maxAbs    = Math.max(...chartVals.map(Math.abs), 1);
 
+  const CHART_H = 148;
   const bars = chartKeys.map((k, i) => {
     const v   = chartVals[i];
-    const pct = Math.abs(v) / maxAbs * 100;
+    const px  = Math.max(Math.abs(v) / maxAbs * CHART_H, 3).toFixed(0);
     const cls = v >= 0 ? 'pos' : 'neg';
     return `<div class="c-col">
       <div class="c-tip">${monthLabel(k)}: ${v >= 0 ? '+' : ''}${fmt(v)}</div>
-      <div class="c-bar ${cls}" style="height:${Math.max(pct,2)}%"></div>
+      <div class="c-bar ${cls}" style="height:${px}px"></div>
     </div>`;
   }).join('');
 
