@@ -116,19 +116,29 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 
 /* ── CHART ── */
 .chart-area{padding:8px 0 0}
-.chart-bars{display:flex;align-items:flex-end;gap:6px;height:150px;padding:0 4px;border-bottom:2px solid var(--g100);position:relative}
-.chart-bars::after{content:'';position:absolute;left:0;right:0;top:33%;height:1px;background:var(--g100)}
-.chart-bars::before{content:'';position:absolute;left:0;right:0;top:66%;height:1px;background:var(--g100)}
-.c-col{flex:1;display:flex;flex-direction:column;align-items:center;gap:0;min-width:32px;cursor:default;position:relative}
-.c-bar{width:100%;max-width:48px;border-radius:6px 6px 0 0;min-height:2px;transition:height .6s cubic-bezier(.4,0,.2,1)}
-.c-bar.pos{background:linear-gradient(to top,#16a34a,#4ade80)}
-.c-bar.neg{background:linear-gradient(to top,#dc2626,#f87171)}
+.chart-wrap{display:flex;gap:0;align-items:stretch}
+.y-axis{display:flex;flex-direction:column;justify-content:space-between;align-items:flex-end;padding-right:8px;padding-bottom:2px;width:46px;flex-shrink:0}
+.y-lbl{font-size:9px;font-weight:700;color:var(--g400);white-space:nowrap;line-height:1}
+.chart-main{flex:1;min-width:0}
+.chart-bars{display:flex;align-items:flex-end;gap:6px;padding:0 4px;border-bottom:2px solid var(--g200);position:relative}
+.chart-gl{position:absolute;left:0;right:0;height:1px;background:var(--g100);pointer-events:none}
+.c-col{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;min-width:34px;cursor:default;position:relative}
+.c-col.c-cur .c-bar{box-shadow:0 0 0 2px var(--or);filter:brightness(1.08)}
+.c-col.c-cur .c-lbl-inline{color:var(--or)}
+.c-val{font-size:9px;font-weight:800;white-space:nowrap;text-align:center;line-height:1}
+.c-val.pos{color:#16a34a}.c-val.neg{color:#dc2626}.c-val.zero{color:var(--g400)}
+.c-bar{width:85%;max-width:52px;border-radius:6px 6px 0 0;min-height:3px;transition:height .7s cubic-bezier(.4,0,.2,1)}
+.c-bar.pos{background:linear-gradient(to top,#15803d,#4ade80)}
+.c-bar.neg{background:linear-gradient(to top,#b91c1c,#f87171)}
 .c-bar.zero{background:var(--g200);min-height:4px}
-.c-tip{position:absolute;bottom:calc(100% + 8px);left:50%;transform:translateX(-50%);background:var(--g800);color:#fff;font-size:11px;font-weight:700;padding:5px 9px;border-radius:7px;white-space:nowrap;display:none;z-index:10;pointer-events:none}
+.c-col:hover .c-bar{filter:brightness(1.12)}
+.c-tip{position:absolute;bottom:calc(100% + 12px);left:50%;transform:translateX(-50%);background:var(--g800);color:#fff;font-size:11px;font-weight:700;padding:6px 10px;border-radius:8px;white-space:nowrap;display:none;z-index:10;pointer-events:none;line-height:1.5;text-align:center}
 .c-tip::after{content:'';position:absolute;top:100%;left:50%;transform:translateX(-50%);border:5px solid transparent;border-top-color:var(--g800)}
 .c-col:hover .c-tip{display:block}
-.c-lbls{display:flex;gap:6px;padding:8px 4px 0}
-.c-lbl{flex:1;text-align:center;font-size:10px;font-weight:700;color:var(--g400);min-width:32px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.c-lbls{display:flex;gap:6px;padding:6px 4px 0;margin-left:46px}
+.c-lbl{flex:1;text-align:center;font-size:10px;font-weight:700;color:var(--g400);min-width:34px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.chart-footer{display:flex;gap:20px;flex-wrap:wrap;margin-top:14px;padding-top:12px;border-top:1px solid var(--g100)}
+.cf-item{font-size:12px;color:var(--g500)}.cf-item strong{color:var(--g800);font-weight:700}
 
 /* ── TABLE ── */
 .tbl{width:100%;border-collapse:collapse;font-size:13px}
@@ -709,18 +719,59 @@ function renderDashboard() {
   const chartVals = chartKeys.map(k => calcLucroMes(allMonths[k]));
   const maxAbs    = Math.max(...chartVals.map(Math.abs), 1);
 
-  const CHART_H = 148;
+  function niceNum(v) {
+    if (v <= 0) return 1;
+    const exp  = Math.floor(Math.log10(v));
+    const f    = v / Math.pow(10, exp);
+    const nice = f < 1.5 ? 1 : f < 3 ? 2 : f < 7 ? 5 : 10;
+    return nice * Math.pow(10, exp);
+  }
+  function compactFmt(v) {
+    const abs = Math.abs(v), s = v >= 0 ? '+' : '-';
+    if (abs >= 10000) return s+'R$'+(abs/1000).toFixed(0)+'k';
+    if (abs >= 1000)  return s+'R$'+(abs/1000).toFixed(1).replace('.0','')+'k';
+    return s+'R$'+abs.toFixed(0);
+  }
+
+  const CHART_H = 200;
+  const yMax    = niceNum(maxAbs);
+  const yStep   = yMax / 4;
+
+  const yLblsHTML = [4,3,2,1,0].map(i => {
+    const val = i * yStep;
+    const lbl = val >= 10000 ? 'R$'+(val/1000).toFixed(0)+'k'
+              : val >= 1000  ? 'R$'+(val/1000).toFixed(1).replace('.0','')+'k'
+              : 'R$'+val.toFixed(0);
+    return `<span class="y-lbl">${lbl}</span>`;
+  }).join('');
+
+  const gridHTML = [1,2,3,4].map(i => {
+    const bot = (i * yStep / yMax * CHART_H).toFixed(0);
+    return `<div class="chart-gl" style="bottom:${bot}px"></div>`;
+  }).join('');
+
   const bars = chartKeys.map((k, i) => {
-    const v   = chartVals[i];
-    const px  = Math.max(Math.abs(v) / maxAbs * CHART_H, 3).toFixed(0);
-    const cls = v >= 0 ? 'pos' : 'neg';
-    return `<div class="c-col">
-      <div class="c-tip">${monthLabel(k)}: ${v >= 0 ? '+' : ''}${fmt(v)}</div>
+    const v     = chartVals[i];
+    const px    = Math.max(Math.abs(v) / yMax * CHART_H, 3).toFixed(0);
+    const cls   = v > 0 ? 'pos' : v < 0 ? 'neg' : 'zero';
+    const isCur = i === chartKeys.length - 1;
+    return `<div class="c-col${isCur?' c-cur':''}">
+      <div class="c-val ${cls}">${compactFmt(v)}</div>
+      <div class="c-tip">${monthLabel(k)}<br>${v>=0?'+':''}${fmt(v)}</div>
       <div class="c-bar ${cls}" style="height:${px}px"></div>
     </div>`;
   }).join('');
 
   const lbls = chartKeys.map(k => `<div class="c-lbl">${monthLabel(k)}</div>`).join('');
+
+  const avg     = chartVals.reduce((s,v) => s+v, 0) / chartVals.length;
+  const bestIdx = chartVals.indexOf(Math.max(...chartVals));
+  const trendUp = chartVals.length > 1 && chartVals[chartVals.length-1] > chartVals[chartVals.length-2];
+  const chartFooter = `<div class="chart-footer">
+    <div class="cf-item">📊 Média mensal: <strong>${fmt(avg)}</strong></div>
+    <div class="cf-item">🏆 Melhor mês: <strong>${monthLabel(chartKeys[bestIdx])} (${fmt(chartVals[bestIdx])})</strong></div>
+    ${chartVals.length > 1 ? `<div class="cf-item">${trendUp?'📈':'📉'} Tendência: <strong style="color:${trendUp?'var(--gr)':'var(--re)'}">${trendUp?'Alta':'Baixa'}</strong></div>` : ''}
+  </div>`;
 
   // Tabela de meses
   const rows = [...keys].reverse().map(k => {
@@ -747,8 +798,14 @@ function renderDashboard() {
     <div class="sec">
       <div class="sec-hd"><div class="sec-ttl"><div class="sec-ico">📈</div>Evolução do Lucro</div></div>
       <div class="chart-area">
-        <div class="chart-bars">${bars}</div>
+        <div class="chart-wrap">
+          <div class="y-axis">${yLblsHTML}</div>
+          <div class="chart-main">
+            <div class="chart-bars" style="height:${CHART_H}px">${gridHTML}${bars}</div>
+          </div>
+        </div>
         <div class="c-lbls">${lbls}</div>
+        ${chartFooter}
       </div>
     </div>
 
