@@ -154,6 +154,38 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 .td-neu{color:var(--g600);font-weight:700}
 .td-cost{color:#c2410c;font-weight:600}
 .td-muted{color:var(--g500)}
+/* ── ADS PAGE ── */
+.ads-drop{border:2px dashed var(--g200);border-radius:16px;padding:48px 24px;text-align:center;cursor:pointer;transition:all .2s;background:var(--g50);display:block}
+.ads-drop:hover,.ads-drop.drag{border-color:var(--or);background:#fff7f0}
+.ads-drop-ico{font-size:52px;margin-bottom:16px}
+.ads-drop-ttl{font-size:20px;font-weight:800;color:var(--g800);margin-bottom:8px}
+.ads-drop-sub{font-size:13px;color:var(--g400);margin-bottom:24px;line-height:1.6}
+.ads-period{display:inline-flex;align-items:center;gap:8px;background:#fff7ed;color:var(--or);font-size:12px;font-weight:700;padding:6px 14px;border-radius:20px}
+.ads-reload{font-size:12px;font-weight:700;color:var(--or);background:#fff7ed;border:none;border-radius:8px;padding:8px 14px;cursor:pointer;display:inline-flex;align-items:center;gap:6px}
+.insight-list{display:flex;flex-direction:column;gap:10px}
+.insight-card{border-radius:12px;padding:14px 16px;display:flex;gap:14px;align-items:flex-start}
+.ic-critico{background:#fef2f2;border-left:4px solid #dc2626}
+.ic-atencao{background:#fffbeb;border-left:4px solid #f59e0b}
+.ic-positivo{background:#f0fdf4;border-left:4px solid #16a34a}
+.ic-info{background:#eff6ff;border-left:4px solid #3b82f6}
+.ic-ico{font-size:22px;flex-shrink:0;margin-top:1px}
+.ic-body{flex:1;min-width:0}
+.ic-ttl{font-size:13px;font-weight:800;color:var(--g800);margin-bottom:3px}
+.ic-desc{font-size:12px;color:var(--g500);margin-bottom:6px}
+.ic-acao{font-size:11px;font-weight:700;color:var(--g600);background:rgba(0,0,0,.05);padding:4px 8px;border-radius:6px;display:inline-block}
+.perf-badge{display:inline-flex;align-items:center;gap:4px;font-size:10px;font-weight:800;padding:3px 8px;border-radius:20px;white-space:nowrap}
+.pb-star{background:#fef3c7;color:#b45309}
+.pb-bom{background:#dcfce7;color:#166534}
+.pb-reg{background:#eff6ff;color:#1d4ed8}
+.pb-fraco{background:#fef2f2;color:#dc2626}
+.pb-sem{background:#fff7ed;color:#c2410c}
+.pb-inativo{background:var(--g100);color:var(--g400)}
+.ads-hbar-wrap{display:flex;flex-direction:column;gap:10px;padding:4px 0}
+.ads-hbar-row{display:flex;align-items:center;gap:10px}
+.ads-hbar-nome{width:160px;flex-shrink:0;font-size:11px;font-weight:700;color:var(--g700);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:right}
+.ads-hbar-track{flex:1;height:22px;background:var(--g100);border-radius:11px;overflow:hidden}
+.ads-hbar-fill{height:100%;border-radius:11px;transition:width .8s cubic-bezier(.4,0,.2,1)}
+.ads-hbar-val{font-size:11px;font-weight:700;color:var(--g700);white-space:nowrap;min-width:90px}
 
 /* ── BREAKDOWN ── */
 .bkd{width:100%;border-collapse:collapse;font-size:14px}
@@ -340,6 +372,7 @@ footer strong{color:var(--or)}
     <div class="nav-sec">Ferramentas</div>
     <button class="nav-it" id="nav-upload" onclick="goPage('upload')"><span class="nav-ico">⬆️</span> Novo Upload</button>
     <button class="nav-it" id="nav-produtos" onclick="goPage('produtos')"><span class="nav-ico">💸</span> Custo dos Produtos</button>
+    <button class="nav-it" id="nav-ads" onclick="goPage('ads')"><span class="nav-ico">📣</span> Análise de ADS</button>
   </nav>
 
   <div class="bnav">
@@ -347,6 +380,7 @@ footer strong{color:var(--or)}
     <button class="bn-it" id="bnav-mes" onclick="goPage('mes')"><span class="bn-ico">📅</span><span class="bn-lbl">Por Mês</span></button>
     <button class="bn-it" id="bnav-upload" onclick="goPage('upload')"><span class="bn-ico">⬆️</span><span class="bn-lbl">Upload</span></button>
     <button class="bn-it" id="bnav-produtos" onclick="goPage('produtos')"><span class="bn-ico">💸</span><span class="bn-lbl">Produtos</span></button>
+    <button class="bn-it" id="bnav-ads" onclick="goPage('ads')"><span class="bn-ico">📣</span><span class="bn-lbl">ADS</span></button>
   </div>
 
   <main class="main">
@@ -416,6 +450,15 @@ footer strong{color:var(--or)}
         <button class="btn-sec" id="btn-clear" onclick="clearFile()">✕ Remover</button>
         <button class="btn-pri" id="btn-processar" onclick="processarESalvar()" disabled>Processar e Salvar →</button>
       </div>
+    </div>
+
+    <!-- ADS -->
+    <div id="page-ads" class="page">
+      <div class="pg-hdr">
+        <h1>Análise de ADS</h1>
+        <p>Exporte o relatório de anúncios CPC da Shopee e faça o upload para analisar a performance, identificar problemas e receber sugestões.</p>
+      </div>
+      <div id="ads-body"></div>
     </div>
 
     <!-- PRODUTOS -->
@@ -619,7 +662,8 @@ const PAGE_TITLES = {
   dashboard: 'Dashboard',
   mes:       'Análise por Mês',
   upload:    'Novo Upload',
-  produtos:  'Custo dos Produtos'
+  produtos:  'Custo dos Produtos',
+  ads:       'Análise de ADS'
 };
 
 function goPage(p) {
@@ -627,7 +671,7 @@ function goPage(p) {
   document.querySelectorAll('.page').forEach(el => el.classList.remove('active'));
   document.getElementById('page-' + p).classList.add('active');
 
-  ['dashboard','mes','upload','produtos'].forEach(id => {
+  ['dashboard','mes','upload','produtos','ads'].forEach(id => {
     const nv  = document.getElementById('nav-' + id);
     const bnv = document.getElementById('bnav-' + id);
     if (nv)  nv.classList.toggle('active',  id === p);
@@ -643,6 +687,7 @@ function renderCurrentPage() {
   if (currentPage === 'dashboard') renderDashboard();
   else if (currentPage === 'mes')  renderMes();
   else if (currentPage === 'produtos') renderProdutos();
+  else if (currentPage === 'ads') renderAds();
 }
 
 // ── UTILS ─────────────────────────────────────────────
@@ -1288,6 +1333,271 @@ function renderProdutos() {
     </div>
     <p class="note">Alterações salvas automaticamente na sua conta</p>
   `;
+}
+
+// ── ADS ────────────────────────────────────────────────
+let adsData = null;
+
+function parseCSVRow(line) {
+  const res = []; let inQ = false, cur = '';
+  for (let i = 0; i < line.length; i++) {
+    const c = line[i];
+    if (c === '"') { inQ = !inQ; continue; }
+    if (c === ',' && !inQ) { res.push(cur.trim()); cur = ''; continue; }
+    cur += c;
+  }
+  res.push(cur.trim());
+  return res;
+}
+
+function parsePct(s) { if (!s||s==='-') return 0; return parseFloat(s.replace('%','').replace(',','.')) || 0; }
+function parseN(s)   { if (!s||s==='-') return 0; return parseFloat(s.replace(',','.')) || 0; }
+function truncNome(s, n=35) { return s.length > n ? s.slice(0,n)+'…' : s; }
+
+function perfBadge(a) {
+  if (a.despesas === 0 && a.impressoes > 0) return ['pb-inativo','💤 Sem gasto'];
+  if (a.despesas === 0)                     return ['pb-inativo','💤 Inativo'];
+  if (a.conv === 0 && a.despesas > 0)       return ['pb-sem','💸 Sem retorno'];
+  if (a.roas >= 15)                         return ['pb-star','🌟 Estrela'];
+  if (a.roas >= 8)                          return ['pb-bom','✅ Bom'];
+  if (a.roas >= 3)                          return ['pb-reg','📊 Regular'];
+  return ['pb-fraco','⚠️ Fraco'];
+}
+
+function processAdsCSV(text) {
+  const lines = text.split(/\r?\n/);
+  let loja = '', periodo = '';
+  for (let i = 0; i < Math.min(10, lines.length); i++) {
+    const r = parseCSVRow(lines[i]);
+    if (r[0] === 'Nome da loja') loja = r[1] || '';
+    if (r[0] === 'Período')      periodo = r[1] || '';
+  }
+  const hi = lines.findIndex(l => l.startsWith('#,Nome do Anúncio'));
+  if (hi === -1) return null;
+  const headers = parseCSVRow(lines[hi]);
+  const get = (row, col) => { const i = headers.indexOf(col); return i >= 0 ? row[i] || '' : ''; };
+  const ads = [];
+  for (let i = hi + 1; i < lines.length; i++) {
+    const row = parseCSVRow(lines[i]);
+    if (!row[0] || isNaN(parseInt(row[0]))) continue;
+    ads.push({
+      num:       parseInt(row[0]),
+      nome:      get(row,'Nome do Anúncio'),
+      status:    get(row,'Status'),
+      idProd:    get(row,'ID do produto'),
+      impressoes: parseN(get(row,'Impressões')),
+      cliques:   parseN(get(row,'Cliques')),
+      ctr:       parsePct(get(row,'CTR')),
+      conv:      parseN(get(row,'Conversões')),
+      txConv:    parsePct(get(row,'Taxa de Conversão')),
+      cpConv:    parseN(get(row,'Custo por Conversão')),
+      itens:     parseN(get(row,'Itens Vendidos')),
+      gmv:       parseN(get(row,'GMV')),
+      despesas:  parseN(get(row,'Despesas')),
+      roas:      parseN(get(row,'ROAS')),
+      acos:      parsePct(get(row,'ACOS')),
+    });
+  }
+  return ads.length ? { ads, loja, periodo } : null;
+}
+
+function gerarInsights(ads, totGasto, totGMV, roasGeral) {
+  const ins = [];
+  const semConv = ads.filter(a => a.despesas > 5 && a.conv === 0);
+  if (semConv.length) ins.push({ tipo:'critico', ico:'🚨',
+    ttl:`${semConv.length} anúncio(s) gastando sem nenhuma conversão`,
+    desc:`Valor desperdiçado: ${fmt(semConv.reduce((s,a)=>s+a.despesas,0))}`,
+    acao:'Pause esses anúncios e revise título, foto de capa e preço do produto' });
+
+  const roasBaixo = ads.filter(a => a.roas > 0 && a.roas < 3 && a.despesas > 15);
+  if (roasBaixo.length) ins.push({ tipo:'atencao', ico:'⚠️',
+    ttl:`${roasBaixo.length} anúncio(s) com ROAS abaixo de 3x`,
+    desc:'Para cada R$1 investido, retorna menos de R$3 em vendas',
+    acao:'Reduza o lance nesses anúncios ou melhore a conversão da página do produto' });
+
+  const acosAlto = ads.filter(a => a.acos > 20 && a.despesas > 15 && a.conv > 0);
+  if (acosAlto.length) ins.push({ tipo:'atencao', ico:'📉',
+    ttl:`${acosAlto.length} anúncio(s) com ACOS acima de 20%`,
+    desc:'O custo de publicidade está comendo grande parte da margem',
+    acao:'Revise a margem do produto — com ACOS > 20% pode estar vendendo no prejuízo' });
+
+  const ctrBaixo = ads.filter(a => a.ctr < 1 && a.impressoes > 2000 && a.despesas > 0);
+  if (ctrBaixo.length) ins.push({ tipo:'atencao', ico:'👆',
+    ttl:`${ctrBaixo.length} anúncio(s) com CTR abaixo de 1%`,
+    desc:'Muitas impressões e poucos cliques — produto não chama atenção na listagem',
+    acao:'Melhore a foto de capa (fundo branco, produto em destaque) e revise o título' });
+
+  const estrelas = ads.filter(a => a.roas >= 15 && a.despesas > 0);
+  if (estrelas.length) ins.push({ tipo:'positivo', ico:'🌟',
+    ttl:`${estrelas.length} anúncio(s) com ROAS excepcional (acima de 15x)!`,
+    desc:truncNome(estrelas.slice(0,2).map(a=>a.nome).join(' · '), 90),
+    acao:'Aumente o orçamento desses anúncios — são os campeões de retorno da sua loja' });
+
+  const bons = ads.filter(a => a.roas >= 8 && a.roas < 15 && a.despesas > 0);
+  if (bons.length) ins.push({ tipo:'positivo', ico:'✅',
+    ttl:`${bons.length} anúncio(s) com boa performance (ROAS 8x–15x)`,
+    desc:'Esses anúncios estão gerando bom retorno sobre o investimento',
+    acao:'Mantenha a estratégia e teste aumentos graduais de orçamento' });
+
+  if (roasGeral >= 10) ins.push({ tipo:'positivo', ico:'🏆',
+    ttl:`ROAS geral de ${roasGeral.toFixed(1)}x — campanha excelente!`,
+    desc:`Para cada R$1 investido, você gerou R$${roasGeral.toFixed(1)} em vendas via ADS`,
+    acao:'Continue a estratégia e considere aumentar o investimento gradualmente' });
+  else if (roasGeral > 0 && roasGeral < 5) ins.push({ tipo:'atencao', ico:'📊',
+    ttl:`ROAS geral de ${roasGeral.toFixed(1)}x — há espaço para melhorar`,
+    desc:'A referência saudável no Shopee fica entre 8x e 20x para a maioria dos produtos',
+    acao:'Concentre o orçamento nos melhores anúncios e pause os de baixo ROAS' });
+
+  if (!ins.length) ins.push({ tipo:'info', ico:'📊',
+    ttl:'Campanha dentro dos parâmetros normais',
+    desc:'',
+    acao:'Continue monitorando semanalmente para identificar oportunidades de melhoria' });
+
+  return ins;
+}
+
+function renderAds() {
+  const body = document.getElementById('ads-body');
+  if (!body) return;
+  if (!adsData) {
+    body.innerHTML = `
+      <label class="ads-drop" id="ads-dz">
+        <div class="ads-drop-ico">📣</div>
+        <div class="ads-drop-ttl">Relatório de Anúncios CPC</div>
+        <div class="ads-drop-sub">Faça o upload do arquivo exportado pela Shopee<br><small style="color:var(--g300)">Painel Shopee → Meus Anúncios → Relatórios → Dados Gerais de Anúncios</small></div>
+        <button class="btn-prim" onclick="document.getElementById('ads-fi').click();event.preventDefault()">Selecionar arquivo CSV</button>
+        <input type="file" accept=".csv,.txt" id="ads-fi" style="display:none" onchange="onAdsFile(this)">
+      </label>`;
+    setupAdsDrop();
+    return;
+  }
+  renderAdsDash(body);
+}
+
+function setupAdsDrop() {
+  const dz = document.getElementById('ads-dz');
+  if (!dz) return;
+  dz.addEventListener('dragover', e => { e.preventDefault(); dz.classList.add('drag'); });
+  dz.addEventListener('dragleave', () => dz.classList.remove('drag'));
+  dz.addEventListener('drop', e => { e.preventDefault(); dz.classList.remove('drag'); const f=e.dataTransfer.files[0]; if(f) readAdsFile(f); });
+}
+
+function onAdsFile(inp) { if (inp.files[0]) readAdsFile(inp.files[0]); }
+
+function readAdsFile(file) {
+  const reader = new FileReader();
+  reader.onload = e => {
+    const result = processAdsCSV(e.target.result);
+    if (!result) { showToast('Arquivo inválido — use "Dados Gerais de Anúncios CPC" da Shopee'); return; }
+    adsData = result;
+    renderAds();
+  };
+  reader.readAsText(file, 'UTF-8');
+}
+
+function renderAdsDash(body) {
+  const { ads, loja, periodo } = adsData;
+  const totGasto = ads.reduce((s,a)=>s+a.despesas,0);
+  const totGMV   = ads.reduce((s,a)=>s+a.gmv,0);
+  const totConv  = ads.reduce((s,a)=>s+a.conv,0);
+  const totItens = ads.reduce((s,a)=>s+a.itens,0);
+  const totImpr  = ads.reduce((s,a)=>s+a.impressoes,0);
+  const totCliq  = ads.reduce((s,a)=>s+a.cliques,0);
+  const roasGeral = totGasto > 0 ? totGMV/totGasto : 0;
+  const ctrGeral  = totImpr  > 0 ? totCliq/totImpr*100 : 0;
+
+  const insights = gerarInsights(ads, totGasto, totGMV, roasGeral);
+
+  const top10 = [...ads].filter(a=>a.gmv>0).sort((a,b)=>b.gmv-a.gmv).slice(0,10);
+  const maxGMV = top10[0]?.gmv || 1;
+  const hbars = top10.map(a => {
+    const pct = (a.gmv/maxGMV*100).toFixed(1);
+    const clr = a.roas>=10 ? '#16a34a' : a.roas>=5 ? '#ea580c' : '#dc2626';
+    return `<div class="ads-hbar-row">
+      <div class="ads-hbar-nome" title="${a.nome}">${truncNome(a.nome,26)}</div>
+      <div class="ads-hbar-track"><div class="ads-hbar-fill" style="width:${pct}%;background:linear-gradient(to right,${clr}88,${clr})"></div></div>
+      <div class="ads-hbar-val">${fmt(a.gmv)} <span style="font-size:9px;color:var(--g400);font-weight:600">ROAS ${a.roas.toFixed(1)}x</span></div>
+    </div>`;
+  }).join('');
+
+  const rows = [...ads].sort((a,b)=>b.despesas-a.despesas).map(a => {
+    const [bc,bl] = perfBadge(a);
+    const rCl = a.roas>=10?'td-pos':a.roas>=5?'':a.roas>0?'td-neg':'td-muted';
+    const aCl = a.acos>20?'td-neg':a.acos>10?'':a.acos>0?'td-pos':'td-muted';
+    return `<tr>
+      <td style="max-width:220px;font-size:12px;font-weight:600;color:var(--g800)">${truncNome(a.nome,42)}</td>
+      <td><span class="perf-badge ${bc}">${bl}</span></td>
+      <td class="td-muted">${a.impressoes.toLocaleString('pt-BR')}</td>
+      <td class="td-muted">${a.cliques.toLocaleString('pt-BR')}</td>
+      <td class="${a.ctr>=3?'td-pos':a.ctr<1&&a.impressoes>1000?'td-neg':'td-muted'}">${a.ctr.toFixed(2)}%</td>
+      <td class="td-neu">${a.conv>0?a.conv:'—'}</td>
+      <td class="${a.txConv>=3?'td-pos':''}">${a.txConv>0?a.txConv.toFixed(2)+'%':'—'}</td>
+      <td class="${a.despesas>0?'td-cost':'td-muted'}">${a.despesas>0?fmt(a.despesas):'—'}</td>
+      <td>${a.gmv>0?fmt(a.gmv):'—'}</td>
+      <td class="${rCl}">${a.roas>0?a.roas.toFixed(1)+'x':'—'}</td>
+      <td class="${aCl}">${a.acos>0?a.acos.toFixed(1)+'%':'—'}</td>
+    </tr>`;
+  }).join('');
+
+  const insCards = insights.map(i=>`
+    <div class="insight-card ic-${i.tipo}">
+      <div class="ic-ico">${i.ico}</div>
+      <div class="ic-body">
+        <div class="ic-ttl">${i.ttl}</div>
+        ${i.desc?`<div class="ic-desc">${i.desc}</div>`:''}
+        <div class="ic-acao">💡 ${i.acao}</div>
+      </div>
+    </div>`).join('');
+
+  const roasKpiCl  = roasGeral>=10?'green':roasGeral>=5?'orange':'red';
+  const roasKpiCor = roasGeral>=10?'var(--gr)':roasGeral>=5?'var(--or)':'var(--re)';
+  const roasKpiIco = roasGeral>=10?'🏆':roasGeral>=5?'📊':'⚠️';
+
+  body.innerHTML = `
+    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:20px">
+      ${periodo?`<div class="ads-period">📅 ${periodo}${loja?' · '+loja:''}</div>`:'<div></div>'}
+      <button class="ads-reload" onclick="adsData=null;renderAds()">🔄 Carregar outro arquivo</button>
+    </div>
+
+    <div class="kpi-grid">
+      <div class="kpi orange"><div class="kpi-ico">💸</div><div class="kpi-lbl">Total Investido</div><div class="kpi-val">${fmt(totGasto)}</div><div class="kpi-sub">gasto com anúncios</div></div>
+      <div class="kpi green"><div class="kpi-ico">🛍️</div><div class="kpi-lbl">Vendas via ADS</div><div class="kpi-val">${fmt(totGMV)}</div><div class="kpi-sub">${totItens.toLocaleString('pt-BR')} itens vendidos</div></div>
+      <div class="kpi ${roasKpiCl}"><div class="kpi-ico">${roasKpiIco}</div><div class="kpi-lbl">ROAS Geral</div><div class="kpi-val" style="color:${roasKpiCor}">${roasGeral.toFixed(1)}x</div><div class="kpi-sub">retorno sobre investimento</div></div>
+      <div class="kpi blue"><div class="kpi-ico">🎯</div><div class="kpi-lbl">Conversões</div><div class="kpi-val">${totConv.toLocaleString('pt-BR')}</div><div class="kpi-sub">CTR geral: ${ctrGeral.toFixed(2)}%</div></div>
+    </div>
+
+    <div class="sec">
+      <div class="sec-hd"><div class="sec-ttl"><div class="sec-ico">💡</div>Análise e Sugestões</div></div>
+      <div class="insight-list">${insCards}</div>
+    </div>
+
+    ${top10.length?`<div class="sec">
+      <div class="sec-hd"><div class="sec-ttl"><div class="sec-ico">📈</div>Top 10 Anúncios por GMV</div></div>
+      <div class="ads-hbar-wrap">${hbars}</div>
+      <p class="note">Cor da barra: verde = ROAS ≥ 10x · laranja = ROAS ≥ 5x · vermelho = ROAS &lt; 5x</p>
+    </div>`:''}
+
+    <div class="sec">
+      <div class="sec-hd"><div class="sec-ttl"><div class="sec-ico">📋</div>Todos os Anúncios</div><span style="font-size:12px;color:var(--g400)">${ads.length} anúncios · ordenado por gasto</span></div>
+      <div style="overflow-x:auto">
+        <table class="tbl">
+          <thead><tr>
+            <th style="text-align:left">Anúncio</th>
+            <th>Status</th>
+            <th>Impressões</th>
+            <th>Cliques</th>
+            <th>CTR</th>
+            <th>Conv.</th>
+            <th>Tx. Conv.</th>
+            <th>Gasto</th>
+            <th>GMV</th>
+            <th>ROAS</th>
+            <th>ACOS</th>
+          </tr></thead>
+          <tbody>${rows}</tbody>
+        </table>
+      </div>
+    </div>`;
 }
 
 function updateCusto(name, val) {
