@@ -214,18 +214,26 @@ async def scrape_and_analyze(url: str) -> dict:
 
         page.on("response", on_response)
 
-        print(f"[SCRAPER] Acessando: {sorted_url}")
+        # Visita a homepage primeiro para obter cookies de sessão (SPC_F etc.)
+        print(f"[SCRAPER] Obtendo cookies da homepage...")
         try:
-            await page.goto(sorted_url, wait_until="networkidle", timeout=60000)
+            await page.goto("https://shopee.com.br/", wait_until="domcontentloaded", timeout=30000)
+            await asyncio.sleep(3)
         except Exception as e:
-            # networkidle pode dar timeout em páginas pesadas — tenta domcontentloaded
-            print(f"[AVISO] networkidle timeout, tentando continuar... {e}")
+            print(f"[AVISO] Homepage timeout: {e}")
 
-        await asyncio.sleep(5)
+        print(f"[SCRAPER] Acessando loja: {sorted_url}")
+        try:
+            await page.goto(sorted_url, wait_until="domcontentloaded", timeout=60000)
+            await page.wait_for_load_state("load", timeout=30000)
+        except Exception as e:
+            print(f"[AVISO] Load timeout, continuando... {e}")
+
+        await asyncio.sleep(8)
 
         # Scroll para forçar carregamento lazy
         await page.evaluate("window.scrollTo(0, document.body.scrollHeight / 2)")
-        await asyncio.sleep(3)
+        await asyncio.sleep(4)
 
         # Tenta capturar nome da loja
         for selector in [".shop-name-content", "[class*='shopName']", ".seller-name", "h1"]:
