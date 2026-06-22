@@ -338,18 +338,30 @@ async def fetch_via_scrapingbee_render(shop_id_str: str, username: str, store_ur
         return products
 
 
+# Após comissão Shopee + taxas + frete, ~49% do preço de venda fica com o vendedor
+# Baseado em: R$ 6,31 recebido de R$ 12,89 vendido = 48,95%
+SHOPEE_KEEP_RATE = 0.4895
+
+
 def calcular_margens(p: dict) -> dict:
     preco = p["preco"]
     sold = p["vendas_30d"]
-    recebido = preco * 0.80
+    recebido = round(preco * SHOPEE_KEEP_RATE, 2)  # o que sobra após TODAS as taxas da Shopee
+
+    def custo_max(margem_pct):
+        val = recebido - preco * margem_pct
+        return round(val, 2) if val > 0 else 0.0
+
     return {
         "nome": p["nome"],
         "preco": preco,
         "vendas_30d": sold,
         "avaliacao": p.get("avaliacao", 0.0),
         "faturamento_30d": round(preco * sold, 2),
-        "preco_compra_30pct": round(recebido * 0.70, 2),
-        "preco_compra_40pct": round(recebido * 0.60, 2),
+        "recebido_apos_taxas": recebido,
+        "custo_max_20pct": custo_max(0.20),
+        "custo_max_25pct": custo_max(0.25),
+        "custo_max_30pct": custo_max(0.30),
         "vendas_por_dia": round(sold / 30, 1),
     }
 
@@ -375,9 +387,9 @@ def gerar_insights(products, total_fat):
             "tipo": "positivo",
             "titulo": f'"{best["nome"][:40]}" vende {best["vendas_por_dia"]:.1f}x por dia',
             "descricao": (
-                f'Para entrar com 30% de margem: compre por até R${best["preco_compra_30pct"]:.2f}. '
-                f'Para 40% de margem: até R${best["preco_compra_40pct"]:.2f}. '
-                f'Preço de venda: R${best["preco"]:.2f}.'
+                f'Vende a R${best["preco"]:.2f} → você recebe R${best["recebido_apos_taxas"]:.2f} após taxas. '
+                f'Para 20% de lucro líquido: compre por até R${best["custo_max_20pct"]:.2f}. '
+                f'Para 25%: até R${best["custo_max_25pct"]:.2f}.'
             ),
         })
 

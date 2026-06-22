@@ -41,15 +41,33 @@ function renderResult(d) {
       </div>
     </div>
 
-    <div class="section-title">Produtos por faturamento</div>
+    <div class="section-title">Produtos — preços de compra para lucro líquido</div>
     <div class="product-list">
       ${produtos.map((p, i) => `
-        <div class="product-item">
-          <div class="product-name">${i + 1}. ${p.nome}</div>
-          <div class="product-stats">
-            <div class="product-price">${fmt(p.preco)}</div>
-            <div class="product-sold">▲ ${p.vendas_30d} vendas</div>
-            <div class="product-fat">${fmt(p.faturamento_30d)}</div>
+        <div class="product-item" style="flex-direction:column;gap:6px">
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <div class="product-name" style="font-weight:600">${i + 1}. ${p.nome}</div>
+            <div style="text-align:right;flex-shrink:0">
+              <div class="product-price">${fmt(p.preco)}</div>
+              <div class="product-sold">▲ ${p.vendas_30d} vendas/mês</div>
+            </div>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:4px;font-size:11px">
+            <div style="background:#0f2d1a;border-radius:4px;padding:5px 7px">
+              <div style="color:#4ade80;font-weight:700">20% lucro</div>
+              <div style="color:#f1f5f9">até ${fmt(p.custo_max_20pct)}</div>
+            </div>
+            <div style="background:#0f2320;border-radius:4px;padding:5px 7px">
+              <div style="color:#34d399;font-weight:700">25% lucro</div>
+              <div style="color:#f1f5f9">até ${fmt(p.custo_max_25pct)}</div>
+            </div>
+            <div style="background:#0a1f2a;border-radius:4px;padding:5px 7px">
+              <div style="color:#60a5fa;font-weight:700">30% lucro</div>
+              <div style="color:#f1f5f9">${p.custo_max_30pct > 0 ? 'até ' + fmt(p.custo_max_30pct) : '⚠️ inviável'}</div>
+            </div>
+          </div>
+          <div style="font-size:10px;color:#475569">
+            Você recebe ${fmt(p.recebido_apos_taxas)} após todas as taxas da Shopee • Fat. ${fmt(p.faturamento_30d)}/mês
           </div>
         </div>
       `).join('')}
