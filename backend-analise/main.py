@@ -5,6 +5,7 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from playwright.async_api import async_playwright
+from playwright_stealth import stealth_async
 
 app = FastAPI(title="Shopee Store Analyzer")
 
@@ -137,6 +138,9 @@ async def fetch_via_browser(shop_id_str: str, username: str, store_url: str) -> 
             timezone_id="America/Sao_Paulo",
         )
         page = await context.new_page()
+
+        # Aplica stealth antes de qualquer navegação
+        await stealth_async(page)
 
         # 1. Homepage para iniciar cookies e JS
         print("[INFO] Carregando homepage...")
