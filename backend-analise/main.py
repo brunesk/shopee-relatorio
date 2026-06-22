@@ -338,17 +338,27 @@ async def fetch_via_scrapingbee_render(shop_id_str: str, username: str, store_ur
         return products
 
 
-# Após comissão Shopee + taxas + frete, ~49% do preço de venda fica com o vendedor
-# Baseado em: R$ 6,31 recebido de R$ 12,89 vendido = 48,95%
-SHOPEE_KEEP_RATE = 0.4895
+def calcular_recebido(preco: float) -> float:
+    """
+    Fórmula exata Shopee Brasil:
+    - Todos os produtos: desconta 20% (comissão + taxas)
+    - Produtos até R$ 79,90: desconta R$ 4,00 fixo (frete subsidiado)
+    - Produtos acima de R$ 79,90: sem taxa fixa de frete
+    """
+    taxa_pct = preco * 0.20
+    taxa_fixa = 4.00 if preco <= 79.90 else 0.00
+    return round(preco - taxa_pct - taxa_fixa, 2)
 
 
 def calcular_margens(p: dict) -> dict:
     preco = p["preco"]
     sold = p["vendas_30d"]
-    recebido = round(preco * SHOPEE_KEEP_RATE, 2)  # o que sobra após TODAS as taxas da Shopee
+    recebido = calcular_recebido(preco)
 
     def custo_max(margem_pct):
+        # lucro líquido = recebido - custo
+        # margem = lucro / preco_venda
+        # custo_max = recebido - (preco * margem_pct)
         val = recebido - preco * margem_pct
         return round(val, 2) if val > 0 else 0.0
 
