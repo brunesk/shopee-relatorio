@@ -34,8 +34,7 @@ async def root():
 @app.post("/analisar")
 async def analisar(req: AnalyzeRequest):
     try:
-        resultado = await scrape_and_analyze(req.url)
-        return resultado
+        return await scrape_and_analyze(req.url)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
@@ -49,164 +48,67 @@ def clean_store_url(url: str):
     parsed = urlparse(url)
     parts = parsed.path.strip("/").split("/")
     if not parts or not parts[0]:
-        raise ValueError("Link inválido. Use o formato: https://shopee.com.br/nomedadaloja")
+        raise ValueError("Link inválido. Use: https://shopee.com.br/nomedadaloja")
     return f"https://shopee.com.br/{parts[0]}", parts[0]
 
 
-async def get_shop_detail(username: str) -> dict:
-    """Busca shop_id e nome via API pública."""
+async def get_shop_id(username: str) -> tuple:
     async with httpx.AsyncClient(timeout=15) as client:
         resp = await client.get(
             f"https://shopee.com.br/api/v4/shop/get_shop_detail?username={username}",
-            headers={"User-Agent": UA, "Referer": f"https://shopee.com.br/{username}"},
+            headers={"User-Agent": UA},
         )
         data = resp.json().get("data") or {}
-        return {
-            "shop_id": data.get("shopid") or data.get("shop_id"),
-            "name": data.get("name") or username,
-        }
+        shop_id = data.get("shopid") or data.get("shop_id")
+        name = data.get("name") or username
+        return shop_id, name
 
 
-async def get_browser_cookies(store_url: str) -> str:
-    """Abre o Playwright só para obter cookies de sessão da Shopee."""
-    async with async_playwright() as pw:
-        browser = await pw.chromium.launch(
-            headless=True,
-            args=["--no-sandbox", "--disable-dev-shm-usage", "--disable-setuid-sandbox"],
-        )
-        context = await browser.new_context(
-            user_agent=UA,
-            viewport={"width": 1366, "height": 768},
-            locale="pt-BR",
-            timezone_id="America/Sao_Paulo",
-        )
-        page = await context.new_page()
-
-        # Visita homepage para gerar SPC_F e outros cookies de sessão
-        print("[COOKIES] Acessando homepage...")
-        try:
-            await page.goto("https://shopee.com.br/", wait_until="domcontentloaded", timeout=30000)
-            await asyncio.sleep(4)
-        except Exception as e:
-            print(f"[COOKIES] Homepage erro: {e}")
-
-        # Visita a loja para cookies específicos do contexto
-        print(f"[COOKIES] Acessando loja: {store_url}")
-        try:
-            await page.goto(store_url, wait_until="domcontentloaded", timeout=40000)
-            await asyncio.sleep(4)
-        except Exception as e:
-            print(f"[COOKIES] Loja erro: {e}")
-
-        cookies = await context.cookies()
-        await browser.close()
-
-        cookie_str = "; ".join(f"{c['name']}={c['value']}" for c in cookies)
-        print(f"[COOKIES] {len(cookies)} cookies obtidos")
-        return cookie_str
-
-
-def find_products_recursive(obj, results=None, depth=0):
-    """Varre recursivamente o JSON procurando objetos com 'name' e 'price'."""
-    if results is None:
-        results = []
-    if depth > 10:
-        return results
-
+def find_products_in_json(obj, depth=0):
+    """Varre o JSON recursivamente e retorna todos os objetos com name+price."""
+    if depth > 12:
+        return []
+    results = []
     if isinstance(obj, dict):
         name = obj.get("name") or obj.get("item_name") or ""
-        price = obj.get("price") or obj.get("price_min") or 0
-        sold = obj.get("sold") or obj.get("sold_count") or 0
-
-        if name and isinstance(name, str) and len(name) > 3 and price:
-            if isinstance(price, (int, float)) and price > 100000:
+        price = obj.get("price") or obj.get("price_min") or obj.get("price_max") or 0
+        sold = obj.get("sold") or 0
+        shopid = obj.get("shopid") or obj.get("shop_id")
+        if name and isinstance(name, str) and len(name) > 3 and isinstance(price, (int, float)) and price > 0:
+            if price > 100000:
                 price = price / 100000
             results.append({
                 "nome": name.strip(),
                 "preco": round(float(price), 2),
                 "vendas_30d": int(sold),
-                "shopid": obj.get("shopid") or obj.get("shop_id"),
+                "_shopid": str(shopid) if shopid else "",
             })
         else:
             for v in obj.values():
-                find_products_recursive(v, results, depth + 1)
-
+                results.extend(find_products_in_json(v, depth + 1))
     elif isinstance(obj, list):
         for item in obj:
-            find_products_recursive(item, results, depth + 1)
-
+            results.extend(find_products_in_json(item, depth + 1))
     return results
 
 
-async def fetch_products(shop_id: int, store_url: str, cookies: str) -> list:
-    """Chama as APIs da Shopee com cookies reais do navegador."""
-    headers = {
-        "User-Agent": UA,
-        "Cookie": cookies,
-        "Referer": store_url,
-        "X-Requested-With": "XMLHttpRequest",
-        "Accept": "application/json",
+def calcular_margens(p: dict) -> dict:
+    preco = p["preco"]
+    sold = p["vendas_30d"]
+    recebido = preco * 0.80
+    return {
+        "nome": p["nome"],
+        "preco": preco,
+        "vendas_30d": sold,
+        "avaliacao": p.get("avaliacao", 0.0),
+        "faturamento_30d": round(preco * sold, 2),
+        "preco_compra_30pct": round(recebido * 0.70, 2),
+        "preco_compra_40pct": round(recebido * 0.60, 2),
+        "vendas_por_dia": round(sold / 30, 1),
     }
 
-    endpoints = [
-        f"https://shopee.com.br/api/v4/recommend/recommend?bundle=shop_page_product_tab_main&item_card=2&limit=100&offset=0&shop_id={shop_id}&sort_type=1",
-        f"https://shopee.com.br/api/v4/recommend/recommend?bundle=shop_page_product_tab_main&limit=100&offset=0&shop_id={shop_id}&sort_type=1&tab_name=populares",
-        f"https://shopee.com.br/api/v4/search/search_items?by=sales&limit=100&match_id={shop_id}&newest=0&order=desc&page_type=shop&scenario=PAGE_OTHERS&version=2",
-        f"https://shopee.com.br/api/v4/recommend/recommend?bundle=shop_page_product_tab_main&limit=100&offset=0&shop_id={shop_id}&sort_type=2",
-    ]
 
-    shop_id_str = str(shop_id)
-
-    async with httpx.AsyncClient(timeout=30, follow_redirects=True) as client:
-        for endpoint in endpoints:
-            try:
-                resp = await client.get(endpoint, headers=headers)
-                print(f"[API] Status {resp.status_code} → {endpoint[:80]}")
-
-                if resp.status_code != 200:
-                    continue
-
-                data = resp.json()
-                all_items = find_products_recursive(data)
-                print(f"[API] {len(all_items)} itens totais no JSON")
-
-                # Filtra por shopid
-                shop_items = [i for i in all_items if str(i.get("shopid") or "") == shop_id_str]
-                print(f"[API] {len(shop_items)} itens desta loja (shopid={shop_id_str})")
-
-                if shop_items:
-                    return shop_items
-                elif all_items:
-                    # Se não tem shopid no JSON mas encontrou itens, retorna todos
-                    # (provavelmente endpoint específico da loja)
-                    return all_items
-
-            except Exception as e:
-                print(f"[API ERRO] {e}")
-
-    return []
-
-
-def calcular_margens(products: list) -> list:
-    resultado = []
-    for p in products:
-        preco = p["preco"]
-        sold = p["vendas_30d"]
-        recebido = preco * 0.80
-        resultado.append({
-            "nome": p["nome"],
-            "preco": preco,
-            "vendas_30d": sold,
-            "avaliacao": 0.0,
-            "faturamento_30d": round(preco * sold, 2),
-            "preco_compra_30pct": round(recebido * 0.70, 2),
-            "preco_compra_40pct": round(recebido * 0.60, 2),
-            "vendas_por_dia": round(sold / 30, 1),
-        })
-    return resultado
-
-
-def gerar_insights(products: list, total_fat: float) -> list:
+def gerar_insights(products, total_fat):
     insights = []
     if not products:
         return insights
@@ -229,24 +131,24 @@ def gerar_insights(products: list, total_fat: float) -> list:
             "descricao": (
                 f'Para entrar com 30% de margem: compre por até R${best["preco_compra_30pct"]:.2f}. '
                 f'Para 40% de margem: até R${best["preco_compra_40pct"]:.2f}. '
-                f'Preço de venda atual: R${best["preco"]:.2f}.'
+                f'Preço de venda: R${best["preco"]:.2f}.'
             ),
         })
 
-    alta_vel = [p for p in products if p["vendas_30d"] >= 100]
-    if alta_vel:
+    alta = [p for p in products if p["vendas_30d"] >= 100]
+    if alta:
         insights.append({
             "tipo": "atencao",
-            "titulo": f"{len(alta_vel)} produto(s) com 100+ vendas no mês",
-            "descricao": "Produtos com alto volume indicam forte demanda. São boas oportunidades para copiar.",
+            "titulo": f"{len(alta)} produto(s) com 100+ vendas no mês",
+            "descricao": "Alta demanda — boa oportunidade para copiar.",
         })
 
-    baixa_vel = [p for p in products if 5 <= p["vendas_30d"] <= 30]
-    if baixa_vel:
+    baixa = [p for p in products if 5 <= p["vendas_30d"] <= 30]
+    if baixa:
         insights.append({
             "tipo": "info",
-            "titulo": f"{len(baixa_vel)} produto(s) com vendas moderadas",
-            "descricao": "Produtos com 5-30 vendas/mês costumam ter menos concorrência. Bom ponto de entrada.",
+            "titulo": f"{len(baixa)} produto(s) com vendas moderadas",
+            "descricao": "5-30 vendas/mês costumam ter menos concorrência. Bom ponto de entrada.",
         })
 
     return insights
@@ -255,51 +157,132 @@ def gerar_insights(products: list, total_fat: float) -> list:
 async def scrape_and_analyze(url: str) -> dict:
     store_url, username = clean_store_url(url)
 
-    # 1. Busca shop_id via API pública
-    print(f"[SCRAPER] Buscando info: {username}")
-    info = await get_shop_detail(username)
-    shop_id = info["shop_id"]
-    shop_name = info["name"]
+    # 1. Pega shop_id via API pública
+    print(f"[INFO] Buscando loja: {username}")
+    shop_id, shop_name = await get_shop_id(username)
     if not shop_id:
         raise ValueError("Loja não encontrada. Verifique o link.")
-    print(f"[SCRAPER] shop_id={shop_id}, nome={shop_name}")
+    shop_id_str = str(shop_id)
+    print(f"[INFO] shop_id={shop_id_str}, nome={shop_name}")
 
-    # 2. Obtém cookies reais via Playwright
-    cookies = await get_browser_cookies(store_url)
+    sorted_url = store_url + "?page=0&sortBy=sales&tab=0"
 
-    # 3. Chama a API com os cookies
-    raw_products = await fetch_products(shop_id, store_url, cookies)
+    # 2. Intercepta respostas da Shopee enquanto a página carrega
+    # A listagem da loja vai ter TODOS os itens com o mesmo shopid
+    # Feeds de recomendação têm shopids misturados — descartamos eles
+    captured_responses = []
 
-    if not raw_products:
+    async with async_playwright() as pw:
+        browser = await pw.chromium.launch(
+            headless=True,
+            args=["--no-sandbox", "--disable-dev-shm-usage", "--disable-setuid-sandbox"],
+        )
+        context = await browser.new_context(
+            user_agent=UA,
+            viewport={"width": 1366, "height": 900},
+            locale="pt-BR",
+            timezone_id="America/Sao_Paulo",
+        )
+        page = await context.new_page()
+
+        async def handle_response(response):
+            u = response.url
+            if response.status == 200 and "shopee.com.br" in u and "/api/" in u:
+                try:
+                    ct = response.headers.get("content-type", "")
+                    if "json" in ct:
+                        data = await response.json()
+                        captured_responses.append((u, data))
+                except Exception:
+                    pass
+
+        page.on("response", handle_response)
+
+        # Homepage para cookies
+        print("[INFO] Carregando homepage...")
+        try:
+            await page.goto("https://shopee.com.br/", wait_until="domcontentloaded", timeout=30000)
+            await asyncio.sleep(3)
+        except Exception:
+            pass
+
+        # Página da loja
+        print(f"[INFO] Carregando loja: {sorted_url}")
+        try:
+            await page.goto(sorted_url, wait_until="domcontentloaded", timeout=60000)
+            await page.wait_for_load_state("load", timeout=30000)
+        except Exception:
+            pass
+
+        await asyncio.sleep(8)
+        # Scroll para forçar carregamento de todos os produtos
+        await page.evaluate("window.scrollTo(0, document.body.scrollHeight * 0.5)")
+        await asyncio.sleep(3)
+        await page.evaluate("window.scrollTo(0, document.body.scrollHeight)")
+        await asyncio.sleep(3)
+
+        await browser.close()
+
+    print(f"[INFO] {len(captured_responses)} respostas JSON capturadas")
+
+    # 3. Para cada resposta, extrai produtos e analisa os shopids
+    # Estratégia: encontrar a resposta onde TODOS os produtos são desta loja
+    shop_products = []
+
+    for resp_url, data in captured_responses:
+        items = find_products_in_json(data)
+        if not items:
+            continue
+
+        shopids = set(i["_shopid"] for i in items if i["_shopid"])
+        n_items = len(items)
+        n_shop = sum(1 for i in items if i["_shopid"] == shop_id_str)
+
+        print(f"[RESP] {n_items} itens | shopids únicos: {len(shopids)} | desta loja: {n_shop} | {resp_url[:70]}")
+
+        # Resposta onde todos (ou quase todos) os itens são desta loja
+        if n_shop > 0 and (n_shop == n_items or (n_shop / n_items) >= 0.8):
+            candidates = [i for i in items if i["_shopid"] == shop_id_str]
+            if len(candidates) > len(shop_products):
+                shop_products = candidates
+                print(f"[MATCH] Melhor listagem: {len(shop_products)} produtos da loja")
+
+    # Fallback: se nenhuma resposta foi 80%+ desta loja, pega os itens pelo shopid
+    if not shop_products:
+        print("[FALLBACK] Usando todos os itens com shopid correto")
+        all_items = []
+        for _, data in captured_responses:
+            all_items.extend(find_products_in_json(data))
+        shop_products = [i for i in all_items if i["_shopid"] == shop_id_str]
+
+    if not shop_products:
         raise ValueError(
-            "Não foi possível carregar os produtos desta loja. Tente novamente em alguns instantes."
+            "Não foi possível carregar os produtos. Tente novamente em alguns instantes."
         )
 
-    # 4. Remove duplicatas
+    # 4. Remove duplicatas e calcula margens
     seen = set()
     unique = []
-    for p in raw_products:
+    for p in shop_products:
         key = p["nome"].lower()[:50]
         if key not in seen:
             seen.add(key)
-            unique.append(p)
+            unique.append(calcular_margens(p))
 
-    # 5. Calcula margens
-    products = calcular_margens(unique)
-    products.sort(key=lambda x: x["faturamento_30d"], reverse=True)
+    unique.sort(key=lambda x: x["faturamento_30d"], reverse=True)
 
-    total_fat = sum(p["faturamento_30d"] for p in products)
-    total_vendas = sum(p["vendas_30d"] for p in products)
+    total_fat = sum(p["faturamento_30d"] for p in unique)
+    total_vendas = sum(p["vendas_30d"] for p in unique)
 
-    print(f"[SCRAPER] Concluído: {len(products)} produtos, faturamento R${total_fat:.2f}")
+    print(f"[OK] {len(unique)} produtos | faturamento R${total_fat:.2f}")
 
     return {
         "loja": shop_name,
         "url": store_url,
-        "total_produtos": len(products),
+        "total_produtos": len(unique),
         "faturamento_30d": round(total_fat, 2),
         "total_vendas_30d": total_vendas,
-        "melhor_produto": products[0] if products else None,
-        "produtos": products,
-        "insights": gerar_insights(products, total_fat),
+        "melhor_produto": unique[0] if unique else None,
+        "produtos": unique,
+        "insights": gerar_insights(unique, total_fat),
     }
