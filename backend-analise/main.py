@@ -21,6 +21,15 @@ UA = (
     "Chrome/122.0.0.0 Safari/537.36"
 )
 
+HEADERS_BASE = {
+    "User-Agent": UA,
+    "Accept": "application/json, text/plain, */*",
+    "Accept-Language": "pt-BR,pt;q=0.9,en-US;q=0.8,en;q=0.7",
+    "x-api-source": "pc",
+    "x-shopee-language": "pt-BR",
+    "x-requested-with": "XMLHttpRequest",
+}
+
 
 class AnalyzeRequest(BaseModel):
     url: str
@@ -56,7 +65,7 @@ async def get_shop_id(username: str) -> tuple:
     async with httpx.AsyncClient(timeout=15) as client:
         resp = await client.get(
             f"https://shopee.com.br/api/v4/shop/get_shop_detail?username={username}",
-            headers={"User-Agent": UA},
+            headers={**HEADERS_BASE, "Referer": "https://shopee.com.br/"},
         )
         data = resp.json().get("data") or {}
         shop_id = data.get("shopid") or data.get("shop_id")
@@ -64,32 +73,252 @@ async def get_shop_id(username: str) -> tuple:
         return shop_id, name
 
 
-def find_products_in_json(obj, depth=0):
-    """Varre o JSON recursivamente e retorna todos os objetos com name+price."""
-    if depth > 12:
+def parse_price(raw) -> float:
+    if not isinstance(raw, (int, float)) or raw <= 0:
+        return 0.0
+    return raw / 100000 if raw > 100000 else float(raw)
+
+
+def extract_products_from_items(items_list: list, shop_id_str: str) -> list:
+    """
+    Extrai produtos de uma lista de items do Shopee.
+    Suporta tanto o formato direto quanto o formato {item_basic: {...}}.
+    """
+    result = []
+    for item in items_list:
+        if not isinstance(item, dict):
+            continue
+
+        # Formato search_items: {"item_basic": {...}}
+        core = item.get("item_basic") or item
+
+        if not isinstance(core, dict):
+            continue
+
+        name = core.get("name") or core.get("item_name") or ""
+        price_raw = (
+            core.get("price")
+            or core.get("price_min")
+            or core.get("price_max")
+            or 0
+        )
+        sold = core.get("sold") or core.get("historical_sold") or 0
+        shopid = core.get("shopid") or core.get("shop_id") or ""
+
+        price = parse_price(price_raw)
+
+        if not (name and isinstance(name, str) and len(name) > 3 and price > 0):
+            continue
+
+        if shop_id_str and str(shopid) and str(shopid) != shop_id_str:
+            continue
+
+        result.append({
+            "nome": name.strip(),
+            "preco": round(price, 2),
+            "vendas_30d": int(sold),
+            "_shopid": str(shopid),
+        })
+
+    return result
+
+
+def find_items_array(obj, depth=0) -> list:
+    """
+    Procura recursivamente por um array de items/products no JSON.
+    Para quando encontra um array com pelo menos 1 objeto que tenha name+price.
+    """
+    if depth > 8:
         return []
-    results = []
-    if isinstance(obj, dict):
-        name = obj.get("name") or obj.get("item_name") or ""
-        price = obj.get("price") or obj.get("price_min") or obj.get("price_max") or 0
-        sold = obj.get("sold") or 0
-        shopid = obj.get("shopid") or obj.get("shop_id")
-        if name and isinstance(name, str) and len(name) > 3 and isinstance(price, (int, float)) and price > 0:
-            if price > 100000:
-                price = price / 100000
-            results.append({
-                "nome": name.strip(),
-                "preco": round(float(price), 2),
-                "vendas_30d": int(sold),
-                "_shopid": str(shopid) if shopid else "",
-            })
-        else:
-            for v in obj.values():
-                results.extend(find_products_in_json(v, depth + 1))
-    elif isinstance(obj, list):
+
+    if isinstance(obj, list):
+        candidates = []
         for item in obj:
-            results.extend(find_products_in_json(item, depth + 1))
+            if not isinstance(item, dict):
+                continue
+            core = item.get("item_basic") or item
+            if isinstance(core, dict):
+                name = core.get("name") or core.get("item_name") or ""
+                price_raw = core.get("price") or core.get("price_min") or 0
+                if name and isinstance(name, str) and len(name) > 3 and price_raw > 0:
+                    candidates.append(item)
+        if candidates:
+            return candidates
+
+        # Se o array não tem produtos diretos, procura nos filhos
+        for item in obj:
+            found = find_items_array(item, depth + 1)
+            if found:
+                return found
+
+    elif isinstance(obj, dict):
+        # Tenta chaves comuns primeiro para ser eficiente
+        for key in ("items", "item_list", "products", "data", "result"):
+            if key in obj:
+                found = find_items_array(obj[key], depth + 1)
+                if found:
+                    return found
+        # Depois tenta o resto
+        for k, v in obj.items():
+            if k in ("items", "item_list", "products", "data", "result"):
+                continue
+            found = find_items_array(v, depth + 1)
+            if found:
+                return found
+
+    return []
+
+
+async def fetch_products_direct(shop_id_str: str, username: str) -> list:
+    """
+    Tenta buscar produtos via HTTP direto no endpoint search_items da Shopee.
+    Não precisa de browser — é o mesmo endpoint que a página usa.
+    """
+    print(f"[DIRETO] Tentando buscar produtos sem browser...")
+    results = []
+
+    async with httpx.AsyncClient(timeout=25, follow_redirects=True) as client:
+        offset = 0
+        limit = 100
+        max_pages = 5  # até 500 produtos
+
+        while offset < limit * max_pages:
+            params = {
+                "by": "sales",
+                "match_id": shop_id_str,
+                "order": "desc",
+                "page_type": "shop",
+                "scenario": "PAGE_OTHERS",
+                "version": "2",
+                "limit": str(limit),
+                "offset": str(offset),
+            }
+            query = "&".join(f"{k}={v}" for k, v in params.items())
+            url = f"https://shopee.com.br/api/v4/search/search_items?{query}"
+
+            try:
+                resp = await client.get(
+                    url,
+                    headers={
+                        **HEADERS_BASE,
+                        "Referer": f"https://shopee.com.br/{username}",
+                    },
+                )
+                print(f"[DIRETO] offset={offset} → HTTP {resp.status_code}")
+
+                if resp.status_code != 200:
+                    break
+
+                data = resp.json()
+                items_raw = find_items_array(data)
+                if not items_raw:
+                    break
+
+                batch = extract_products_from_items(items_raw, shop_id_str)
+                print(f"[DIRETO] {len(batch)} produtos nesta página")
+                results.extend(batch)
+
+                if len(items_raw) < limit:
+                    break  # última página
+
+                offset += limit
+
+            except Exception as e:
+                print(f"[DIRETO] Erro: {e}")
+                break
+
+    print(f"[DIRETO] Total: {len(results)} produtos")
     return results
+
+
+async def fetch_products_browser(shop_id_str: str, username: str, store_url: str) -> list:
+    """
+    Fallback: usa Playwright e intercepta ESPECIFICAMENTE o endpoint
+    search_items com page_type=shop — sem heurística de shopid.
+    """
+    print(f"[BROWSER] Iniciando Playwright...")
+    sorted_url = store_url + "?page=0&sortBy=sales&tab=0"
+
+    found_products = []
+    search_done = asyncio.Event()
+
+    async with async_playwright() as pw:
+        browser = await pw.chromium.launch(
+            headless=True,
+            args=["--no-sandbox", "--disable-dev-shm-usage", "--disable-setuid-sandbox"],
+        )
+        context = await browser.new_context(
+            user_agent=UA,
+            viewport={"width": 1366, "height": 900},
+            locale="pt-BR",
+            timezone_id="America/Sao_Paulo",
+        )
+        page = await context.new_page()
+
+        async def handle_response(response):
+            u = response.url
+            # Intercepta SOMENTE o endpoint de listagem da loja
+            if (
+                response.status == 200
+                and "shopee.com.br" in u
+                and "/api/" in u
+                and (
+                    ("search_items" in u and "page_type=shop" in u)
+                    or ("search_items" in u and f"match_id={shop_id_str}" in u)
+                    or ("get_shop_item_list" in u)
+                    or ("shop/item" in u)
+                )
+            ):
+                try:
+                    ct = response.headers.get("content-type", "")
+                    if "json" not in ct:
+                        return
+                    data = await response.json()
+                    items_raw = find_items_array(data)
+                    if not items_raw:
+                        return
+                    batch = extract_products_from_items(items_raw, shop_id_str)
+                    if batch:
+                        print(f"[BROWSER] Capturei {len(batch)} produtos de: {u[:90]}")
+                        found_products.extend(batch)
+                        search_done.set()
+                except Exception as e:
+                    print(f"[BROWSER] Erro ao parsear resposta: {e}")
+
+        page.on("response", handle_response)
+
+        # Homepage para cookies
+        try:
+            await page.goto("https://shopee.com.br/", wait_until="domcontentloaded", timeout=30000)
+            await asyncio.sleep(2)
+        except Exception:
+            pass
+
+        # Página da loja
+        print(f"[BROWSER] Carregando: {sorted_url}")
+        try:
+            await page.goto(sorted_url, wait_until="domcontentloaded", timeout=60000)
+            await page.wait_for_load_state("networkidle", timeout=20000)
+        except Exception:
+            pass
+
+        # Aguarda até 15s pelo endpoint certo
+        try:
+            await asyncio.wait_for(search_done.wait(), timeout=15)
+        except asyncio.TimeoutError:
+            print("[BROWSER] Timeout — endpoint específico não apareceu")
+
+        # Scroll para tentar carregar mais
+        if not found_products:
+            await page.evaluate("window.scrollTo(0, document.body.scrollHeight * 0.5)")
+            await asyncio.sleep(3)
+            await page.evaluate("window.scrollTo(0, document.body.scrollHeight)")
+            await asyncio.sleep(3)
+
+        await browser.close()
+
+    print(f"[BROWSER] Total: {len(found_products)} produtos")
+    return found_products
 
 
 def calcular_margens(p: dict) -> dict:
@@ -157,7 +386,6 @@ def gerar_insights(products, total_fat):
 async def scrape_and_analyze(url: str) -> dict:
     store_url, username = clean_store_url(url)
 
-    # 1. Pega shop_id via API pública
     print(f"[INFO] Buscando loja: {username}")
     shop_id, shop_name = await get_shop_id(username)
     if not shop_id:
@@ -165,105 +393,22 @@ async def scrape_and_analyze(url: str) -> dict:
     shop_id_str = str(shop_id)
     print(f"[INFO] shop_id={shop_id_str}, nome={shop_name}")
 
-    sorted_url = store_url + "?page=0&sortBy=sales&tab=0"
+    # Camada 1: HTTP direto (sem browser)
+    raw_products = await fetch_products_direct(shop_id_str, username)
 
-    # 2. Intercepta respostas da Shopee enquanto a página carrega
-    # A listagem da loja vai ter TODOS os itens com o mesmo shopid
-    # Feeds de recomendação têm shopids misturados — descartamos eles
-    captured_responses = []
+    # Camada 2: Playwright com filtro de URL (fallback)
+    if not raw_products:
+        raw_products = await fetch_products_browser(shop_id_str, username, store_url)
 
-    async with async_playwright() as pw:
-        browser = await pw.chromium.launch(
-            headless=True,
-            args=["--no-sandbox", "--disable-dev-shm-usage", "--disable-setuid-sandbox"],
-        )
-        context = await browser.new_context(
-            user_agent=UA,
-            viewport={"width": 1366, "height": 900},
-            locale="pt-BR",
-            timezone_id="America/Sao_Paulo",
-        )
-        page = await context.new_page()
-
-        async def handle_response(response):
-            u = response.url
-            if response.status == 200 and "shopee.com.br" in u and "/api/" in u:
-                try:
-                    ct = response.headers.get("content-type", "")
-                    if "json" in ct:
-                        data = await response.json()
-                        captured_responses.append((u, data))
-                except Exception:
-                    pass
-
-        page.on("response", handle_response)
-
-        # Homepage para cookies
-        print("[INFO] Carregando homepage...")
-        try:
-            await page.goto("https://shopee.com.br/", wait_until="domcontentloaded", timeout=30000)
-            await asyncio.sleep(3)
-        except Exception:
-            pass
-
-        # Página da loja
-        print(f"[INFO] Carregando loja: {sorted_url}")
-        try:
-            await page.goto(sorted_url, wait_until="domcontentloaded", timeout=60000)
-            await page.wait_for_load_state("load", timeout=30000)
-        except Exception:
-            pass
-
-        await asyncio.sleep(8)
-        # Scroll para forçar carregamento de todos os produtos
-        await page.evaluate("window.scrollTo(0, document.body.scrollHeight * 0.5)")
-        await asyncio.sleep(3)
-        await page.evaluate("window.scrollTo(0, document.body.scrollHeight)")
-        await asyncio.sleep(3)
-
-        await browser.close()
-
-    print(f"[INFO] {len(captured_responses)} respostas JSON capturadas")
-
-    # 3. Para cada resposta, extrai produtos e analisa os shopids
-    # Estratégia: encontrar a resposta onde TODOS os produtos são desta loja
-    shop_products = []
-
-    for resp_url, data in captured_responses:
-        items = find_products_in_json(data)
-        if not items:
-            continue
-
-        shopids = set(i["_shopid"] for i in items if i["_shopid"])
-        n_items = len(items)
-        n_shop = sum(1 for i in items if i["_shopid"] == shop_id_str)
-
-        print(f"[RESP] {n_items} itens | shopids únicos: {len(shopids)} | desta loja: {n_shop} | {resp_url[:70]}")
-
-        # Resposta onde todos (ou quase todos) os itens são desta loja
-        if n_shop > 0 and (n_shop == n_items or (n_shop / n_items) >= 0.8):
-            candidates = [i for i in items if i["_shopid"] == shop_id_str]
-            if len(candidates) > len(shop_products):
-                shop_products = candidates
-                print(f"[MATCH] Melhor listagem: {len(shop_products)} produtos da loja")
-
-    # Fallback: se nenhuma resposta foi 80%+ desta loja, pega os itens pelo shopid
-    if not shop_products:
-        print("[FALLBACK] Usando todos os itens com shopid correto")
-        all_items = []
-        for _, data in captured_responses:
-            all_items.extend(find_products_in_json(data))
-        shop_products = [i for i in all_items if i["_shopid"] == shop_id_str]
-
-    if not shop_products:
+    if not raw_products:
         raise ValueError(
-            "Não foi possível carregar os produtos. Tente novamente em alguns instantes."
+            "Não foi possível carregar os produtos desta loja. Tente novamente."
         )
 
-    # 4. Remove duplicatas e calcula margens
+    # Remove duplicatas
     seen = set()
     unique = []
-    for p in shop_products:
+    for p in raw_products:
         key = p["nome"].lower()[:50]
         if key not in seen:
             seen.add(key)
@@ -274,7 +419,7 @@ async def scrape_and_analyze(url: str) -> dict:
     total_fat = sum(p["faturamento_30d"] for p in unique)
     total_vendas = sum(p["vendas_30d"] for p in unique)
 
-    print(f"[OK] {len(unique)} produtos | faturamento R${total_fat:.2f}")
+    print(f"[OK] {len(unique)} produtos únicos | faturamento R${total_fat:.2f}")
 
     return {
         "loja": shop_name,
