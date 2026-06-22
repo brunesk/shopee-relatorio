@@ -36,7 +36,7 @@ async def analisar(req: AnalyzeRequest):
         raise HTTPException(status_code=500, detail=f"Erro interno: {str(e)}")
 
 
-def clean_store_url(url: str) -> str:
+def clean_store_url(url: str):
     url = url.strip()
     if not url.startswith("http"):
         url = "https://" + url
@@ -48,7 +48,7 @@ def clean_store_url(url: str) -> str:
     return f"https://shopee.com.br/{username}", username
 
 
-def parse_item(item: dict) -> dict | None:
+def parse_item(item: dict):
     nome = item.get("name", "").strip()
     if not nome:
         return None
@@ -79,7 +79,7 @@ def parse_item(item: dict) -> dict | None:
 def extract_items_from_response(data: dict) -> list:
     items = []
 
-    # Formato recommend/recommend
+    # Formato 1: recommend/recommend — sections[].data.item[]
     sections = data.get("data", {}).get("sections", [])
     for section in sections:
         for item in section.get("data", {}).get("item", []):
@@ -87,7 +87,7 @@ def extract_items_from_response(data: dict) -> list:
             if parsed:
                 items.append(parsed)
 
-    # Formato search_items
+    # Formato 2: search_items — items[].item_basic
     if not items:
         for wrap in data.get("items", []):
             item = wrap.get("item_basic", wrap)
@@ -95,12 +95,23 @@ def extract_items_from_response(data: dict) -> list:
             if parsed:
                 items.append(parsed)
 
-    # Formato data.items
+    # Formato 3: data.items[]
     if not items:
         for item in data.get("data", {}).get("items", []):
             parsed = parse_item(item)
             if parsed:
                 items.append(parsed)
+
+    # Formato 4: tentativa genérica — qualquer lista com campo "name"
+    if not items:
+        for key in ["item", "products", "result", "list"]:
+            lst = data.get(key, [])
+            if isinstance(lst, list):
+                for item in lst:
+                    if isinstance(item, dict) and item.get("name"):
+                        parsed = parse_item(item)
+                        if parsed:
+                            items.append(parsed)
 
     return items
 
@@ -157,7 +168,8 @@ async def scrape_and_analyze(url: str) -> dict:
 
     products = []
     shop_name = username
-    captured = []
+    captured = []       # (url, data)
+    all_urls = []       # log de todas as URLs capturadas
 
     async with async_playwright() as pw:
         browser = await pw.chromium.launch(
@@ -167,6 +179,7 @@ async def scrape_and_analyze(url: str) -> dict:
                 "--disable-dev-shm-usage",
                 "--disable-blink-features=AutomationControlled",
                 "--disable-setuid-sandbox",
+                "--disable-web-security",
             ],
         )
 
@@ -185,26 +198,36 @@ async def scrape_and_analyze(url: str) -> dict:
 
         async def on_response(response):
             u = response.url
-            if any(k in u for k in ["recommend/recommend", "search_items", "rcmd_items", "get_shop_item"]):
+            status = response.status
+            all_urls.append(f"{status} {u}")
+
+            # Captura toda resposta JSON da Shopee com status 200
+            if status == 200 and "shopee.com.br" in u and "/api/" in u:
                 try:
-                    if response.status == 200:
+                    ct = response.headers.get("content-type", "")
+                    if "json" in ct:
                         data = await response.json()
-                        captured.append(data)
-                except Exception:
-                    pass
+                        captured.append((u, data))
+                        print(f"[CAPTURADO] {u[:120]}")
+                except Exception as e:
+                    print(f"[ERRO JSON] {u[:80]} -> {e}")
 
         page.on("response", on_response)
 
+        print(f"[SCRAPER] Acessando: {sorted_url}")
         try:
-            await page.goto(sorted_url, wait_until="domcontentloaded", timeout=45000)
+            await page.goto(sorted_url, wait_until="networkidle", timeout=60000)
         except Exception as e:
-            await browser.close()
-            raise ValueError(f"Não foi possível acessar a loja. Verifique o link. ({e})")
+            # networkidle pode dar timeout em páginas pesadas — tenta domcontentloaded
+            print(f"[AVISO] networkidle timeout, tentando continuar... {e}")
 
-        # Aguarda as chamadas de API carregarem
-        await asyncio.sleep(6)
+        await asyncio.sleep(5)
 
-        # Tenta capturar nome da loja da página
+        # Scroll para forçar carregamento lazy
+        await page.evaluate("window.scrollTo(0, document.body.scrollHeight / 2)")
+        await asyncio.sleep(3)
+
+        # Tenta capturar nome da loja
         for selector in [".shop-name-content", "[class*='shopName']", ".seller-name", "h1"]:
             try:
                 el = await page.query_selector(selector)
@@ -218,11 +241,20 @@ async def scrape_and_analyze(url: str) -> dict:
 
         await browser.close()
 
-    for data in captured:
+    # Log para debug no Railway
+    print(f"[SCRAPER] Total URLs capturadas: {len(all_urls)}")
+    print(f"[SCRAPER] APIs JSON capturadas: {len(captured)}")
+    for u, _ in captured:
+        print(f"  -> {u[:120]}")
+
+    # Tenta extrair produtos de cada resposta capturada
+    for u, data in captured:
         items = extract_items_from_response(data)
+        if items:
+            print(f"[PRODUTOS] {len(items)} encontrados em: {u[:80]}")
         products.extend(items)
 
-    # Remove duplicatas por nome
+    # Remove duplicatas
     seen = set()
     unique = []
     for p in products:
@@ -232,6 +264,10 @@ async def scrape_and_analyze(url: str) -> dict:
     products = unique
 
     if not products:
+        print(f"[FALHA] Nenhum produto encontrado. URLs da Shopee capturadas:")
+        for u in all_urls:
+            if "shopee" in u:
+                print(f"  {u[:120]}")
         raise ValueError(
             "Nenhum produto encontrado. Verifique se o link é de uma loja Shopee válida e tente novamente."
         )
