@@ -68,6 +68,9 @@ def parse_item(item: dict):
         rating_obj = item.get("item_rating") or {}
         avaliacao = round(float(rating_obj.get("rating_star") or 0), 1)
 
+        # Inclui shopid para filtrar depois
+        shopid = item.get("shopid") or item.get("shop_id")
+
         return {
             "nome": nome,
             "preco": price,
@@ -78,6 +81,7 @@ def parse_item(item: dict):
             "preco_compra_30pct": round(recebido * 0.70, 2),
             "preco_compra_40pct": round(recebido * 0.60, 2),
             "vendas_por_dia": round(sold / 30, 1),
+            "_shopid": shopid,
         }
     except Exception as e:
         print(f"[PARSE_ITEM] Erro: {e} | item: {str(item)[:100]}")
@@ -257,11 +261,10 @@ async def scrape_and_analyze(url: str) -> dict:
 
         async def on_response(response):
             u = response.url
-            # Só captura APIs da Shopee que contenham o shop_id desta loja
+            # Captura toda resposta JSON da Shopee
             if (response.status == 200
                     and "shopee.com.br" in u
-                    and "/api/" in u
-                    and shop_id_str in u):
+                    and "/api/" in u):
                 try:
                     ct = response.headers.get("content-type", "")
                     if "json" in ct:
@@ -294,23 +297,38 @@ async def scrape_and_analyze(url: str) -> dict:
 
         await browser.close()
 
-    print(f"[SCRAPER] APIs capturadas com shop_id {shop_id_str}: {len(captured)}")
+    print(f"[SCRAPER] APIs capturadas: {len(captured)}")
     for u, _ in captured:
         print(f"  -> {u[:120]}")
 
-    # Tenta extrair produtos de cada resposta capturada
+    # Extrai produtos e filtra pelo shop_id desta loja
+    all_items = []
     for u, data in captured:
         items = extract_items_from_response(data)
         if items:
             print(f"[PRODUTOS] {len(items)} encontrados em: {u[:80]}")
-        products.extend(items)
+        all_items.extend(items)
 
-    # Remove duplicatas
+    # Filtra apenas produtos desta loja (pelo shopid dentro do JSON)
+    loja_items = [p for p in all_items if str(p.get("_shopid") or "") == shop_id_str]
+    print(f"[FILTRO] {len(all_items)} produtos totais → {len(loja_items)} desta loja (shop_id={shop_id_str})")
+
+    # Se o filtro por shopid não funcionou (campo ausente), usa todos sem filtro
+    if not loja_items:
+        print("[FILTRO] shopid ausente nos itens, usando todos sem filtro")
+        loja_items = all_items
+
+    # Remove campo interno _shopid antes de retornar
+    for p in loja_items:
+        p.pop("_shopid", None)
+
+    # Remove duplicatas por nome
     seen = set()
     unique = []
-    for p in products:
+    for p in loja_items:
         if p["nome"] not in seen:
             seen.add(p["nome"])
+            p.pop("_shopid", None)
             unique.append(p)
     products = unique
 
