@@ -49,63 +49,76 @@ def clean_store_url(url: str):
 
 
 def parse_item(item: dict):
-    nome = item.get("name", "").strip()
-    if not nome:
+    try:
+        nome = (item.get("name") or "").strip()
+        if not nome:
+            return None
+
+        price = item.get("price") or 0
+        if isinstance(price, (int, float)) and price > 100000:
+            price = price / 100000
+        price = round(float(price or 0), 2)
+
+        sold = int(item.get("sold") or 0)
+
+        taxa_shopee = 0.20
+        recebido = price * (1 - taxa_shopee)
+
+        rating_obj = item.get("item_rating") or {}
+        avaliacao = round(float(rating_obj.get("rating_star") or 0), 1)
+
+        return {
+            "nome": nome,
+            "preco": price,
+            "vendas_30d": sold,
+            "historico_vendas": int(item.get("historical_sold") or 0),
+            "avaliacao": avaliacao,
+            "faturamento_30d": round(price * sold, 2),
+            "preco_compra_30pct": round(recebido * 0.70, 2),
+            "preco_compra_40pct": round(recebido * 0.60, 2),
+            "vendas_por_dia": round(sold / 30, 1),
+        }
+    except Exception as e:
+        print(f"[PARSE_ITEM] Erro: {e} | item: {str(item)[:100]}")
         return None
-
-    price = item.get("price", 0)
-    if isinstance(price, (int, float)) and price > 100000:
-        price = price / 100000
-    price = round(float(price), 2)
-
-    sold = int(item.get("sold", 0))
-
-    taxa_shopee = 0.20
-    recebido = price * (1 - taxa_shopee)
-
-    return {
-        "nome": nome,
-        "preco": price,
-        "vendas_30d": sold,
-        "historico_vendas": int(item.get("historical_sold", 0)),
-        "avaliacao": round(float(item.get("item_rating", {}).get("rating_star", 0)), 1),
-        "faturamento_30d": round(price * sold, 2),
-        "preco_compra_30pct": round(recebido * 0.70, 2),
-        "preco_compra_40pct": round(recebido * 0.60, 2),
-        "vendas_por_dia": round(sold / 30, 1),
-    }
 
 
 def extract_items_from_response(data: dict) -> list:
+    if not isinstance(data, dict):
+        return []
     items = []
 
     # Formato 1: recommend/recommend — sections[].data.item[]
-    sections = data.get("data", {}).get("sections", [])
+    sections = (data.get("data") or {}).get("sections") or []
     for section in sections:
-        for item in section.get("data", {}).get("item", []):
-            parsed = parse_item(item)
-            if parsed:
-                items.append(parsed)
+        section_data = (section.get("data") or {})
+        for item in (section_data.get("item") or []):
+            if isinstance(item, dict):
+                parsed = parse_item(item)
+                if parsed:
+                    items.append(parsed)
 
     # Formato 2: search_items — items[].item_basic
     if not items:
-        for wrap in data.get("items", []):
-            item = wrap.get("item_basic", wrap)
-            parsed = parse_item(item)
-            if parsed:
-                items.append(parsed)
+        for wrap in (data.get("items") or []):
+            if isinstance(wrap, dict):
+                item = wrap.get("item_basic") or wrap
+                parsed = parse_item(item)
+                if parsed:
+                    items.append(parsed)
 
     # Formato 3: data.items[]
     if not items:
-        for item in data.get("data", {}).get("items", []):
-            parsed = parse_item(item)
-            if parsed:
-                items.append(parsed)
+        for item in ((data.get("data") or {}).get("items") or []):
+            if isinstance(item, dict):
+                parsed = parse_item(item)
+                if parsed:
+                    items.append(parsed)
 
-    # Formato 4: tentativa genérica — qualquer lista com campo "name"
+    # Formato 4: genérico — qualquer lista com campo "name"
     if not items:
         for key in ["item", "products", "result", "list"]:
-            lst = data.get(key, [])
+            lst = data.get(key) or []
             if isinstance(lst, list):
                 for item in lst:
                     if isinstance(item, dict) and item.get("name"):
