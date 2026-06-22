@@ -1,13 +1,13 @@
 import asyncio
 import re
 import json
+import base64
+import os
 import httpx
-from urllib.parse import urlparse
+from urllib.parse import urlparse, quote
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-from playwright.async_api import async_playwright
-from playwright_stealth import stealth_async
 
 app = FastAPI(title="Shopee Store Analyzer")
 
@@ -22,6 +22,11 @@ UA = (
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
     "AppleWebKit/537.36 (KHTML, like Gecko) "
     "Chrome/122.0.0.0 Safari/537.36"
+)
+
+SCRAPINGBEE_KEY = os.getenv(
+    "SCRAPINGBEE_API_KEY",
+    "OA8697CMXEHIYR5TPYGXA5YEW4ZCBE6U0X8S9WGD64YCTQU57HGH8P2ZH1UB1GUY1LKCXE5ZI9NT0SCO"
 )
 
 
@@ -74,7 +79,7 @@ def parse_price(raw) -> float:
 
 
 def extract_from_json(obj, shop_id_str: str, depth=0) -> list:
-    """Varre o JSON recursivamente e extrai produtos válidos."""
+    """Varre JSON recursivamente extraindo produtos válidos."""
     if depth > 15:
         return []
     results = []
@@ -84,15 +89,10 @@ def extract_from_json(obj, shop_id_str: str, depth=0) -> list:
             results.extend(extract_from_json(item, shop_id_str, depth + 1))
 
     elif isinstance(obj, dict):
-        # Suporte ao formato {item_basic: {...}} do search_items
         core = obj.get("item_basic") if "item_basic" in obj else obj
-
         name = core.get("name") or core.get("item_name") or ""
         price_raw = (
-            core.get("price")
-            or core.get("price_min")
-            or core.get("price_max")
-            or 0
+            core.get("price") or core.get("price_min") or core.get("price_max") or 0
         )
         sold = core.get("sold") or core.get("historical_sold") or 0
         shopid = str(core.get("shopid") or core.get("shop_id") or "")
@@ -119,176 +119,126 @@ def extract_from_json(obj, shop_id_str: str, depth=0) -> list:
     return results
 
 
-async def fetch_from_html(username: str, shop_id_str: str) -> list:
+async def fetch_via_scrapingbee_api(shop_id_str: str, username: str) -> list:
     """
-    Tenta extrair produtos do HTML inicial da loja.
-    Sites React/Next.js costumam injetar os dados no HTML como window.__INITIAL_STATE__.
-    Não precisa de browser nem de tokens.
+    Estratégia 1: ScrapingBee como proxy para chamar o endpoint JSON da Shopee.
+    IP residencial brasileiro — sem JS rendering (1 crédito).
     """
-    url = f"https://shopee.com.br/{username}?page=0&sortBy=sales&tab=0"
-    headers = {
-        "User-Agent": UA,
-        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
-        "Accept-Language": "pt-BR,pt;q=0.9,en-US;q=0.8",
-        "Accept-Encoding": "gzip, deflate, br",
-        "Upgrade-Insecure-Requests": "1",
-    }
+    target = (
+        f"https://shopee.com.br/api/v4/search/search_items"
+        f"?by=sales&match_id={shop_id_str}&order=desc"
+        f"&page_type=shop&scenario=PAGE_OTHERS&version=2&limit=100&offset=0"
+    )
+    sb_url = (
+        f"https://app.scrapingbee.com/api/v1/"
+        f"?api_key={SCRAPINGBEE_KEY}"
+        f"&url={quote(target, safe='')}"
+        f"&render_js=false"
+        f"&country_code=br"
+        f"&custom_google=false"
+        f"&forward_headers=true"
+    )
 
-    print("[HTML] Buscando HTML da loja...")
-    async with httpx.AsyncClient(timeout=20, follow_redirects=True) as client:
-        resp = await client.get(url, headers=headers)
-        html = resp.text
-        print(f"[HTML] HTTP {resp.status_code} | {len(html)} chars")
+    print("[SB-API] Tentando endpoint direto via ScrapingBee...")
+    async with httpx.AsyncClient(timeout=60) as client:
+        resp = await client.get(
+            sb_url,
+            headers={
+                "x-api-source": "pc",
+                "x-shopee-language": "pt-BR",
+                "Referer": f"https://shopee.com.br/{username}",
+            },
+        )
+        print(f"[SB-API] HTTP {resp.status_code} | {len(resp.text)} chars")
 
-    # Padrões de dados injetados no HTML por frameworks React/SSR
-    patterns = [
-        r'window\.__INITIAL_STATE__\s*=\s*(\{.+?\})\s*;?\s*(?:</script>|window\.)',
-        r'window\.__DATA__\s*=\s*(\{.+?\})\s*;?\s*(?:</script>|window\.)',
-        r'window\.__SERVER_DATA__\s*=\s*(\{.+?\})\s*;?\s*(?:</script>|window\.)',
-        r'window\.__SHOPEE_SERVER_DATA__\s*=\s*(\{.+?\})\s*;?\s*(?:</script>|window\.)',
-        r'<script id="__NEXT_DATA__" type="application/json">(.+?)</script>',
-        r'<script type="application/json"[^>]*>(\{.+?\})</script>',
-    ]
+        if resp.status_code != 200:
+            print(f"[SB-API] Erro: {resp.text[:300]}")
+            return []
 
-    for pattern in patterns:
-        matches = re.findall(pattern, html, re.DOTALL)
-        for raw in matches:
-            try:
-                data = json.loads(raw)
-                products = extract_from_json(data, shop_id_str)
-                print(f"[HTML] Padrão encontrado → {len(products)} produtos")
-                if products:
-                    return products
-            except Exception:
-                continue
-
-    # Fallback: varre todas as tags <script> que contenham JSON
-    for raw in re.findall(r'<script[^>]*>(\{.+?\})</script>', html, re.DOTALL):
         try:
-            data = json.loads(raw)
-            products = extract_from_json(data, shop_id_str)
-            if products:
-                print(f"[HTML] Script tag → {len(products)} produtos")
-                return products
+            data = resp.json()
         except Exception:
-            continue
+            print(f"[SB-API] Resposta não é JSON: {resp.text[:200]}")
+            return []
 
-    print("[HTML] Nenhum dado de produto encontrado no HTML")
-    return []
+        products = extract_from_json(data, shop_id_str)
+        print(f"[SB-API] {len(products)} produtos encontrados")
+        return products
 
 
-async def fetch_via_browser(shop_id_str: str, username: str, store_url: str) -> list:
+async def fetch_via_scrapingbee_render(shop_id_str: str, username: str, store_url: str) -> list:
     """
-    Estratégia definitiva: navega para a loja com Playwright e faz
-    fetch() do endpoint de produtos DE DENTRO do browser.
-    O browser já tem cookies e tokens (x-spc-iap) gerados pelo JS da Shopee.
+    Estratégia 2: ScrapingBee renderiza a página completa com JS.
+    Injeta um snippet que chama a API de dentro do browser (tem acesso aos tokens).
+    5 créditos por requisição.
     """
     sorted_url = store_url + "?page=0&sortBy=sales&tab=0"
-    all_products = []
 
-    async with async_playwright() as pw:
-        browser = await pw.chromium.launch(
-            headless=True,
-            args=["--no-sandbox", "--disable-dev-shm-usage", "--disable-setuid-sandbox"],
-        )
-        context = await browser.new_context(
-            user_agent=UA,
-            viewport={"width": 1366, "height": 900},
-            locale="pt-BR",
-            timezone_id="America/Sao_Paulo",
-        )
-        page = await context.new_page()
+    # JS que roda dentro da página após carregar e grava o resultado no DOM
+    js_snippet = base64.b64encode(f"""
+(async () => {{
+    try {{
+        await new Promise(r => setTimeout(r, 4000));
+        const resp = await fetch(
+            '/api/v4/search/search_items?by=sales&match_id={shop_id_str}&order=desc&page_type=shop&scenario=PAGE_OTHERS&version=2&limit=100&offset=0',
+            {{credentials: 'include', headers: {{'x-api-source': 'pc', 'x-shopee-language': 'pt-BR'}}}}
+        );
+        const data = await resp.json();
+        const el = document.createElement('div');
+        el.id = '__scraped__';
+        el.style.display = 'none';
+        el.textContent = JSON.stringify(data);
+        document.body.appendChild(el);
+    }} catch(e) {{
+        const el = document.createElement('div');
+        el.id = '__scraped__';
+        el.style.display = 'none';
+        el.textContent = JSON.stringify({{error: String(e)}});
+        document.body.appendChild(el);
+    }}
+}})();
+""".encode()).decode()
 
-        # Aplica stealth antes de qualquer navegação
-        await stealth_async(page)
+    sb_url = (
+        f"https://app.scrapingbee.com/api/v1/"
+        f"?api_key={SCRAPINGBEE_KEY}"
+        f"&url={quote(sorted_url, safe='')}"
+        f"&render_js=true"
+        f"&country_code=br"
+        f"&wait=8000"
+        f"&js_snippet={js_snippet}"
+    )
 
-        # 1. Homepage para iniciar cookies e JS
-        print("[INFO] Carregando homepage...")
+    print("[SB-RENDER] Renderizando página com JS injetado...")
+    async with httpx.AsyncClient(timeout=120) as client:
+        resp = await client.get(sb_url)
+        print(f"[SB-RENDER] HTTP {resp.status_code} | {len(resp.text)} chars")
+
+        if resp.status_code != 200:
+            print(f"[SB-RENDER] Erro: {resp.text[:300]}")
+            return []
+
+        html = resp.text
+
+        # Extrai dados do elemento que o JS injetou
+        match = re.search(r'id="__scraped__"[^>]*>(.+?)</div>', html, re.DOTALL)
+        if not match:
+            print("[SB-RENDER] Elemento __scraped__ não encontrado no HTML")
+            return []
+
         try:
-            await page.goto("https://shopee.com.br/", wait_until="domcontentloaded", timeout=30000)
-            await asyncio.sleep(3)
-        except Exception:
-            pass
+            data = json.loads(match.group(1))
+        except Exception as e:
+            print(f"[SB-RENDER] Erro ao parsear JSON: {e}")
+            return []
 
-        # 2. Página da loja para ativar tokens específicos da loja
-        print(f"[INFO] Carregando loja: {sorted_url}")
-        try:
-            await page.goto(sorted_url, wait_until="domcontentloaded", timeout=60000)
-            await asyncio.sleep(6)  # tempo para o JS gerar x-spc-iap
-        except Exception:
-            pass
+        if "error" in data:
+            print(f"[SB-RENDER] Erro do JS: {data['error']}")
+            return []
 
-        # 3. Faz fetch() de dentro do browser com todos os tokens gerados
-        offset = 0
-        limit = 100
-        max_paginas = 10
-
-        for _ in range(max_paginas):
-            print(f"[FETCH] Buscando produtos offset={offset}...")
-            try:
-                result = await page.evaluate(f"""
-                    async () => {{
-                        try {{
-                            const url = '/api/v4/search/search_items'
-                                + '?by=sales'
-                                + '&match_id={shop_id_str}'
-                                + '&order=desc'
-                                + '&page_type=shop'
-                                + '&scenario=PAGE_OTHERS'
-                                + '&version=2'
-                                + '&limit={limit}'
-                                + '&offset={offset}';
-                            const resp = await fetch(url, {{
-                                credentials: 'include',
-                                headers: {{
-                                    'x-api-source': 'pc',
-                                    'x-shopee-language': 'pt-BR',
-                                    'Accept': 'application/json'
-                                }}
-                            }});
-                            if (!resp.ok) return {{ _error: resp.status }};
-                            return await resp.json();
-                        }} catch(e) {{
-                            return {{ _error: String(e) }};
-                        }}
-                    }}
-                """)
-
-                if not result or not isinstance(result, dict):
-                    print(f"[FETCH] Resposta inválida: {result}")
-                    break
-
-                if "_error" in result:
-                    print(f"[FETCH] Erro no browser: {result['_error']}")
-                    break
-
-                products = extract_from_json(result, shop_id_str)
-                print(f"[FETCH] offset={offset} → {len(products)} produtos extraídos")
-
-                if not products:
-                    # Tenta sem filtro de shopid para debug
-                    products_all = extract_from_json(result, "")
-                    print(f"[FETCH] Sem filtro shopid: {len(products_all)} itens")
-                    if products_all:
-                        all_products.extend(products_all)
-                    break
-
-                all_products.extend(products)
-
-                # Verifica se tem mais páginas
-                items_raw_count = result.get("total_count") or 0
-                if len(products) < limit or (items_raw_count and offset + limit >= items_raw_count):
-                    break
-
-                offset += limit
-
-            except Exception as e:
-                print(f"[FETCH] Exceção: {e}")
-                break
-
-        await browser.close()
-
-    return all_products
+        products = extract_from_json(data, shop_id_str)
+        print(f"[SB-RENDER] {len(products)} produtos encontrados")
+        return products
 
 
 def calcular_margens(p: dict) -> dict:
@@ -363,19 +313,19 @@ async def scrape_and_analyze(url: str) -> dict:
     shop_id_str = str(shop_id)
     print(f"[INFO] shop_id={shop_id_str}, nome={shop_name}")
 
-    # Camada 1: extração do HTML (sem browser, sem token)
-    raw_products = await fetch_from_html(username, shop_id_str)
+    # Estratégia 1: ScrapingBee chamando a API diretamente (1 crédito)
+    raw_products = await fetch_via_scrapingbee_api(shop_id_str, username)
 
-    # Camada 2: browser com stealth (fallback)
+    # Estratégia 2: ScrapingBee renderizando a página + JS injetado (5 créditos)
     if not raw_products:
-        raw_products = await fetch_via_browser(shop_id_str, username, store_url)
+        raw_products = await fetch_via_scrapingbee_render(shop_id_str, username, store_url)
 
     if not raw_products:
         raise ValueError(
             "Não foi possível carregar os produtos desta loja. Tente novamente."
         )
 
-    # Remove duplicatas pelo nome
+    # Remove duplicatas
     seen = set()
     unique = []
     for p in raw_products:
