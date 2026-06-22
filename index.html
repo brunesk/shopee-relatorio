@@ -99,14 +99,14 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 /* ── CARDS GRID ── */
 .kpi-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:14px;margin-bottom:22px}
 @media(min-width:560px){.kpi-grid{grid-template-columns:repeat(4,1fr)}}
-.kpi{background:#fff;border-radius:var(--r);padding:18px 16px;box-shadow:var(--sh1);border-top:3px solid transparent;transition:transform .15s}
-.kpi:hover{transform:translateY(-2px)}
+.kpi{background:#fff;border-radius:var(--r);padding:20px 18px;box-shadow:var(--sh1);border-top:3px solid transparent;transition:transform .15s,box-shadow .15s}
+.kpi:hover{transform:translateY(-2px);box-shadow:var(--sh2)}
 .kpi.blue{border-color:#60a5fa}.kpi.green{border-color:#4ade80}
 .kpi.red{border-color:#f87171}.kpi.orange{border-color:var(--or)}.kpi.purple{border-color:#a78bfa}
-.kpi-ico{font-size:21px;margin-bottom:10px}
-.kpi-lbl{font-size:10px;color:var(--g400);text-transform:uppercase;letter-spacing:.6px;margin-bottom:4px;font-weight:700}
-.kpi-val{font-size:20px;font-weight:900;letter-spacing:-.5px;line-height:1.1}
-.kpi-sub{font-size:11px;color:var(--g400);margin-top:5px}
+.kpi-ico{font-size:20px;margin-bottom:12px}
+.kpi-lbl{font-size:10px;color:var(--g400);text-transform:uppercase;letter-spacing:.6px;margin-bottom:6px;font-weight:700}
+.kpi-val{font-size:22px;font-weight:900;letter-spacing:-.5px;line-height:1.1}
+.kpi-sub{font-size:11px;color:var(--g500);margin-top:6px}
 
 /* ── SEC CARD ── */
 .sec{background:#fff;border-radius:var(--r);padding:22px;box-shadow:var(--sh1);margin-bottom:18px}
@@ -142,12 +142,15 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 
 /* ── TABLE ── */
 .tbl{width:100%;border-collapse:collapse;font-size:13px}
-.tbl th{font-size:10px;text-transform:uppercase;letter-spacing:.5px;color:var(--g400);font-weight:700;padding:0 10px 12px;text-align:right;border-bottom:1px solid var(--g100)}
-.tbl th:first-child{text-align:left}
+.tbl thead{position:sticky;top:0;z-index:1}
+.tbl th{font-size:10px;text-transform:uppercase;letter-spacing:.5px;color:var(--g500);font-weight:700;padding:10px 10px 10px;text-align:right;background:var(--g50);border-bottom:2px solid var(--g200)}
+.tbl th:first-child{text-align:left;border-radius:8px 0 0 0}
+.tbl th:last-child{border-radius:0 8px 0 0}
 .tbl td{padding:13px 10px;border-bottom:1px solid var(--g50);vertical-align:middle}
 .tbl tr:last-child td{border-bottom:none}
 .tbl td:not(:first-child){text-align:right}
 .tbl tr.clk:hover td{background:var(--g50);cursor:pointer}
+.tbl tbody tr:hover td{background:#fffaf9}
 .td-mon{font-weight:700;color:var(--g800)}
 .td-pos{color:var(--gr);font-weight:700}
 .td-neg{color:var(--re);font-weight:700}
@@ -155,37 +158,48 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 .td-cost{color:#c2410c;font-weight:600}
 .td-muted{color:var(--g500)}
 /* ── ADS PAGE ── */
-.ads-drop{border:2px dashed var(--g200);border-radius:16px;padding:48px 24px;text-align:center;cursor:pointer;transition:all .2s;background:var(--g50);display:block}
-.ads-drop:hover,.ads-drop.drag{border-color:var(--or);background:#fff7f0}
+.ads-drop{border:2px dashed var(--g200);border-radius:20px;padding:52px 24px;text-align:center;cursor:pointer;transition:all .25s;background:var(--g50);display:block}
+.ads-drop:hover,.ads-drop.drag{border-color:var(--or);background:#fff7f0;transform:translateY(-1px)}
 .ads-drop-ico{font-size:52px;margin-bottom:16px}
 .ads-drop-ttl{font-size:20px;font-weight:800;color:var(--g800);margin-bottom:8px}
 .ads-drop-sub{font-size:13px;color:var(--g400);margin-bottom:24px;line-height:1.6}
 .ads-period{display:inline-flex;align-items:center;gap:8px;background:#fff7ed;color:var(--or);font-size:12px;font-weight:700;padding:6px 14px;border-radius:20px}
-.ads-reload{font-size:12px;font-weight:700;color:var(--or);background:#fff7ed;border:none;border-radius:8px;padding:8px 14px;cursor:pointer;display:inline-flex;align-items:center;gap:6px}
-.insight-list{display:flex;flex-direction:column;gap:10px}
-.insight-card{border-radius:12px;padding:14px 16px;display:flex;gap:14px;align-items:flex-start}
-.ic-critico{background:#fef2f2;border-left:4px solid #dc2626}
-.ic-atencao{background:#fffbeb;border-left:4px solid #f59e0b}
-.ic-positivo{background:#f0fdf4;border-left:4px solid #16a34a}
-.ic-info{background:#eff6ff;border-left:4px solid #3b82f6}
-.ic-ico{font-size:22px;flex-shrink:0;margin-top:1px}
+.ads-reload{font-size:12px;font-weight:700;color:var(--g500);background:var(--g100);border:none;border-radius:8px;padding:8px 14px;cursor:pointer;display:inline-flex;align-items:center;gap:6px;transition:all .15s}
+.ads-reload:hover{background:var(--g200);color:var(--g800)}
+/* insight cards — full border, no side-stripe */
+.insight-list{display:flex;flex-direction:column;gap:8px}
+.insight-card{border-radius:14px;padding:16px 18px;display:flex;gap:14px;align-items:flex-start}
+.ic-critico{background:#fef2f2;border:1.5px solid #fca5a5}
+.ic-atencao{background:#fffbeb;border:1.5px solid #fde68a}
+.ic-positivo{background:#f0fdf4;border:1.5px solid #86efac}
+.ic-info{background:#eff6ff;border:1.5px solid #93c5fd}
+.ic-ico{font-size:20px;flex-shrink:0;margin-top:2px;width:32px;height:32px;display:flex;align-items:center;justify-content:center}
 .ic-body{flex:1;min-width:0}
-.ic-ttl{font-size:13px;font-weight:800;color:var(--g800);margin-bottom:3px}
-.ic-desc{font-size:12px;color:var(--g500);margin-bottom:6px}
-.ic-acao{font-size:11px;font-weight:700;color:var(--g600);background:rgba(0,0,0,.05);padding:4px 8px;border-radius:6px;display:inline-block}
-.perf-badge{display:inline-flex;align-items:center;gap:4px;font-size:10px;font-weight:800;padding:3px 8px;border-radius:20px;white-space:nowrap}
-.pb-star{background:#fef3c7;color:#b45309}
-.pb-bom{background:#dcfce7;color:#166534}
-.pb-reg{background:#eff6ff;color:#1d4ed8}
-.pb-fraco{background:#fef2f2;color:#dc2626}
-.pb-sem{background:#fff7ed;color:#c2410c}
+.ic-ttl{font-size:14px;font-weight:800;color:var(--g900);margin-bottom:4px;line-height:1.4}
+.ic-desc{font-size:12px;color:var(--g600);margin-bottom:8px;line-height:1.6}
+.ic-acao{font-size:12px;font-weight:600;color:var(--g700);background:rgba(255,255,255,.7);border:1px solid rgba(0,0,0,.06);padding:6px 10px;border-radius:8px;display:inline-block;line-height:1.5}
+/* performance badges */
+.perf-badge{display:inline-flex;align-items:center;gap:4px;font-size:10px;font-weight:800;padding:4px 9px;border-radius:20px;white-space:nowrap}
+.pb-star{background:#dcfce7;color:#15803d}
+.pb-bom{background:#d1fae5;color:#065f46}
+.pb-reg{background:#fef9c3;color:#854d0e}
+.pb-fraco{background:#ffedd5;color:#c2410c}
+.pb-mruim{background:#fee2e2;color:#dc2626}
+.pb-sem{background:#fef2f2;color:#b91c1c}
 .pb-inativo{background:var(--g100);color:var(--g400)}
+/* action badges */
+.acao-badge{display:inline-flex;align-items:center;gap:3px;font-size:11px;font-weight:700;padding:4px 9px;border-radius:20px;white-space:nowrap}
+.ab-baixar{background:#dbeafe;color:#1e40af}
+.ab-manter{background:#dcfce7;color:#166534}
+.ab-elevar{background:#fee2e2;color:#991b1b}
+.ab-ajustar{background:#fef3c7;color:#92400e}
+/* horizontal bar chart */
 .ads-hbar-wrap{display:flex;flex-direction:column;gap:10px;padding:4px 0}
-.ads-hbar-row{display:flex;align-items:center;gap:10px}
-.ads-hbar-nome{width:160px;flex-shrink:0;font-size:11px;font-weight:700;color:var(--g700);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:right}
-.ads-hbar-track{flex:1;height:22px;background:var(--g100);border-radius:11px;overflow:hidden}
-.ads-hbar-fill{height:100%;border-radius:11px;transition:width .8s cubic-bezier(.4,0,.2,1)}
-.ads-hbar-val{font-size:11px;font-weight:700;color:var(--g700);white-space:nowrap;min-width:90px}
+.ads-hbar-row{display:flex;align-items:center;gap:12px}
+.ads-hbar-nome{width:180px;flex-shrink:0;font-size:11px;font-weight:600;color:var(--g600);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:right}
+.ads-hbar-track{flex:1;height:24px;background:var(--g100);border-radius:12px;overflow:hidden}
+.ads-hbar-fill{height:100%;border-radius:12px;transition:width .9s cubic-bezier(.4,0,.2,1)}
+.ads-hbar-val{font-size:12px;font-weight:700;color:var(--g700);white-space:nowrap;min-width:100px}
 
 /* ── BREAKDOWN ── */
 .bkd{width:100%;border-collapse:collapse;font-size:14px}
@@ -195,6 +209,58 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 .btv{text-align:right;font-weight:700}
 .bkd .bttot td{font-size:15px;font-weight:800;padding-top:14px;border-top:2px solid var(--g200)!important}
 
+/* ── NOTA CAMPANHA ── */
+.nota-wrap{background:#fff;border-radius:var(--r);padding:24px;box-shadow:var(--sh2);margin-bottom:20px;display:flex;align-items:center;gap:22px;flex-wrap:wrap}
+.nota-grade{width:88px;height:88px;border-radius:22px;display:flex;align-items:center;justify-content:center;font-size:46px;font-weight:900;flex-shrink:0;letter-spacing:-3px;box-shadow:0 4px 20px rgba(0,0,0,.1)}
+.nota-info{flex:1;min-width:200px}
+.nota-info h3{font-size:17px;font-weight:900;color:var(--g900);margin-bottom:6px;line-height:1.3}
+.nota-info p{font-size:13px;color:var(--g500);line-height:1.6}
+.nota-stats{display:flex;gap:12px;flex-wrap:wrap;margin-left:auto}
+.ns-item{text-align:center;background:var(--g50);border:1px solid var(--g200);border-radius:12px;padding:10px 18px;min-width:80px}
+.ns-val{font-size:20px;font-weight:900;color:var(--g900);line-height:1.1}
+.ns-lbl{font-size:10px;color:var(--g400);font-weight:700;margin-top:4px;white-space:nowrap}
+/* ── PRIORITY ACTIONS — no side-stripe ── */
+.prio-list{display:flex;flex-direction:column;gap:10px}
+.prio-item{display:flex;align-items:flex-start;gap:14px;padding:16px 18px;background:#fff;border:1.5px solid var(--g200);border-radius:14px;transition:border-color .2s,box-shadow .2s,transform .15s}
+.prio-item:hover{border-color:#fbd0c4;box-shadow:0 4px 16px rgba(238,77,45,.07);transform:translateY(-1px)}
+.prio-num{width:28px;height:28px;background:linear-gradient(135deg,var(--or),#ff7043);color:#fff;border-radius:9px;font-size:13px;font-weight:900;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:2px;box-shadow:0 2px 8px rgba(238,77,45,.3)}
+.prio-text{font-size:13px;font-weight:500;color:var(--g700);line-height:1.6}
+.prio-text strong{color:var(--g900);font-weight:800}
+/* ── ACTION GUIDE ── */
+.acao-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}
+.acao-card{border-radius:14px;padding:18px;display:flex;flex-direction:column;gap:12px}
+.ac-baixar{background:#eff6ff;border:1.5px solid #bfdbfe}
+.ac-manter{background:#f0fdf4;border:1.5px solid #86efac}
+.ac-ajustar{background:#fefce8;border:1.5px solid #fef08a}
+.ac-elevar{background:#fef2f2;border:1.5px solid #fca5a5}
+.acao-card-when{font-size:11px;font-weight:700;color:var(--g500);margin-top:4px}
+.acao-card-body{font-size:13px;color:var(--g700);line-height:1.65}
+.acao-card-example{background:rgba(255,255,255,.7);border-radius:10px;padding:10px 12px;font-size:12px;color:var(--g600);line-height:1.7}
+.acao-card-example strong{color:var(--g900);font-weight:800}
+/* ── STRATEGY CARD ── */
+.strat-section{background:#fff;border-radius:var(--r);padding:0;box-shadow:var(--sh1);margin-bottom:18px;overflow:hidden}
+.strat-head{display:flex;align-items:center;gap:14px;padding:18px 22px;cursor:pointer;user-select:none}
+.strat-ico{width:36px;height:36px;background:linear-gradient(135deg,var(--or),#ff7043);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:17px;color:#fff;flex-shrink:0;box-shadow:0 3px 10px rgba(238,77,45,.25)}
+.strat-lbl{font-size:14px;font-weight:800;color:var(--g900);flex:1}
+.strat-sub{font-size:12px;color:var(--g400);font-weight:400;margin-top:1px}
+.strat-arr{font-size:11px;color:var(--or);transition:transform .22s}
+.strat-arr.open{transform:rotate(90deg)}
+.strat-body{display:none;padding:0 22px 22px;border-top:1px solid var(--g100)}
+.strat-body.open{display:block}
+.strat-pillars{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin-top:18px}
+.strat-pillar{background:var(--g50);border:1px solid var(--g200);border-radius:12px;padding:14px 16px}
+.strat-pillar-ico{font-size:20px;margin-bottom:8px}
+.strat-pillar-ttl{font-size:12px;font-weight:800;color:var(--g900);margin-bottom:5px}
+.strat-pillar-txt{font-size:12px;color:var(--g600);line-height:1.65}
+.strat-steps{display:flex;flex-direction:column;gap:8px;margin-top:16px;padding-top:16px;border-top:1px solid var(--g100)}
+.strat-step{display:flex;align-items:flex-start;gap:12px;font-size:13px;color:var(--g700);line-height:1.6}
+.strat-step-n{width:22px;height:22px;background:var(--or);color:#fff;border-radius:6px;font-size:11px;font-weight:900;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px}
+/* ── GLOSSARY ── */
+.gloss-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(185px,1fr));gap:10px}
+.gloss-item{background:#fff;border:1.5px solid var(--g200);border-radius:12px;padding:16px}
+.gloss-term{font-size:12px;font-weight:800;color:var(--g900);margin-bottom:5px}
+.gloss-def{font-size:12px;color:var(--g600);line-height:1.6}
+.gloss-ref{font-size:11px;font-weight:700;color:var(--or);margin-top:8px;padding-top:8px;border-top:1px solid var(--g100)}
 /* ── ADS BLOCK ── */
 .ads-blk{display:flex;align-items:center;gap:14px;flex-wrap:wrap;padding:16px 20px;background:#fff8f6;border:1.5px solid #fde0d8;border-radius:14px;margin-bottom:18px}
 .ads-lbl{font-size:14px;font-weight:700;color:var(--g700);flex:1;min-width:120px}
@@ -1358,10 +1424,52 @@ function perfBadge(a) {
   if (a.despesas === 0 && a.impressoes > 0) return ['pb-inativo','💤 Sem gasto'];
   if (a.despesas === 0)                     return ['pb-inativo','💤 Inativo'];
   if (a.conv === 0 && a.despesas > 0)       return ['pb-sem','💸 Sem retorno'];
-  if (a.roas >= 15)                         return ['pb-star','🌟 Estrela'];
-  if (a.roas >= 8)                          return ['pb-bom','✅ Bom'];
-  if (a.roas >= 3)                          return ['pb-reg','📊 Regular'];
-  return ['pb-fraco','⚠️ Fraco'];
+  if (a.roas >= 20)                         return ['pb-star','🌟 Ótimo'];
+  if (a.roas >= 15)                         return ['pb-bom','✅ Bom'];
+  if (a.roas >= 10)                         return ['pb-reg','📊 Razoável'];
+  if (a.roas >= 5)                          return ['pb-fraco','⚠️ Fraco'];
+  return ['pb-mruim','🔴 Muito fraco'];
+}
+
+function notaCampanha(roas) {
+  if (roas >= 20) return { nota:'A', cor:'#15803d', bg:'#dcfce7', texto:'Campanha excelente — zona ideal!', sub:'ROAS ≥ 20x. Para cada R$1 investido, você gera R$' + roas.toFixed(0) + ' em vendas' };
+  if (roas >= 15) return { nota:'B', cor:'#16a34a', bg:'#d1fae5', texto:'Campanha boa', sub:'ROAS entre 15x e 20x — bom retorno, mas ainda abaixo da zona ideal (20–25x)' };
+  if (roas >= 10) return { nota:'C', cor:'#d97706', bg:'#fef9c3', texto:'Campanha razoável', sub:'ROAS entre 10x e 15x — aceitável, mas precisa de otimização' };
+  if (roas >= 5)  return { nota:'D', cor:'#ea580c', bg:'#ffedd5', texto:'Campanha fraca', sub:'ROAS entre 5x e 10x — abaixo do ideal, pode estar consumindo margem' };
+  if (roas > 0)   return { nota:'F', cor:'#dc2626', bg:'#fee2e2', texto:'Campanha muito fraca', sub:'ROAS abaixo de 5x — anúncios podem estar comprometendo o lucro' };
+  return           { nota:'?', cor:'#64748b', bg:'var(--g100)', texto:'Sem dados suficientes', sub:'Nenhum retorno registrado ainda neste período' };
+}
+
+function gerarPrioridades(ads, roasGeral) {
+  const acoes = [];
+
+  // Sem conversão = dinheiro perdido
+  const semConv = ads.filter(a => a.despesas > 5 && a.conv === 0);
+  if (semConv.length) acoes.push(
+    `<strong>Pause agora</strong> ${semConv.length > 1 ? 'os ' + semConv.length + ' anúncios' : '"' + truncNome(semConv[0].nome,30) + '"'} que gastam sem converter — ${fmt(semConv.reduce((s,a)=>s+a.despesas,0))} sendo desperdiçados. Corrija a foto ou preço antes de religar`);
+
+  // ROAS muito baixo = elevar meta
+  const muitoFraco = ads.filter(a => a.roas > 0 && a.roas < 5 && a.despesas > 10);
+  if (muitoFraco.length && acoes.length < 3) acoes.push(
+    `<strong>Eleve a meta de ROAS</strong> de ${muitoFraco.length > 1 ? muitoFraco.length + ' anúncios com ROAS < 5x' : '"' + truncNome(muitoFraco[0].nome,30) + '" (ROAS ' + muitoFraco[0].roas.toFixed(0) + 'x)'} — meta ROAS alta restringe o gasto e melhora a seletividade`);
+
+  // ROAS acima de 25 = meta restringindo volume
+  const restrito = ads.filter(a => a.roas > 25 && a.despesas > 0);
+  if (restrito.length && acoes.length < 3) acoes.push(
+    `<strong>Baixe a meta de ROAS ~10%</strong> em ${restrito.length > 1 ? restrito.length + ' anúncios com ROAS > 25x' : '"' + truncNome(restrito[0].nome,30) + '" (ROAS ' + restrito[0].roas.toFixed(0) + 'x)'} — ROAS alto demais indica meta muito restritiva, está deixando volume na mesa`);
+
+  // ROAS fraco (5-10) = elevar meta
+  const fraco = ads.filter(a => a.roas >= 5 && a.roas < 10 && a.despesas > 15);
+  if (fraco.length && acoes.length < 3) acoes.push(
+    `<strong>Aumente a meta de ROAS</strong> de ${fraco.length} anúncio(s) com ROAS entre 5x e 10x — meta atual está baixa demais, gasta muito para pouco retorno`);
+
+  // Zona ideal = manter
+  const ideal = ads.filter(a => a.roas >= 20 && a.roas <= 25 && a.despesas > 0);
+  if (ideal.length && acoes.length < 3) acoes.push(
+    `<strong>Mantenha como está</strong> ${ideal.length > 1 ? 'os ' + ideal.length + ' anúncios na zona ideal (ROAS 20–25x)' : '"' + truncNome(ideal[0].nome,30) + '" (ROAS ' + ideal[0].roas.toFixed(0) + 'x)'} — esses estão no ponto de equilíbrio perfeito`);
+
+  if (!acoes.length) acoes.push(`<strong>Continue monitorando</strong> — analise os dados da próxima semana e compare o ROAS real de cada anúncio com a meta configurada`);
+  return acoes.slice(0,3);
 }
 
 function processAdsCSV(text) {
@@ -1381,21 +1489,26 @@ function processAdsCSV(text) {
     const row = parseCSVRow(lines[i]);
     if (!row[0] || isNaN(parseInt(row[0]))) continue;
     ads.push({
-      num:       parseInt(row[0]),
-      nome:      get(row,'Nome do Anúncio'),
-      status:    get(row,'Status'),
-      idProd:    get(row,'ID do produto'),
+      num:        parseInt(row[0]),
+      nome:       get(row,'Nome do Anúncio'),
+      status:     get(row,'Status'),
+      idProd:     get(row,'ID do produto'),
       impressoes: parseN(get(row,'Impressões')),
-      cliques:   parseN(get(row,'Cliques')),
-      ctr:       parsePct(get(row,'CTR')),
-      conv:      parseN(get(row,'Conversões')),
-      txConv:    parsePct(get(row,'Taxa de Conversão')),
-      cpConv:    parseN(get(row,'Custo por Conversão')),
-      itens:     parseN(get(row,'Itens Vendidos')),
-      gmv:       parseN(get(row,'GMV')),
-      despesas:  parseN(get(row,'Despesas')),
-      roas:      parseN(get(row,'ROAS')),
-      acos:      parsePct(get(row,'ACOS')),
+      cliques:    parseN(get(row,'Cliques')),
+      ctr:        parsePct(get(row,'CTR')),
+      addToCart:  parseN(get(row,'Add to Cart')),
+      addToCartRate: parsePct(get(row,'Add to Cart Rate')),
+      conv:       parseN(get(row,'Conversões')),
+      convDireto: parseN(get(row,'Conversões Diretas')),
+      txConv:     parsePct(get(row,'Taxa de Conversão')),
+      cpConv:     parseN(get(row,'Custo por Conversão')),
+      itens:      parseN(get(row,'Itens Vendidos')),
+      gmv:        parseN(get(row,'GMV')),
+      despesas:   parseN(get(row,'Despesas')),
+      roas:       parseN(get(row,'ROAS')),
+      roasDireto: parseN(get(row,'ROAS Direto')),
+      acos:       parsePct(get(row,'ACOS')),
+      metaRoas:   null,
     });
   }
   return ads.length ? { ads, loja, periodo } : null;
@@ -1403,55 +1516,92 @@ function processAdsCSV(text) {
 
 function gerarInsights(ads, totGasto, totGMV, roasGeral) {
   const ins = [];
+
+  // ── ZONA IDEAL ──
+  const ideal = ads.filter(a => a.roas >= 20 && a.roas <= 25 && a.despesas > 0);
+  if (ideal.length) ins.push({ tipo:'positivo', ico:'🎯',
+    ttl:`${ideal.length} anúncio(s) na ZONA IDEAL — ROAS entre 20x e 25x`,
+    desc:ideal.slice(0,3).map(a=>`${truncNome(a.nome,35)} (${a.roas.toFixed(0)}x)`).join(' · '),
+    acao:'Perfeito! Esses anúncios encontraram o ponto de equilíbrio. Mantenha a meta de ROAS atual e não mexa' });
+
+  // ── ROAS MUITO ALTO = META TRAVANDO VOLUME ──
+  const restrito = ads.filter(a => a.roas > 25 && a.despesas > 0);
+  if (restrito.length) ins.push({ tipo:'info', ico:'📈',
+    ttl:`${restrito.length} anúncio(s) com ROAS acima de 25x — meta de ROAS pode estar alta demais`,
+    desc:`ROAS muito alto significa que o anúncio é seletivo demais e está deixando volume na mesa. ${restrito.slice(0,2).map(a=>truncNome(a.nome,32)+' ('+a.roas.toFixed(0)+'x)').join(' · ')}`,
+    acao:'Baixe a meta de ROAS em ~10% nesses anúncios. O objetivo é que o ROAS real caia para a faixa de 20–25x, mas com muito mais volume de vendas' });
+
+  // ── SEM CONVERSÃO = DINHEIRO PERDIDO ──
   const semConv = ads.filter(a => a.despesas > 5 && a.conv === 0);
   if (semConv.length) ins.push({ tipo:'critico', ico:'🚨',
-    ttl:`${semConv.length} anúncio(s) gastando sem nenhuma conversão`,
-    desc:`Valor desperdiçado: ${fmt(semConv.reduce((s,a)=>s+a.despesas,0))}`,
-    acao:'Pause esses anúncios e revise título, foto de capa e preço do produto' });
+    ttl:`${semConv.length} anúncio(s) gastando sem converter nenhuma venda`,
+    desc:`${fmt(semConv.reduce((s,a)=>s+a.despesas,0))} gastos sem retorno — ${semConv.slice(0,2).map(a=>truncNome(a.nome,30)).join(' · ')}${semConv.length>2?' e mais…':''}`,
+    acao:'Pause esses anúncios e investigue: foto de capa (principal motivo), preço do produto, avaliações ou título. Só religue após corrigir' });
 
-  const roasBaixo = ads.filter(a => a.roas > 0 && a.roas < 3 && a.despesas > 15);
-  if (roasBaixo.length) ins.push({ tipo:'atencao', ico:'⚠️',
-    ttl:`${roasBaixo.length} anúncio(s) com ROAS abaixo de 3x`,
-    desc:'Para cada R$1 investido, retorna menos de R$3 em vendas',
-    acao:'Reduza o lance nesses anúncios ou melhore a conversão da página do produto' });
+  // ── ROAS MUITO FRACO = ELEVA META URGENTE ──
+  const muitoFraco = ads.filter(a => a.roas > 0 && a.roas < 5 && a.despesas > 10);
+  if (muitoFraco.length) ins.push({ tipo:'critico', ico:'🔴',
+    ttl:`${muitoFraco.length} anúncio(s) com ROAS abaixo de 5x — muito fraco`,
+    desc:`${muitoFraco.slice(0,3).map(a=>truncNome(a.nome,28)+' ('+a.roas.toFixed(0)+'x)').join(' · ')}`,
+    acao:'Eleve a meta de ROAS urgente nesses anúncios. Meta mais alta = menos impressões = mais seletivo = ROAS real sobe. Se não melhorar em 7 dias, pause' });
 
-  const acosAlto = ads.filter(a => a.acos > 20 && a.despesas > 15 && a.conv > 0);
-  if (acosAlto.length) ins.push({ tipo:'atencao', ico:'📉',
-    ttl:`${acosAlto.length} anúncio(s) com ACOS acima de 20%`,
-    desc:'O custo de publicidade está comendo grande parte da margem',
-    acao:'Revise a margem do produto — com ACOS > 20% pode estar vendendo no prejuízo' });
+  // ── ROAS FRACO (5–10) = PRECISA AJUSTAR ──
+  const fraco = ads.filter(a => a.roas >= 5 && a.roas < 10 && a.despesas > 15);
+  if (fraco.length) ins.push({ tipo:'atencao', ico:'⚠️',
+    ttl:`${fraco.length} anúncio(s) com ROAS entre 5x e 10x — abaixo do ideal`,
+    desc:'Aceitável apenas se a margem do produto for alta. Para a maioria dos produtos, abaixo de 10x já come demais a margem',
+    acao:'Aumente a meta de ROAS gradualmente até o ROAS real se estabilizar acima de 10x. Teste subir a meta em 20%' });
 
-  const ctrBaixo = ads.filter(a => a.ctr < 1 && a.impressoes > 2000 && a.despesas > 0);
-  if (ctrBaixo.length) ins.push({ tipo:'atencao', ico:'👆',
-    ttl:`${ctrBaixo.length} anúncio(s) com CTR abaixo de 1%`,
-    desc:'Muitas impressões e poucos cliques — produto não chama atenção na listagem',
-    acao:'Melhore a foto de capa (fundo branco, produto em destaque) e revise o título' });
+  // ── ROAS RAZOÁVEL (10–15) ──
+  const razoavel = ads.filter(a => a.roas >= 10 && a.roas < 15 && a.despesas > 15);
+  if (razoavel.length) ins.push({ tipo:'atencao', ico:'📊',
+    ttl:`${razoavel.length} anúncio(s) com ROAS entre 10x e 15x — razoável, mas não ideal`,
+    desc:'ROAS entre 10x e 15x ainda está abaixo da zona de excelência. Dependendo da margem, pode estar no limite',
+    acao:'Aumente a meta de ROAS em ~15% e monitore por 7 dias. O objetivo é empurrar para a faixa de 15x+' });
 
-  const estrelas = ads.filter(a => a.roas >= 15 && a.despesas > 0);
-  if (estrelas.length) ins.push({ tipo:'positivo', ico:'🌟',
-    ttl:`${estrelas.length} anúncio(s) com ROAS excepcional (acima de 15x)!`,
-    desc:truncNome(estrelas.slice(0,2).map(a=>a.nome).join(' · '), 90),
-    acao:'Aumente o orçamento desses anúncios — são os campeões de retorno da sua loja' });
+  // ── ROAS BOM (15–20) ──
+  const bom = ads.filter(a => a.roas >= 15 && a.roas < 20 && a.despesas > 0);
+  if (bom.length) ins.push({ tipo:'positivo', ico:'✅',
+    ttl:`${bom.length} anúncio(s) com ROAS entre 15x e 20x — bom!`,
+    desc:bom.slice(0,3).map(a=>`${truncNome(a.nome,32)} (${a.roas.toFixed(0)}x)`).join(' · '),
+    acao:'Próximo da zona ideal. Tente baixar a meta de ROAS em ~10% para ver se o volume aumenta sem comprometer demais o ROAS real' });
 
-  const bons = ads.filter(a => a.roas >= 8 && a.roas < 15 && a.despesas > 0);
-  if (bons.length) ins.push({ tipo:'positivo', ico:'✅',
-    ttl:`${bons.length} anúncio(s) com boa performance (ROAS 8x–15x)`,
-    desc:'Esses anúncios estão gerando bom retorno sobre o investimento',
-    acao:'Mantenha a estratégia e teste aumentos graduais de orçamento' });
+  // ── CTR MUITO BAIXO = FOTO RUIM ──
+  const ctrPessimo = ads.filter(a => a.ctr < 0.5 && a.impressoes > 3000 && a.despesas > 0);
+  if (ctrPessimo.length) ins.push({ tipo:'atencao', ico:'📸',
+    ttl:`${ctrPessimo.length} produto(s) quase invisível na busca — CTR abaixo de 0,5%`,
+    desc:'A cada 1.000 visualizações, menos de 5 pessoas clicam. A foto de capa é o problema principal',
+    acao:'Mude a foto de capa: fundo branco, produto bem iluminado, sem texto em excesso. O CTR impacta diretamente o custo e o volume dos anúncios' });
 
-  if (roasGeral >= 10) ins.push({ tipo:'positivo', ico:'🏆',
-    ttl:`ROAS geral de ${roasGeral.toFixed(1)}x — campanha excelente!`,
-    desc:`Para cada R$1 investido, você gerou R$${roasGeral.toFixed(1)} em vendas via ADS`,
-    acao:'Continue a estratégia e considere aumentar o investimento gradualmente' });
-  else if (roasGeral > 0 && roasGeral < 5) ins.push({ tipo:'atencao', ico:'📊',
-    ttl:`ROAS geral de ${roasGeral.toFixed(1)}x — há espaço para melhorar`,
-    desc:'A referência saudável no Shopee fica entre 8x e 20x para a maioria dos produtos',
-    acao:'Concentre o orçamento nos melhores anúncios e pause os de baixo ROAS' });
+  // ── CTR BOM MAS ADD TO CART BAIXO = PÁGINA DO PRODUTO RUIM ──
+  const paginaProblema = ads.filter(a => a.ctr >= 2 && a.addToCartRate < 3 && a.cliques > 200 && a.despesas > 0 && a.addToCart !== undefined);
+  if (paginaProblema.length) ins.push({ tipo:'atencao', ico:'🛒',
+    ttl:`${paginaProblema.length} produto(s) com CTR bom mas poucas adições ao carrinho`,
+    desc:'A pessoa clicou no anúncio mas não adicionou ao carrinho. O problema está na página do produto, não no anúncio',
+    acao:'Revise: fotos adicionais (mostre vários ângulos), descrição do produto, preço em relação à concorrência e avaliações' });
+
+  // ── AVALIAÇÃO GERAL ──
+  if (roasGeral >= 20) ins.push({ tipo:'positivo', ico:'🏆',
+    ttl:`ROAS geral ${roasGeral.toFixed(0)}x — campanha na zona ideal ou acima!`,
+    desc:`Para cada R$1 investido, você gerou R$${roasGeral.toFixed(0)} em vendas`,
+    acao: roasGeral > 25 ? 'ROAS alto indica volume baixo — considere baixar a meta geral para escalar as vendas' : 'Mantenha a estratégia atual. Analise anúncio por anúncio para encontrar quem está fora da faixa 20–25x' });
+  else if (roasGeral >= 15) ins.push({ tipo:'info', ico:'📊',
+    ttl:`ROAS geral ${roasGeral.toFixed(0)}x — campanha boa, mas abaixo da zona ideal`,
+    desc:'O objetivo é ter o ROAS real médio entre 20x e 25x',
+    acao:'Aumente a meta de ROAS nos anúncios mais fracos e monitore os resultados por 7 dias' });
+  else if (roasGeral >= 10) ins.push({ tipo:'atencao', ico:'📊',
+    ttl:`ROAS geral ${roasGeral.toFixed(0)}x — campanha razoável, precisa melhorar`,
+    desc:'Ainda abaixo da faixa recomendada de 20–25x',
+    acao:'Eleve a meta de ROAS nos anúncios com ROAS < 10x. Pause os que gastam sem converter' });
+  else if (roasGeral > 0) ins.push({ tipo:'critico', ico:'🔴',
+    ttl:`ROAS geral ${roasGeral.toFixed(0)}x — campanha fraca`,
+    desc:'Abaixo de 10x, dependendo da margem, pode estar comprometendo o lucro',
+    acao:'Aumente a meta de ROAS em todos os anúncios com ROAS < 10x. Foque em proteger a margem antes de escalar' });
 
   if (!ins.length) ins.push({ tipo:'info', ico:'📊',
-    ttl:'Campanha dentro dos parâmetros normais',
+    ttl:'Dados insuficientes para análise completa',
     desc:'',
-    acao:'Continue monitorando semanalmente para identificar oportunidades de melhoria' });
+    acao:'Aguarde pelo menos 7 dias de dados para ter uma análise mais precisa' });
 
   return ins;
 }
@@ -1461,26 +1611,39 @@ function renderAds() {
   if (!body) return;
   if (!adsData) {
     body.innerHTML = `
-      <label class="ads-drop" id="ads-dz">
+      <div class="sec" style="margin-bottom:18px">
+        <div class="how-head" onclick="toggleHow(this)">
+          <span class="how-arrow">▶</span>
+          <span style="font-size:14px;font-weight:700;color:var(--g700)">Como exportar o relatório de ADS da Shopee</span>
+        </div>
+        <div class="how-body">
+          <div class="how-steps">
+            <div class="how-step"><div class="how-n">1</div><h4>🖥️ Seller Center</h4><p>Acesse <strong>seller.shopee.com.br</strong> e faça login</p></div>
+            <div class="how-step"><div class="how-n">2</div><h4>📣 Anúncios</h4><p>Menu lateral → <strong>Anúncios CPC</strong> → <strong>Gerenciar Anúncios</strong></p></div>
+            <div class="how-step"><div class="how-n">3</div><h4>📊 Relatório</h4><p>No topo da página, clique em <strong>"Relatório"</strong></p></div>
+            <div class="how-step"><div class="how-n">4</div><h4>📅 Período</h4><p>Selecione o intervalo desejado (sugerido: último mês completo)</p></div>
+            <div class="how-step"><div class="how-n">5</div><h4>📋 Tipo</h4><p>Selecione <strong>"Dados Gerais de Anúncios CPC"</strong></p></div>
+            <div class="how-step"><div class="how-n">6</div><h4>⬇️ Exportar</h4><p>Clique em <strong>"Exportar"</strong> e baixe o arquivo <strong>.csv</strong></p></div>
+          </div>
+          <p style="font-size:12px;color:var(--g400);margin-top:14px;padding-top:12px;border-top:1px solid var(--g100)">💡 Dica: exporte mês a mês para comparar a evolução da sua campanha ao longo do tempo</p>
+        </div>
+      </div>
+      <label class="ads-drop" id="ads-dz"
+        ondragover="event.preventDefault();this.classList.add('drag')"
+        ondragleave="this.classList.remove('drag')"
+        ondrop="event.preventDefault();this.classList.remove('drag');const f=event.dataTransfer.files[0];if(f)readAdsFile(f)">
         <div class="ads-drop-ico">📣</div>
         <div class="ads-drop-ttl">Relatório de Anúncios CPC</div>
-        <div class="ads-drop-sub">Faça o upload do arquivo exportado pela Shopee<br><small style="color:var(--g300)">Painel Shopee → Meus Anúncios → Relatórios → Dados Gerais de Anúncios</small></div>
-        <button class="btn-prim" onclick="document.getElementById('ads-fi').click();event.preventDefault()">Selecionar arquivo CSV</button>
+        <div class="ads-drop-sub">Arraste o arquivo CSV aqui ou clique para selecionar<br><small style="color:var(--g400)">Arquivo exportado em: Anúncios CPC → Relatório → Dados Gerais de Anúncios</small></div>
+        <button class="uz-btn" style="margin-top:16px" onclick="document.getElementById('ads-fi').click();event.preventDefault()">Selecionar arquivo CSV</button>
         <input type="file" accept=".csv,.txt" id="ads-fi" style="display:none" onchange="onAdsFile(this)">
+        <div class="uz-hint" style="margin-top:12px">🔒 Arquivo processado no seu dispositivo — nenhum dado é enviado</div>
       </label>`;
-    setupAdsDrop();
     return;
   }
   renderAdsDash(body);
 }
 
-function setupAdsDrop() {
-  const dz = document.getElementById('ads-dz');
-  if (!dz) return;
-  dz.addEventListener('dragover', e => { e.preventDefault(); dz.classList.add('drag'); });
-  dz.addEventListener('dragleave', () => dz.classList.remove('drag'));
-  dz.addEventListener('drop', e => { e.preventDefault(); dz.classList.remove('drag'); const f=e.dataTransfer.files[0]; if(f) readAdsFile(f); });
-}
 
 function onAdsFile(inp) { if (inp.files[0]) readAdsFile(inp.files[0]); }
 
@@ -1505,37 +1668,52 @@ function renderAdsDash(body) {
   const totCliq  = ads.reduce((s,a)=>s+a.cliques,0);
   const roasGeral = totGasto > 0 ? totGMV/totGasto : 0;
   const ctrGeral  = totImpr  > 0 ? totCliq/totImpr*100 : 0;
+  const cpcGeral  = totCliq  > 0 ? totGasto/totCliq : 0;
+  const lucroEst  = totGMV - totGasto;
 
-  const insights = gerarInsights(ads, totGasto, totGMV, roasGeral);
+  const insights   = gerarInsights(ads, totGasto, totGMV, roasGeral);
+  const prioridades = gerarPrioridades(ads, roasGeral);
+  const nota        = notaCampanha(roasGeral);
 
   const top10 = [...ads].filter(a=>a.gmv>0).sort((a,b)=>b.gmv-a.gmv).slice(0,10);
   const maxGMV = top10[0]?.gmv || 1;
   const hbars = top10.map(a => {
     const pct = (a.gmv/maxGMV*100).toFixed(1);
-    const clr = a.roas>=10 ? '#16a34a' : a.roas>=5 ? '#ea580c' : '#dc2626';
+    const clr = a.roas>=20 ? '#16a34a' : a.roas>=15 ? '#4ade80' : a.roas>=10 ? '#f59e0b' : '#dc2626';
+    const roasLabel = a.roas>=20?'ab-manter':a.roas>=15?'ab-ajustar':'ab-elevar';
     return `<div class="ads-hbar-row">
-      <div class="ads-hbar-nome" title="${a.nome}">${truncNome(a.nome,26)}</div>
-      <div class="ads-hbar-track"><div class="ads-hbar-fill" style="width:${pct}%;background:linear-gradient(to right,${clr}88,${clr})"></div></div>
-      <div class="ads-hbar-val">${fmt(a.gmv)} <span style="font-size:9px;color:var(--g400);font-weight:600">ROAS ${a.roas.toFixed(1)}x</span></div>
+      <div class="ads-hbar-nome" title="${a.nome}">${truncNome(a.nome,28)}</div>
+      <div class="ads-hbar-track"><div class="ads-hbar-fill" style="width:${pct}%;background:linear-gradient(to right,${clr}99,${clr})"></div></div>
+      <div class="ads-hbar-val">
+        <span style="font-weight:800;color:var(--g900)">${fmt(a.gmv)}</span>
+        <span class="acao-badge ${roasLabel}" style="margin-left:6px">${a.roas.toFixed(0)}x</span>
+      </div>
     </div>`;
   }).join('');
 
+  const hasMeta = ads.some(a => a.metaRoas !== null && a.metaRoas > 0);
   const rows = [...ads].sort((a,b)=>b.despesas-a.despesas).map(a => {
     const [bc,bl] = perfBadge(a);
-    const rCl = a.roas>=10?'td-pos':a.roas>=5?'':a.roas>0?'td-neg':'td-muted';
-    const aCl = a.acos>20?'td-neg':a.acos>10?'':a.acos>0?'td-pos':'td-muted';
+    const cpc = a.cliques > 0 ? a.despesas/a.cliques : 0;
+    const rCl = a.roas>=20?'td-pos':a.roas>=15?'td-neu':a.roas>=10?'':a.roas>0?'td-neg':'td-muted';
+    const ctrCl = a.ctr>=2?'td-pos':a.ctr<0.5&&a.impressoes>1000?'td-neg':'td-muted';
+    // Diagnóstico: o que fazer com a meta de ROAS
+    let metaDiag = '';
+    if (a.roas > 25) metaDiag = '<span class="acao-badge ab-baixar">↓ baixar meta</span>';
+    else if (a.roas >= 20 && a.roas <= 25) metaDiag = '<span class="acao-badge ab-manter">✓ manter</span>';
+    else if (a.roas > 0 && a.roas < 10) metaDiag = '<span class="acao-badge ab-elevar">↑ elevar meta</span>';
+    else if (a.roas >= 10 && a.roas < 20) metaDiag = '<span class="acao-badge ab-ajustar">↑ ajustar</span>';
     return `<tr>
-      <td style="max-width:220px;font-size:12px;font-weight:600;color:var(--g800)">${truncNome(a.nome,42)}</td>
+      <td style="max-width:190px;font-size:12px;font-weight:600;color:var(--g800)">${truncNome(a.nome,38)}</td>
       <td><span class="perf-badge ${bc}">${bl}</span></td>
-      <td class="td-muted">${a.impressoes.toLocaleString('pt-BR')}</td>
-      <td class="td-muted">${a.cliques.toLocaleString('pt-BR')}</td>
-      <td class="${a.ctr>=3?'td-pos':a.ctr<1&&a.impressoes>1000?'td-neg':'td-muted'}">${a.ctr.toFixed(2)}%</td>
+      <td class="td-muted">${a.impressoes>0?a.impressoes.toLocaleString('pt-BR'):'—'}</td>
+      <td class="${ctrCl}">${a.ctr>0?a.ctr.toFixed(2)+'%':'—'}</td>
       <td class="td-neu">${a.conv>0?a.conv:'—'}</td>
-      <td class="${a.txConv>=3?'td-pos':''}">${a.txConv>0?a.txConv.toFixed(2)+'%':'—'}</td>
       <td class="${a.despesas>0?'td-cost':'td-muted'}">${a.despesas>0?fmt(a.despesas):'—'}</td>
       <td>${a.gmv>0?fmt(a.gmv):'—'}</td>
-      <td class="${rCl}">${a.roas>0?a.roas.toFixed(1)+'x':'—'}</td>
-      <td class="${aCl}">${a.acos>0?a.acos.toFixed(1)+'%':'—'}</td>
+      <td class="${rCl}" style="font-size:14px;font-weight:900">${a.roas>0?a.roas.toFixed(0)+'x':'—'}</td>
+      ${hasMeta?`<td class="td-muted">${a.metaRoas?a.metaRoas.toFixed(0)+'x':'—'}</td>`:''}
+      <td>${metaDiag}</td>
     </tr>`;
   }).join('');
 
@@ -1549,53 +1727,205 @@ function renderAdsDash(body) {
       </div>
     </div>`).join('');
 
-  const roasKpiCl  = roasGeral>=10?'green':roasGeral>=5?'orange':'red';
-  const roasKpiCor = roasGeral>=10?'var(--gr)':roasGeral>=5?'var(--or)':'var(--re)';
-  const roasKpiIco = roasGeral>=10?'🏆':roasGeral>=5?'📊':'⚠️';
+  const prioCards = prioridades.map((p,i)=>`
+    <div class="prio-item">
+      <div class="prio-num">${i+1}</div>
+      <div class="prio-text">${p}</div>
+    </div>`).join('');
+
+  const roasKpiCl  = roasGeral>=20?'green':roasGeral>=15?'orange':roasGeral>=10?'orange':'red';
+  const roasKpiCor = roasGeral>=20?'var(--gr)':roasGeral>=15?'var(--or)':roasGeral>=10?'#d97706':'var(--re)';
+  const roasKpiIco = roasGeral>=20?'🏆':roasGeral>=15?'✅':roasGeral>=10?'📊':'⚠️';
 
   body.innerHTML = `
-    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:20px">
-      ${periodo?`<div class="ads-period">📅 ${periodo}${loja?' · '+loja:''}</div>`:'<div></div>'}
-      <button class="ads-reload" onclick="adsData=null;renderAds()">🔄 Carregar outro arquivo</button>
+    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:22px">
+      <div style="display:flex;flex-direction:column;gap:4px">
+        ${loja?`<div style="font-size:17px;font-weight:800;color:var(--g900)">${loja}</div>`:''}
+        ${periodo?`<div class="ads-period" style="align-self:flex-start">📅 ${periodo}</div>`:''}
+      </div>
+      <button class="ads-reload" onclick="adsData=null;renderAds()">↩ Outro arquivo</button>
+    </div>
+
+    <div class="nota-wrap">
+      <div class="nota-grade" style="background:${nota.bg};color:${nota.cor}">${nota.nota}</div>
+      <div class="nota-info">
+        <h3>${nota.texto}</h3>
+        <p>${nota.sub}</p>
+      </div>
+      <div class="nota-stats">
+        <div class="ns-item">
+          <div class="ns-val" style="color:${roasKpiCor}">${roasGeral.toFixed(1)}x</div>
+          <div class="ns-lbl">ROAS Geral</div>
+        </div>
+        <div class="ns-item">
+          <div class="ns-val" style="color:${lucroEst>=0?'var(--gr)':'var(--re)'}">${lucroEst>=0?'+':''}${fmt(lucroEst)}</div>
+          <div class="ns-lbl">Retorno líq. ADS</div>
+        </div>
+        <div class="ns-item">
+          <div class="ns-val">${ads.filter(a=>a.despesas>0).length}</div>
+          <div class="ns-lbl">Anúncios ativos</div>
+        </div>
+      </div>
     </div>
 
     <div class="kpi-grid">
       <div class="kpi orange"><div class="kpi-ico">💸</div><div class="kpi-lbl">Total Investido</div><div class="kpi-val">${fmt(totGasto)}</div><div class="kpi-sub">gasto com anúncios</div></div>
       <div class="kpi green"><div class="kpi-ico">🛍️</div><div class="kpi-lbl">Vendas via ADS</div><div class="kpi-val">${fmt(totGMV)}</div><div class="kpi-sub">${totItens.toLocaleString('pt-BR')} itens vendidos</div></div>
-      <div class="kpi ${roasKpiCl}"><div class="kpi-ico">${roasKpiIco}</div><div class="kpi-lbl">ROAS Geral</div><div class="kpi-val" style="color:${roasKpiCor}">${roasGeral.toFixed(1)}x</div><div class="kpi-sub">retorno sobre investimento</div></div>
-      <div class="kpi blue"><div class="kpi-ico">🎯</div><div class="kpi-lbl">Conversões</div><div class="kpi-val">${totConv.toLocaleString('pt-BR')}</div><div class="kpi-sub">CTR geral: ${ctrGeral.toFixed(2)}%</div></div>
+      <div class="kpi ${roasKpiCl}"><div class="kpi-ico">${roasKpiIco}</div><div class="kpi-lbl">ROAS Geral</div><div class="kpi-val" style="color:${roasKpiCor}">${roasGeral.toFixed(0)}x</div><div class="kpi-sub">zona ideal: 20–25x</div></div>
+      <div class="kpi blue"><div class="kpi-ico">🖱️</div><div class="kpi-lbl">CPC Médio</div><div class="kpi-val">${cpcGeral>0?'R$ '+cpcGeral.toFixed(2):'—'}</div><div class="kpi-sub">CTR geral: ${ctrGeral.toFixed(2)}%</div></div>
     </div>
 
+    <div class="strat-section">
+      <div class="strat-head" onclick="this.querySelector('.strat-arr').classList.toggle('open');this.nextElementSibling.classList.toggle('open')">
+        <div class="strat-ico">📊</div>
+        <div style="flex:1">
+          <div class="strat-lbl">Como funciona a estratégia de ADS na Shopee</div>
+          <div class="strat-sub">GMV Max com Meta de ROAS · clique para recolher</div>
+        </div>
+        <span class="strat-arr open">▶</span>
+      </div>
+      <div class="strat-body open">
+        <div class="strat-pillars">
+          <div class="strat-pillar">
+            <div class="strat-pillar-ico">💰</div>
+            <div class="strat-pillar-ttl">Orçamento: sempre ilimitado</div>
+            <div class="strat-pillar-txt">A Shopee controla o gasto pela Meta de ROAS, não pelo orçamento. Com orçamento ilimitado, o algoritmo nunca para de exibir por falta de verba — você nunca perde uma venda desnecessariamente.</div>
+          </div>
+          <div class="strat-pillar">
+            <div class="strat-pillar-ico">🎯</div>
+            <div class="strat-pillar-ttl">Meta de ROAS: o único controle</div>
+            <div class="strat-pillar-txt">Meta alta → Shopee exibe só em bids muito qualificados → menos impressões, menos gasto, ROAS real alto.<br>Meta baixa → Shopee exibe mais amplamente → mais volume de vendas, gasto maior.</div>
+          </div>
+          <div class="strat-pillar">
+            <div class="strat-pillar-ico">🟢</div>
+            <div class="strat-pillar-ttl">Zona ideal: ROAS 20–25x</div>
+            <div class="strat-pillar-txt">Equilíbrio perfeito entre eficiência e volume. Abaixo de 20x há perda de margem. Acima de 25x o algoritmo está seletivo demais e você deixa vendas na mesa.</div>
+          </div>
+          <div class="strat-pillar">
+            <div class="strat-pillar-ico">🔄</div>
+            <div class="strat-pillar-ttl">Ciclo semanal de otimização</div>
+            <div class="strat-pillar-txt">Revise cada anúncio individualmente a cada 7 dias. Ajuste a Meta de ROAS anúncio por anúncio com base no ROAS real da semana. Aguarde 7 dias antes de avaliar o resultado de cada ajuste.</div>
+          </div>
+        </div>
+        <div class="strat-steps">
+          <div style="font-size:11px;font-weight:800;color:var(--g400);margin-bottom:6px;text-transform:uppercase;letter-spacing:.06em">Passo a passo semanal</div>
+          <div class="strat-step"><div class="strat-step-n">1</div><span>Exporte o relatório de ADS da Shopee referente aos últimos 7 dias</span></div>
+          <div class="strat-step"><div class="strat-step-n">2</div><span>Faça o upload aqui para ver o diagnóstico e a ação recomendada de cada anúncio</span></div>
+          <div class="strat-step"><div class="strat-step-n">3</div><span>No Seller Center: Anúncios CPC → edite o anúncio → altere a Meta de ROAS conforme indicado</span></div>
+          <div class="strat-step"><div class="strat-step-n">4</div><span>Aguarde 7 dias e repita — otimização contínua é o que escala os resultados ao longo do tempo</span></div>
+        </div>
+      </div>
+    </div>
+
+    ${prioridades.length?`<div class="sec">
+      <div class="sec-hd"><div class="sec-ttl"><div class="sec-ico">🎯</div>O que fazer agora</div></div>
+      <div class="prio-list">${prioCards}</div>
+    </div>`:''}
+
     <div class="sec">
-      <div class="sec-hd"><div class="sec-ttl"><div class="sec-ico">💡</div>Análise e Sugestões</div></div>
+      <div class="sec-hd"><div class="sec-ttl"><div class="sec-ico">💡</div>Análise detalhada</div></div>
       <div class="insight-list">${insCards}</div>
     </div>
 
     ${top10.length?`<div class="sec">
-      <div class="sec-hd"><div class="sec-ttl"><div class="sec-ico">📈</div>Top 10 Anúncios por GMV</div></div>
+      <div class="sec-hd"><div class="sec-ttl"><div class="sec-ico">📈</div>Top 10 Anúncios por Vendas (GMV)</div></div>
       <div class="ads-hbar-wrap">${hbars}</div>
-      <p class="note">Cor da barra: verde = ROAS ≥ 10x · laranja = ROAS ≥ 5x · vermelho = ROAS &lt; 5x</p>
+      <p class="note">Cor: 🟢 ROAS ≥ 20x (zona ideal) · 🟡 ROAS 15–20x (bom) · 🟠 ROAS 10–15x (razoável) · 🔴 ROAS < 10x (fraco)</p>
     </div>`:''}
 
     <div class="sec">
-      <div class="sec-hd"><div class="sec-ttl"><div class="sec-ico">📋</div>Todos os Anúncios</div><span style="font-size:12px;color:var(--g400)">${ads.length} anúncios · ordenado por gasto</span></div>
+      <div class="sec-hd"><div class="sec-ttl"><div class="sec-ico">🧭</div>Guia de ações — o que fazer em cada situação</div></div>
+      <div class="acao-grid">
+
+        <div class="acao-card ac-baixar">
+          <div>
+            <span class="acao-badge ab-baixar">↓ Baixar meta</span>
+            <div class="acao-card-when" style="color:#1d4ed8">Quando ROAS real > 25x</div>
+          </div>
+          <div class="acao-card-body"><strong>O que fazer:</strong> Reduzir a Meta de ROAS em ~10% no Seller Center.<br><em>Anúncios CPC → editar anúncio → alterar Meta de ROAS</em></div>
+          <div class="acao-card-example">
+            📌 <strong>Exemplo:</strong> Meta atual 35 → Nova meta 32<br>
+            🎯 <strong>Resultado:</strong> ROAS cai de ~29x para ~24x, volume sobe<br>
+            ⏱️ Reavalie em 7 dias
+          </div>
+        </div>
+
+        <div class="acao-card ac-manter">
+          <div>
+            <span class="acao-badge ab-manter">✓ Manter</span>
+            <div class="acao-card-when" style="color:#15803d">Quando ROAS real 20–25x — Zona ideal</div>
+          </div>
+          <div class="acao-card-body"><strong>O que fazer:</strong> Não altere nada. Esse anúncio está no ponto de equilíbrio perfeito entre eficiência e volume de vendas.</div>
+          <div class="acao-card-example">
+            ✅ Você está na zona ideal<br>
+            💡 Foque em melhorar foto e título do produto<br>
+            ⏱️ Reavalie em 7 dias
+          </div>
+        </div>
+
+        <div class="acao-card ac-ajustar">
+          <div>
+            <span class="acao-badge ab-ajustar">↑ Ajustar</span>
+            <div class="acao-card-when" style="color:#b45309">Quando ROAS real entre 10x e 20x</div>
+          </div>
+          <div class="acao-card-body"><strong>O que fazer:</strong> Aumentar a Meta de ROAS em ~15% no Seller Center para melhorar a eficiência gradualmente.</div>
+          <div class="acao-card-example">
+            📌 <strong>Exemplo:</strong> Meta atual 20 → Nova meta 23<br>
+            🎯 <strong>Resultado:</strong> ROAS sobe, gasto cai levemente<br>
+            ⏱️ Reavalie em 7 dias
+          </div>
+        </div>
+
+        <div class="acao-card ac-elevar">
+          <div>
+            <span class="acao-badge ab-elevar">↑ Elevar meta</span>
+            <div class="acao-card-when" style="color:#b91c1c">Quando ROAS real &lt; 10x</div>
+          </div>
+          <div class="acao-card-body"><strong>O que fazer:</strong> Aumentar a Meta de ROAS em ~30% imediatamente. Se não melhorar em 14 dias, considere pausar o anúncio.</div>
+          <div class="acao-card-example">
+            📌 <strong>Exemplo:</strong> Meta atual 10 → Nova meta 13<br>
+            🎯 <strong>Resultado:</strong> Gasto cai, ROAS sobe gradualmente<br>
+            ⏱️ Reavalie em 7 dias (prazo: 14 dias)
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <div class="sec">
+      <div class="sec-hd">
+        <div class="sec-ttl"><div class="sec-ico">📋</div>Todos os Anúncios</div>
+        <span style="font-size:12px;color:var(--g400)">${ads.length} anúncios · ordenado por gasto</span>
+      </div>
       <div style="overflow-x:auto">
         <table class="tbl">
           <thead><tr>
             <th style="text-align:left">Anúncio</th>
-            <th>Status</th>
+            <th>Nota</th>
             <th>Impressões</th>
-            <th>Cliques</th>
             <th>CTR</th>
             <th>Conv.</th>
-            <th>Tx. Conv.</th>
             <th>Gasto</th>
-            <th>GMV</th>
-            <th>ROAS</th>
-            <th>ACOS</th>
+            <th>Vendas (GMV)</th>
+            <th>ROAS real</th>
+            ${hasMeta?'<th>Meta ROAS</th>':''}
+            <th>Ação</th>
           </tr></thead>
           <tbody>${rows}</tbody>
         </table>
+      </div>
+      <p class="note">ROAS real: retorno efetivo · Meta ROAS: alvo configurado na Shopee · Zona ideal: ROAS real 20–25x</p>
+    </div>
+
+    <div class="sec">
+      <div class="sec-hd"><div class="sec-ttl"><div class="sec-ico">📖</div>Glossário — o que significa cada métrica</div></div>
+      <div class="gloss-grid">
+        <div class="gloss-item"><div class="gloss-term">ROAS real</div><div class="gloss-def">Retorno efetivo sobre o que foi gasto. ROAS 20x = para cada R$1 investido, R$20 em vendas</div><div class="gloss-ref">Zona ideal: 20–25x · < 10x fraco</div></div>
+        <div class="gloss-item"><div class="gloss-term">Meta de ROAS</div><div class="gloss-def">O alvo que você configura na Shopee. Meta alta = menos consumo + mais seletivo. Meta baixa = mais consumo + mais volume</div><div class="gloss-ref">Controla quanto o anúncio gasta</div></div>
+        <div class="gloss-item"><div class="gloss-term">Estratégia de escala</div><div class="gloss-def">ROAS real > 25x → baixar meta ~10% para ganhar volume. ROAS real 20–25x → manter. ROAS < 10x → elevar meta</div><div class="gloss-ref">Objetivo: maximizar lucro total</div></div>
+        <div class="gloss-item"><div class="gloss-term">CTR</div><div class="gloss-def">% de quem viu o anúncio e clicou. CTR baixo = foto ruim ou título fraco. Impacta diretamente o custo por clique</div><div class="gloss-ref">≥ 2% bom · < 1% precisa melhorar</div></div>
+        <div class="gloss-item"><div class="gloss-term">GMV</div><div class="gloss-def">Volume total de vendas geradas pelo anúncio. É o faturamento bruto atribuído a cada anúncio CPC</div><div class="gloss-ref">Quanto mais, melhor</div></div>
+        <div class="gloss-item"><div class="gloss-term">ACOS</div><div class="gloss-def">% do faturamento gasto em ADS. ACOS 5% = gastou R$5 de ADS para vender R$100. Inverso do ROAS</div><div class="gloss-ref">ACOS = 100 ÷ ROAS</div></div>
       </div>
     </div>`;
 }
