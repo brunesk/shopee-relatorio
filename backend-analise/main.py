@@ -1,4 +1,6 @@
 import asyncio
+import re
+import json
 import httpx
 from urllib.parse import urlparse
 from fastapi import FastAPI, HTTPException
@@ -115,6 +117,64 @@ def extract_from_json(obj, shop_id_str: str, depth=0) -> list:
                 results.extend(extract_from_json(v, shop_id_str, depth + 1))
 
     return results
+
+
+async def fetch_from_html(username: str, shop_id_str: str) -> list:
+    """
+    Tenta extrair produtos do HTML inicial da loja.
+    Sites React/Next.js costumam injetar os dados no HTML como window.__INITIAL_STATE__.
+    Não precisa de browser nem de tokens.
+    """
+    url = f"https://shopee.com.br/{username}?page=0&sortBy=sales&tab=0"
+    headers = {
+        "User-Agent": UA,
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
+        "Accept-Language": "pt-BR,pt;q=0.9,en-US;q=0.8",
+        "Accept-Encoding": "gzip, deflate, br",
+        "Upgrade-Insecure-Requests": "1",
+    }
+
+    print("[HTML] Buscando HTML da loja...")
+    async with httpx.AsyncClient(timeout=20, follow_redirects=True) as client:
+        resp = await client.get(url, headers=headers)
+        html = resp.text
+        print(f"[HTML] HTTP {resp.status_code} | {len(html)} chars")
+
+    # Padrões de dados injetados no HTML por frameworks React/SSR
+    patterns = [
+        r'window\.__INITIAL_STATE__\s*=\s*(\{.+?\})\s*;?\s*(?:</script>|window\.)',
+        r'window\.__DATA__\s*=\s*(\{.+?\})\s*;?\s*(?:</script>|window\.)',
+        r'window\.__SERVER_DATA__\s*=\s*(\{.+?\})\s*;?\s*(?:</script>|window\.)',
+        r'window\.__SHOPEE_SERVER_DATA__\s*=\s*(\{.+?\})\s*;?\s*(?:</script>|window\.)',
+        r'<script id="__NEXT_DATA__" type="application/json">(.+?)</script>',
+        r'<script type="application/json"[^>]*>(\{.+?\})</script>',
+    ]
+
+    for pattern in patterns:
+        matches = re.findall(pattern, html, re.DOTALL)
+        for raw in matches:
+            try:
+                data = json.loads(raw)
+                products = extract_from_json(data, shop_id_str)
+                print(f"[HTML] Padrão encontrado → {len(products)} produtos")
+                if products:
+                    return products
+            except Exception:
+                continue
+
+    # Fallback: varre todas as tags <script> que contenham JSON
+    for raw in re.findall(r'<script[^>]*>(\{.+?\})</script>', html, re.DOTALL):
+        try:
+            data = json.loads(raw)
+            products = extract_from_json(data, shop_id_str)
+            if products:
+                print(f"[HTML] Script tag → {len(products)} produtos")
+                return products
+        except Exception:
+            continue
+
+    print("[HTML] Nenhum dado de produto encontrado no HTML")
+    return []
 
 
 async def fetch_via_browser(shop_id_str: str, username: str, store_url: str) -> list:
@@ -303,7 +363,12 @@ async def scrape_and_analyze(url: str) -> dict:
     shop_id_str = str(shop_id)
     print(f"[INFO] shop_id={shop_id_str}, nome={shop_name}")
 
-    raw_products = await fetch_via_browser(shop_id_str, username, store_url)
+    # Camada 1: extração do HTML (sem browser, sem token)
+    raw_products = await fetch_from_html(username, shop_id_str)
+
+    # Camada 2: browser com stealth (fallback)
+    if not raw_products:
+        raw_products = await fetch_via_browser(shop_id_str, username, store_url)
 
     if not raw_products:
         raise ValueError(
