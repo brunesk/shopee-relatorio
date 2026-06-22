@@ -34,9 +34,52 @@ class AnalyzeRequest(BaseModel):
     url: str
 
 
+class DadosRequest(BaseModel):
+    url: str
+    shop_id: str
+    shop_name: str
+    raw_data: dict
+
+
 @app.get("/")
 async def root():
     return {"status": "ok", "message": "Shopee Analyzer API funcionando"}
+
+
+@app.post("/analisar-dados")
+async def analisar_dados(req: DadosRequest):
+    """Recebe dados brutos coletados pela extensão Chrome e retorna a análise."""
+    try:
+        products = extract_from_json(req.raw_data, req.shop_id)
+        if not products:
+            raise HTTPException(status_code=400, detail="Nenhum produto encontrado. Aguarde a loja carregar e tente novamente.")
+
+        seen = set()
+        unique = []
+        for p in products:
+            key = p["nome"].lower()[:50]
+            if key not in seen:
+                seen.add(key)
+                unique.append(calcular_margens(p))
+
+        unique.sort(key=lambda x: x["faturamento_30d"], reverse=True)
+        total_fat = sum(p["faturamento_30d"] for p in unique)
+        total_vendas = sum(p["vendas_30d"] for p in unique)
+
+        return {
+            "loja": req.shop_name,
+            "url": req.url,
+            "total_produtos": len(unique),
+            "faturamento_30d": round(total_fat, 2),
+            "total_vendas_30d": total_vendas,
+            "melhor_produto": unique[0] if unique else None,
+            "produtos": unique,
+            "insights": gerar_insights(unique, total_fat),
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Erro interno: {str(e)}")
 
 
 @app.get("/debug/{username}")

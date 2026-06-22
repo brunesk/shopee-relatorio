@@ -1,0 +1,12 @@
+{
+  "manifest_version": 3,
+  "name": "Acelera Shopee — Análise de Loja",
+  "version": "1.0.0",
+  "description": "Analisa qualquer loja do Shopee: faturamento, produtos mais vendidos e preços ideais de compra.",
+  "permissions": ["activeTab", "scripting"],
+  "host_permissions": ["*://shopee.com.br/*"],
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "Analisar loja Shopee"
+  }
+}
