@@ -87,6 +87,7 @@ async def debug(username: str):
         f"?api_key={SCRAPINGBEE_KEY}"
         f"&url={quote(sorted_url, safe='')}"
         f"&render_js=true"
+        f"&stealth_proxy=true"
         f"&country_code=br"
         f"&wait=10000"
         f"&js_snippet={quote(js_snippet, safe='')}"
