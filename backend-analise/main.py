@@ -41,38 +41,66 @@ async def root():
 
 @app.get("/debug/{username}")
 async def debug(username: str):
-    """Mostra o que o ScrapingBee retorna para diagnosticar o problema."""
+    """Testa estratégia 2: ScrapingBee renderiza página + JS injetado faz fetch interno."""
     shop_id, shop_name = await get_shop_id(username)
     shop_id_str = str(shop_id)
+    store_url = f"https://shopee.com.br/{username}"
+    sorted_url = store_url + "?page=0&sortBy=sales&tab=0"
 
-    target = (
-        f"https://shopee.com.br/api/v4/search/search_items"
-        f"?by=sales&match_id={shop_id_str}&order=desc"
-        f"&page_type=shop&scenario=PAGE_OTHERS&version=2&limit=100&offset=0"
-    )
+    js_snippet = base64.b64encode(f"""
+(async () => {{
+    try {{
+        await new Promise(r => setTimeout(r, 5000));
+        const resp = await fetch(
+            '/api/v4/search/search_items?by=sales&match_id={shop_id_str}&order=desc&page_type=shop&scenario=PAGE_OTHERS&version=2&limit=100&offset=0',
+            {{credentials: 'include', headers: {{'x-api-source': 'pc'}}}}
+        );
+        const data = await resp.json();
+        const el = document.createElement('div');
+        el.id = '__scraped__';
+        el.style.display = 'none';
+        el.textContent = JSON.stringify(data);
+        document.body.appendChild(el);
+    }} catch(e) {{
+        const el = document.createElement('div');
+        el.id = '__scraped__';
+        el.style.display = 'none';
+        el.textContent = JSON.stringify({{error: String(e)}});
+        document.body.appendChild(el);
+    }}
+}})();
+""".encode()).decode()
+
     sb_url = (
         f"https://app.scrapingbee.com/api/v1/"
         f"?api_key={SCRAPINGBEE_KEY}"
-        f"&url={quote(target, safe='')}"
-        f"&render_js=false"
+        f"&url={quote(sorted_url, safe='')}"
+        f"&render_js=true"
         f"&country_code=br"
+        f"&wait=10000"
+        f"&js_snippet={quote(js_snippet, safe='')}"
     )
 
-    async with httpx.AsyncClient(timeout=60) as client:
+    async with httpx.AsyncClient(timeout=120) as client:
         resp = await client.get(sb_url)
+        html = resp.text
+        match = re.search(r'id="__scraped__"[^>]*>(.+?)</div>', html, re.DOTALL)
+        scraped_raw = match.group(1) if match else None
         try:
-            data = resp.json()
+            scraped_data = json.loads(scraped_raw) if scraped_raw else None
         except Exception:
-            data = None
+            scraped_data = None
 
         return {
             "shop_id": shop_id_str,
             "shop_name": shop_name,
             "scrapingbee_status": resp.status_code,
-            "response_size": len(resp.text),
-            "response_preview": resp.text[:2000],
-            "parsed_json_keys": list(data.keys()) if isinstance(data, dict) else type(data).__name__,
-            "products_found": len(extract_from_json(data, shop_id_str)) if data else 0,
+            "html_size": len(html),
+            "scraped_div_found": scraped_raw is not None,
+            "scraped_preview": scraped_raw[:500] if scraped_raw else None,
+            "scraped_keys": list(scraped_data.keys()) if isinstance(scraped_data, dict) else None,
+            "products_found": len(extract_from_json(scraped_data, shop_id_str)) if scraped_data else 0,
+            "html_preview": html[:500],
         }
 
 
