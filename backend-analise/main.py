@@ -39,6 +39,43 @@ async def root():
     return {"status": "ok", "message": "Shopee Analyzer API funcionando"}
 
 
+@app.get("/debug/{username}")
+async def debug(username: str):
+    """Mostra o que o ScrapingBee retorna para diagnosticar o problema."""
+    shop_id, shop_name = await get_shop_id(username)
+    shop_id_str = str(shop_id)
+
+    target = (
+        f"https://shopee.com.br/api/v4/search/search_items"
+        f"?by=sales&match_id={shop_id_str}&order=desc"
+        f"&page_type=shop&scenario=PAGE_OTHERS&version=2&limit=100&offset=0"
+    )
+    sb_url = (
+        f"https://app.scrapingbee.com/api/v1/"
+        f"?api_key={SCRAPINGBEE_KEY}"
+        f"&url={quote(target, safe='')}"
+        f"&render_js=false"
+        f"&country_code=br"
+    )
+
+    async with httpx.AsyncClient(timeout=60) as client:
+        resp = await client.get(sb_url)
+        try:
+            data = resp.json()
+        except Exception:
+            data = None
+
+        return {
+            "shop_id": shop_id_str,
+            "shop_name": shop_name,
+            "scrapingbee_status": resp.status_code,
+            "response_size": len(resp.text),
+            "response_preview": resp.text[:2000],
+            "parsed_json_keys": list(data.keys()) if isinstance(data, dict) else type(data).__name__,
+            "products_found": len(extract_from_json(data, shop_id_str)) if data else 0,
+        }
+
+
 @app.post("/analisar")
 async def analisar(req: AnalyzeRequest):
     try:
