@@ -83,16 +83,25 @@ def parse_item(item: dict):
         return None
 
 
-def extract_items_from_response(data: dict) -> list:
+def as_dict(val) -> dict:
+    return val if isinstance(val, dict) else {}
+
+def as_list(val) -> list:
+    return val if isinstance(val, list) else []
+
+def extract_items_from_response(data) -> list:
     if not isinstance(data, dict):
         return []
     items = []
 
-    # Formato 1: recommend/recommend — sections[].data.item[]
-    sections = (data.get("data") or {}).get("sections") or []
+    # Formato 1: recommend/recommend — data.sections[].data.item[]
+    data_obj = as_dict(data.get("data"))
+    sections = as_list(data_obj.get("sections"))
     for section in sections:
-        section_data = (section.get("data") or {})
-        for item in (section_data.get("item") or []):
+        if not isinstance(section, dict):
+            continue
+        section_data = as_dict(section.get("data"))
+        for item in as_list(section_data.get("item")):
             if isinstance(item, dict):
                 parsed = parse_item(item)
                 if parsed:
@@ -100,31 +109,43 @@ def extract_items_from_response(data: dict) -> list:
 
     # Formato 2: search_items — items[].item_basic
     if not items:
-        for wrap in (data.get("items") or []):
-            if isinstance(wrap, dict):
-                item = wrap.get("item_basic") or wrap
-                parsed = parse_item(item)
-                if parsed:
-                    items.append(parsed)
+        for wrap in as_list(data.get("items")):
+            if not isinstance(wrap, dict):
+                continue
+            item = wrap.get("item_basic")
+            item = item if isinstance(item, dict) else wrap
+            parsed = parse_item(item)
+            if parsed:
+                items.append(parsed)
 
     # Formato 3: data.items[]
     if not items:
-        for item in ((data.get("data") or {}).get("items") or []):
+        for item in as_list(data_obj.get("items")):
             if isinstance(item, dict):
                 parsed = parse_item(item)
                 if parsed:
                     items.append(parsed)
 
-    # Formato 4: genérico — qualquer lista com campo "name"
+    # Formato 4: lista no topo com campo "name"
     if not items:
-        for key in ["item", "products", "result", "list"]:
-            lst = data.get(key) or []
-            if isinstance(lst, list):
-                for item in lst:
-                    if isinstance(item, dict) and item.get("name"):
-                        parsed = parse_item(item)
-                        if parsed:
-                            items.append(parsed)
+        if isinstance(data, list):
+            for item in data:
+                if isinstance(item, dict) and item.get("name"):
+                    parsed = parse_item(item)
+                    if parsed:
+                        items.append(parsed)
+
+    # Formato 5: qualquer chave que contenha uma lista de produtos
+    if not items:
+        for key in ["item", "products", "result", "list", "data"]:
+            lst = as_list(data.get(key))
+            for item in lst:
+                if isinstance(item, dict) and item.get("name"):
+                    parsed = parse_item(item)
+                    if parsed:
+                        items.append(parsed)
+            if items:
+                break
 
     return items
 
