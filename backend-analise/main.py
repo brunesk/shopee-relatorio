@@ -353,10 +353,7 @@ async def scrape_and_analyze(url: str) -> dict:
     products = unique
 
     if not products:
-        print(f"[FALHA] Nenhum produto encontrado. URLs da Shopee capturadas:")
-        for u in all_urls:
-            if "shopee" in u:
-                print(f"  {u[:120]}")
+        print(f"[FALHA] Nenhum produto encontrado.")
         raise ValueError(
             "Nenhum produto encontrado. Verifique se o link é de uma loja Shopee válida e tente novamente."
         )
