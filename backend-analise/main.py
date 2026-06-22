@@ -41,46 +41,10 @@ async def root():
 
 @app.get("/debug/{username}")
 async def debug(username: str):
-    """Testa estratégia 2: ScrapingBee renderiza página + JS injetado faz fetch interno."""
+    """Renderiza a página com stealth_proxy e examina o HTML resultante."""
     shop_id, shop_name = await get_shop_id(username)
     shop_id_str = str(shop_id)
-    store_url = f"https://shopee.com.br/{username}"
-    sorted_url = store_url + "?page=0&sortBy=sales&tab=0"
-
-    js_snippet = base64.b64encode("""
-(async () => {
-    await new Promise(r => setTimeout(r, 8000));
-
-    const result = {
-        page_title: document.title,
-        total_links: document.querySelectorAll('a').length,
-        total_imgs: document.querySelectorAll('img').length,
-        dom_text_preview: document.body.innerText.substring(0, 3000),
-        window_state_keys: Object.getOwnPropertyNames(window).filter(k => {
-            try {
-                const v = window[k];
-                return v && typeof v === 'object' && JSON.stringify(v).length > 200;
-            } catch(e) { return false; }
-        }).slice(0, 15)
-    };
-
-    // Tenta pegar window.__INITIAL_STATE__ ou similares
-    const stateVars = ['__INITIAL_STATE__', '__DATA__', '__SERVER_DATA__', '__SHOPEE_DATA__', 'pageData'];
-    for (const key of stateVars) {
-        try {
-            if (window[key]) {
-                result['found_state_' + key] = JSON.stringify(window[key]).substring(0, 1000);
-            }
-        } catch(e) {}
-    }
-
-    const el = document.createElement('div');
-    el.id = '__scraped__';
-    el.style.display = 'none';
-    el.textContent = JSON.stringify(result);
-    document.body.appendChild(el);
-})();
-""".encode()).decode()
+    sorted_url = f"https://shopee.com.br/{username}?page=0&sortBy=sales&tab=0"
 
     sb_url = (
         f"https://app.scrapingbee.com/api/v1/"
@@ -89,30 +53,43 @@ async def debug(username: str):
         f"&render_js=true"
         f"&stealth_proxy=true"
         f"&country_code=br"
-        f"&wait=10000"
-        f"&js_snippet={quote(js_snippet, safe='')}"
+        f"&wait=12000"
     )
 
     async with httpx.AsyncClient(timeout=120) as client:
         resp = await client.get(sb_url)
         html = resp.text
-        match = re.search(r'id="__scraped__"[^>]*>(.+?)</div>', html, re.DOTALL)
-        scraped_raw = match.group(1) if match else None
-        try:
-            scraped_data = json.loads(scraped_raw) if scraped_raw else None
-        except Exception:
-            scraped_data = None
+
+        # Procura por dados JSON embutidos no HTML (SSR ou inline scripts)
+        inline_data = []
+        for m in re.finditer(r'<script[^>]*>(\{.{100,}\})</script>', html, re.DOTALL):
+            raw = m.group(1)
+            try:
+                data = json.loads(raw)
+                products = extract_from_json(data, shop_id_str)
+                if products:
+                    inline_data.append({"products": len(products), "preview": str(products[:2])})
+            except Exception:
+                pass
+
+        # Extrai texto visível do HTML para ver se tem nomes de produto
+        # Remove tags para pegar só o texto
+        text_only = re.sub(r'<[^>]+>', ' ', html)
+        text_only = re.sub(r'\s+', ' ', text_only).strip()
+
+        # Procura padrões de preço e vendas no texto
+        prices = re.findall(r'R\$\s*[\d.,]+', text_only)[:10]
+        sales = re.findall(r'\d+\s*vendas?', text_only, re.IGNORECASE)[:10]
 
         return {
             "shop_id": shop_id_str,
             "shop_name": shop_name,
-            "scrapingbee_status": resp.status_code,
+            "status": resp.status_code,
             "html_size": len(html),
-            "scraped_div_found": scraped_raw is not None,
-            "scraped_preview": scraped_raw[:500] if scraped_raw else None,
-            "scraped_keys": list(scraped_data.keys()) if isinstance(scraped_data, dict) else None,
-            "products_found": len(extract_from_json(scraped_data, shop_id_str)) if scraped_data else 0,
-            "html_preview": html[:500],
+            "inline_scripts_with_products": inline_data,
+            "prices_found_in_html": prices,
+            "sales_found_in_html": sales,
+            "text_preview": text_only[:3000],
         }
 
 
