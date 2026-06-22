@@ -1,5 +1,6 @@
 import asyncio
 import os
+import httpx
 from urllib.parse import urlparse
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
@@ -196,14 +197,37 @@ def gerar_insights(products: list, total_fat: float) -> list:
     return insights
 
 
+async def get_shop_info(username: str) -> tuple:
+    """Busca shop_id e nome da loja via API pública da Shopee."""
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/122.0.0.0 Safari/537.36",
+        "Referer": f"https://shopee.com.br/{username}",
+    }
+    async with httpx.AsyncClient(timeout=15) as client:
+        resp = await client.get(
+            f"https://shopee.com.br/api/v4/shop/get_shop_detail?username={username}",
+            headers=headers,
+        )
+        data = resp.json()
+        shop_data = as_dict(data.get("data"))
+        shop_id = shop_data.get("shopid") or shop_data.get("shop_id")
+        shop_name = shop_data.get("name") or username
+        return shop_id, shop_name
+
+
 async def scrape_and_analyze(url: str) -> dict:
     store_url, username = clean_store_url(url)
     sorted_url = store_url + "?page=0&sortBy=sales&tab=0"
 
+    # Passo 1: busca shop_id via API pública (sabemos que funciona)
+    print(f"[SCRAPER] Buscando shop_id para: {username}")
+    shop_id, shop_name = await get_shop_info(username)
+    if not shop_id:
+        raise ValueError("Loja não encontrada. Verifique o link.")
+    print(f"[SCRAPER] shop_id={shop_id}, nome={shop_name}")
+
     products = []
-    shop_name = username
-    captured = []       # (url, data)
-    all_urls = []       # log de todas as URLs capturadas
+    captured = []
 
     async with async_playwright() as pw:
         browser = await pw.chromium.launch(
@@ -229,14 +253,15 @@ async def scrape_and_analyze(url: str) -> dict:
         )
 
         page = await context.new_page()
+        shop_id_str = str(shop_id)
 
         async def on_response(response):
             u = response.url
-            status = response.status
-            all_urls.append(f"{status} {u}")
-
-            # Captura toda resposta JSON da Shopee com status 200
-            if status == 200 and "shopee.com.br" in u and "/api/" in u:
+            # Só captura APIs da Shopee que contenham o shop_id desta loja
+            if (response.status == 200
+                    and "shopee.com.br" in u
+                    and "/api/" in u
+                    and shop_id_str in u):
                 try:
                     ct = response.headers.get("content-type", "")
                     if "json" in ct:
@@ -248,44 +273,28 @@ async def scrape_and_analyze(url: str) -> dict:
 
         page.on("response", on_response)
 
-        # Visita a homepage primeiro para obter cookies de sessão (SPC_F etc.)
-        print(f"[SCRAPER] Obtendo cookies da homepage...")
+        # Homepage primeiro para pegar cookies de sessão
+        print("[SCRAPER] Obtendo cookies da homepage...")
         try:
             await page.goto("https://shopee.com.br/", wait_until="domcontentloaded", timeout=30000)
             await asyncio.sleep(3)
         except Exception as e:
-            print(f"[AVISO] Homepage timeout: {e}")
+            print(f"[AVISO] Homepage: {e}")
 
         print(f"[SCRAPER] Acessando loja: {sorted_url}")
         try:
             await page.goto(sorted_url, wait_until="domcontentloaded", timeout=60000)
             await page.wait_for_load_state("load", timeout=30000)
         except Exception as e:
-            print(f"[AVISO] Load timeout, continuando... {e}")
+            print(f"[AVISO] Load: {e}")
 
         await asyncio.sleep(8)
-
-        # Scroll para forçar carregamento lazy
         await page.evaluate("window.scrollTo(0, document.body.scrollHeight / 2)")
         await asyncio.sleep(4)
 
-        # Tenta capturar nome da loja
-        for selector in [".shop-name-content", "[class*='shopName']", ".seller-name", "h1"]:
-            try:
-                el = await page.query_selector(selector)
-                if el:
-                    text = (await el.inner_text()).strip()
-                    if text and len(text) < 80:
-                        shop_name = text
-                        break
-            except Exception:
-                pass
-
         await browser.close()
 
-    # Log para debug no Railway
-    print(f"[SCRAPER] Total URLs capturadas: {len(all_urls)}")
-    print(f"[SCRAPER] APIs JSON capturadas: {len(captured)}")
+    print(f"[SCRAPER] APIs capturadas com shop_id {shop_id_str}: {len(captured)}")
     for u, _ in captured:
         print(f"  -> {u[:120]}")
 
