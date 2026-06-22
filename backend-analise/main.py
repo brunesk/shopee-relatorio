@@ -274,8 +274,6 @@ async def scrape_and_analyze(url: str) -> dict:
                 except Exception as e:
                     print(f"[ERRO JSON] {u[:80]} -> {e}")
 
-        page.on("response", on_response)
-
         # Homepage primeiro para pegar cookies de sessão
         print("[SCRAPER] Obtendo cookies da homepage...")
         try:
@@ -291,17 +289,47 @@ async def scrape_and_analyze(url: str) -> dict:
         except Exception as e:
             print(f"[AVISO] Load: {e}")
 
-        await asyncio.sleep(8)
-        await page.evaluate("window.scrollTo(0, document.body.scrollHeight / 2)")
-        await asyncio.sleep(4)
+        await asyncio.sleep(5)
+
+        # Chama a API da Shopee de DENTRO da página (tem cookies válidos, não dá 403)
+        print(f"[SCRAPER] Chamando API de produtos de dentro da página...")
+        endpoints = [
+            f"/api/v4/recommend/recommend?bundle=shop_page_product_tab_main&item_card=2&limit=100&offset=0&shop_id={shop_id}&sort_type=1&tab_name=populares",
+            f"/api/v4/recommend/recommend?bundle=shop_page_product_tab_main&limit=100&offset=0&shop_id={shop_id}&sort_type=1",
+            f"/api/v4/search/search_items?by=sales&limit=100&match_id={shop_id}&newest=0&order=desc&page_type=shop&scenario=PAGE_OTHERS&version=2",
+        ]
+
+        for endpoint in endpoints:
+            try:
+                result = await page.evaluate(f"""
+                    async () => {{
+                        try {{
+                            const r = await fetch('{endpoint}', {{
+                                headers: {{'x-requested-with': 'XMLHttpRequest'}}
+                            }});
+                            return await r.json();
+                        }} catch(e) {{
+                            return {{error: e.toString()}};
+                        }}
+                    }}
+                """)
+                if result and not result.get("error"):
+                    captured.append((endpoint, result))
+                    print(f"[API OK] {endpoint[:80]}")
+                    items = extract_items_from_response(result)
+                    if items:
+                        print(f"[PRODUTOS] {len(items)} encontrados neste endpoint")
+                        break
+                else:
+                    print(f"[API ERRO] {endpoint[:80]} -> {result}")
+            except Exception as e:
+                print(f"[EVAL ERRO] {e}")
 
         await browser.close()
 
     print(f"[SCRAPER] APIs capturadas: {len(captured)}")
-    for u, _ in captured:
-        print(f"  -> {u[:120]}")
 
-    # Extrai produtos e filtra pelo shop_id desta loja
+    # Extrai produtos das respostas capturadas
     all_items = []
     for u, data in captured:
         items = extract_items_from_response(data)
@@ -309,26 +337,18 @@ async def scrape_and_analyze(url: str) -> dict:
             print(f"[PRODUTOS] {len(items)} encontrados em: {u[:80]}")
         all_items.extend(items)
 
-    # Filtra apenas produtos desta loja (pelo shopid dentro do JSON)
+    # Filtra pelo shopid se disponível
     loja_items = [p for p in all_items if str(p.get("_shopid") or "") == shop_id_str]
-    print(f"[FILTRO] {len(all_items)} produtos totais → {len(loja_items)} desta loja (shop_id={shop_id_str})")
-
-    # Se o filtro por shopid não funcionou (campo ausente), usa todos sem filtro
     if not loja_items:
-        print("[FILTRO] shopid ausente nos itens, usando todos sem filtro")
         loja_items = all_items
 
-    # Remove campo interno _shopid antes de retornar
-    for p in loja_items:
-        p.pop("_shopid", None)
-
-    # Remove duplicatas por nome
+    # Remove campo interno e duplicatas por nome
     seen = set()
     unique = []
     for p in loja_items:
+        p.pop("_shopid", None)
         if p["nome"] not in seen:
             seen.add(p["nome"])
-            p.pop("_shopid", None)
             unique.append(p)
     products = unique
 
