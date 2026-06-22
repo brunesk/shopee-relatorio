@@ -47,28 +47,39 @@ async def debug(username: str):
     store_url = f"https://shopee.com.br/{username}"
     sorted_url = store_url + "?page=0&sortBy=sales&tab=0"
 
-    js_snippet = base64.b64encode(f"""
-(async () => {{
-    try {{
-        await new Promise(r => setTimeout(r, 5000));
-        const resp = await fetch(
-            '/api/v4/search/search_items?by=sales&match_id={shop_id_str}&order=desc&page_type=shop&scenario=PAGE_OTHERS&version=2&limit=100&offset=0',
-            {{credentials: 'include', headers: {{'x-api-source': 'pc'}}}}
-        );
-        const data = await resp.json();
-        const el = document.createElement('div');
-        el.id = '__scraped__';
-        el.style.display = 'none';
-        el.textContent = JSON.stringify(data);
-        document.body.appendChild(el);
-    }} catch(e) {{
-        const el = document.createElement('div');
-        el.id = '__scraped__';
-        el.style.display = 'none';
-        el.textContent = JSON.stringify({{error: String(e)}});
-        document.body.appendChild(el);
-    }}
-}})();
+    js_snippet = base64.b64encode("""
+(async () => {
+    await new Promise(r => setTimeout(r, 8000));
+
+    const result = {
+        page_title: document.title,
+        total_links: document.querySelectorAll('a').length,
+        total_imgs: document.querySelectorAll('img').length,
+        dom_text_preview: document.body.innerText.substring(0, 3000),
+        window_state_keys: Object.getOwnPropertyNames(window).filter(k => {
+            try {
+                const v = window[k];
+                return v && typeof v === 'object' && JSON.stringify(v).length > 200;
+            } catch(e) { return false; }
+        }).slice(0, 15)
+    };
+
+    // Tenta pegar window.__INITIAL_STATE__ ou similares
+    const stateVars = ['__INITIAL_STATE__', '__DATA__', '__SERVER_DATA__', '__SHOPEE_DATA__', 'pageData'];
+    for (const key of stateVars) {
+        try {
+            if (window[key]) {
+                result['found_state_' + key] = JSON.stringify(window[key]).substring(0, 1000);
+            }
+        } catch(e) {}
+    }
+
+    const el = document.createElement('div');
+    el.id = '__scraped__';
+    el.style.display = 'none';
+    el.textContent = JSON.stringify(result);
+    document.body.appendChild(el);
+})();
 """.encode()).decode()
 
     sb_url = (
