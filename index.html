@@ -370,6 +370,22 @@ input[type=file]{display:none}
 .note{font-size:12px;color:var(--g400);text-align:center;padding:10px 0}
 footer{text-align:center;padding:24px 0 16px;font-size:12px;color:var(--g400)}
 footer strong{color:var(--or)}
+/* ── ANÁLISE DE LOJA ── */
+.analise-input-row{display:flex;gap:10px;align-items:stretch}
+.analise-url-inp{flex:1;padding:14px 16px;border:2px solid var(--g200);border-radius:12px;font-size:14px;outline:none;transition:all .2s;font-family:inherit;color:var(--g800);background:#fff}
+.analise-url-inp:focus{border-color:var(--or);box-shadow:0 0 0 3px rgba(238,77,45,.1)}
+.analise-btn{padding:14px 24px;background:linear-gradient(135deg,var(--or),#ff7043);color:#fff;border:none;border-radius:12px;font-size:14px;font-weight:800;cursor:pointer;white-space:nowrap;font-family:inherit;box-shadow:0 4px 14px rgba(238,77,45,.3);transition:all .2s}
+.analise-btn:hover:not(:disabled){transform:translateY(-1px);box-shadow:0 6px 20px rgba(238,77,45,.4)}
+.analise-btn:disabled{background:var(--g200);color:var(--g400);box-shadow:none;cursor:not-allowed;transform:none}
+.analise-hint{font-size:12px;color:var(--g400);margin-top:10px}
+.analise-loading{display:flex;align-items:center;gap:20px;padding:32px 22px;background:#fff;border-radius:var(--r);box-shadow:var(--sh1);margin-top:16px}
+.analise-loading-ttl{font-size:15px;font-weight:800;color:var(--g800);margin-bottom:4px}
+.analise-loading-sub{font-size:13px;color:var(--g500)}
+.analise-error{background:#fef2f2;border:1.5px solid #fca5a5;border-radius:12px;padding:14px 18px;color:#b91c1c;font-size:14px;font-weight:600;margin-top:16px}
+.analise-loja-nome{font-size:13px;color:var(--g500);margin-top:4px}
+.analise-nota{font-size:11px;color:var(--g400);margin-top:12px;line-height:1.6}
+.badge-30{display:inline-block;background:#dcfce7;color:#16a34a;font-size:10px;font-weight:700;padding:2px 7px;border-radius:10px}
+.badge-40{display:inline-block;background:#eff6ff;color:#2563eb;font-size:10px;font-weight:700;padding:2px 7px;border-radius:10px}
 </style>
 </head>
 <body>
@@ -439,6 +455,7 @@ footer strong{color:var(--or)}
     <button class="nav-it" id="nav-upload" onclick="goPage('upload')"><span class="nav-ico">⬆️</span> Novo Upload</button>
     <button class="nav-it" id="nav-produtos" onclick="goPage('produtos')"><span class="nav-ico">💸</span> Custo dos Produtos</button>
     <button class="nav-it" id="nav-ads" onclick="goPage('ads')"><span class="nav-ico">📣</span> Análise de ADS</button>
+    <button class="nav-it" id="nav-analise" onclick="goPage('analise')"><span class="nav-ico">🔍</span> Análise de Loja</button>
   </nav>
 
   <div class="bnav">
@@ -447,6 +464,7 @@ footer strong{color:var(--or)}
     <button class="bn-it" id="bnav-upload" onclick="goPage('upload')"><span class="bn-ico">⬆️</span><span class="bn-lbl">Upload</span></button>
     <button class="bn-it" id="bnav-produtos" onclick="goPage('produtos')"><span class="bn-ico">💸</span><span class="bn-lbl">Produtos</span></button>
     <button class="bn-it" id="bnav-ads" onclick="goPage('ads')"><span class="bn-ico">📣</span><span class="bn-lbl">ADS</span></button>
+    <button class="bn-it" id="bnav-analise" onclick="goPage('analise')"><span class="bn-ico">🔍</span><span class="bn-lbl">Análise</span></button>
   </div>
 
   <main class="main">
@@ -539,6 +557,96 @@ footer strong{color:var(--or)}
           <div class="empty-ttl">Nenhum produto ainda</div>
           <div class="empty-sub">Faça o upload de um arquivo de pedidos para os produtos aparecerem aqui.</div>
           <button class="btn-empty" onclick="goPage('upload')">⬆️ Fazer Upload</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ANÁLISE DE LOJA -->
+    <div id="page-analise" class="page">
+      <div class="pg-hdr">
+        <h1>Análise de Loja</h1>
+        <p>Cole o link de qualquer loja Shopee para ver faturamento, produtos e preços de compra</p>
+      </div>
+
+      <div class="sec">
+        <div class="analise-input-row">
+          <input type="url" id="analise-url" class="analise-url-inp"
+            placeholder="https://shopee.com.br/nomeddaloja"
+            onkeydown="if(event.key==='Enter')analisarLoja()" />
+          <button id="analise-btn" class="analise-btn" onclick="analisarLoja()">🔍 Analisar</button>
+        </div>
+        <p class="analise-hint">Cole o link completo da loja que você quer pesquisar. Pode ser a loja de um concorrente.</p>
+      </div>
+
+      <div id="analise-loading" class="analise-loading" style="display:none">
+        <div class="spin" style="flex-shrink:0"></div>
+        <div>
+          <p class="analise-loading-ttl">Acessando a loja na Shopee...</p>
+          <p class="analise-loading-sub">Estamos coletando dados de produtos e vendas. Isso pode levar até 30 segundos.</p>
+        </div>
+      </div>
+
+      <div id="analise-error" class="analise-error" style="display:none">
+        ⚠️ <span id="analise-error-msg"></span>
+      </div>
+
+      <div id="analise-result" style="display:none">
+        <div class="pg-hdr" style="margin-top:8px;margin-bottom:18px">
+          <h1 id="res-loja-nome" style="font-size:19px">—</h1>
+          <p id="res-loja-url" class="analise-loja-nome"></p>
+        </div>
+
+        <div class="kpi-grid">
+          <div class="kpi orange">
+            <div class="kpi-ico">📦</div>
+            <div class="kpi-lbl">Produtos Analisados</div>
+            <div class="kpi-val" id="res-total-produtos">—</div>
+          </div>
+          <div class="kpi green">
+            <div class="kpi-ico">💰</div>
+            <div class="kpi-lbl">Faturamento Est. 30d</div>
+            <div class="kpi-val" id="res-faturamento">—</div>
+          </div>
+          <div class="kpi blue">
+            <div class="kpi-ico">📈</div>
+            <div class="kpi-lbl">Total Vendas 30d</div>
+            <div class="kpi-val" id="res-total-vendas">—</div>
+          </div>
+          <div class="kpi purple">
+            <div class="kpi-ico">🏆</div>
+            <div class="kpi-lbl">Mais Vendido</div>
+            <div class="kpi-val" id="res-mais-vendido" style="font-size:12px;line-height:1.3">—</div>
+          </div>
+        </div>
+
+        <div class="sec">
+          <div class="sec-hd">
+            <div class="sec-ttl"><div class="sec-ico">💡</div> Insights da Loja</div>
+          </div>
+          <div id="res-insights" class="insight-list"></div>
+        </div>
+
+        <div class="sec">
+          <div class="sec-hd">
+            <div class="sec-ttl"><div class="sec-ico">📋</div> Produtos por Faturamento</div>
+            <div style="font-size:11px;color:var(--g400)">Últimos 30 dias</div>
+          </div>
+          <div style="overflow-x:auto">
+            <table class="tbl">
+              <thead>
+                <tr>
+                  <th style="text-align:left">Produto</th>
+                  <th>Preço</th>
+                  <th>Vendas<br>30d</th>
+                  <th>Faturamento<br>Est.</th>
+                  <th><span class="badge-30">30% margem</span><br>Comprar até</th>
+                  <th><span class="badge-40">40% margem</span><br>Comprar até</th>
+                </tr>
+              </thead>
+              <tbody id="res-produtos-tbody"></tbody>
+            </table>
+          </div>
+          <p class="analise-nota">* Cálculo considera 20% de taxa Shopee. Faturamento é estimativa baseada em dados públicos da plataforma.</p>
         </div>
       </div>
     </div>
@@ -729,7 +837,8 @@ const PAGE_TITLES = {
   mes:       'Análise por Mês',
   upload:    'Novo Upload',
   produtos:  'Custo dos Produtos',
-  ads:       'Análise de ADS'
+  ads:       'Análise de ADS',
+  analise:   'Análise de Loja'
 };
 
 function goPage(p) {
@@ -737,7 +846,7 @@ function goPage(p) {
   document.querySelectorAll('.page').forEach(el => el.classList.remove('active'));
   document.getElementById('page-' + p).classList.add('active');
 
-  ['dashboard','mes','upload','produtos','ads'].forEach(id => {
+  ['dashboard','mes','upload','produtos','ads','analise'].forEach(id => {
     const nv  = document.getElementById('nav-' + id);
     const bnv = document.getElementById('bnav-' + id);
     if (nv)  nv.classList.toggle('active',  id === p);
@@ -1947,6 +2056,103 @@ function updateCusto(name, val) {
   }
 
   scheduleSave();
+}
+
+// ── ANÁLISE DE LOJA ──────────────────────────────────
+const ANALISE_API = 'https://shopee-analise.railway.app'; // Atualizar após o deploy
+
+async function analisarLoja() {
+  const urlInput = document.getElementById('analise-url');
+  const url = urlInput.value.trim();
+  if (!url) { urlInput.focus(); return; }
+
+  const btn      = document.getElementById('analise-btn');
+  const loading  = document.getElementById('analise-loading');
+  const errorEl  = document.getElementById('analise-error');
+  const resultEl = document.getElementById('analise-result');
+
+  btn.disabled = true;
+  btn.textContent = 'Analisando...';
+  loading.style.display  = 'flex';
+  errorEl.style.display  = 'none';
+  resultEl.style.display = 'none';
+
+  try {
+    const res = await fetch(ANALISE_API + '/analisar', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ url })
+    });
+
+    const data = await res.json();
+
+    if (!res.ok) {
+      throw new Error(data.detail || 'Erro ao analisar a loja.');
+    }
+
+    renderAnalise(data);
+  } catch (err) {
+    document.getElementById('analise-error-msg').textContent = err.message || 'Não foi possível conectar ao servidor.';
+    errorEl.style.display = 'block';
+  } finally {
+    loading.style.display = 'none';
+    btn.disabled = false;
+    btn.textContent = '🔍 Analisar';
+  }
+}
+
+function renderAnalise(d) {
+  document.getElementById('res-loja-nome').textContent     = d.loja || 'Loja Shopee';
+  document.getElementById('res-loja-url').textContent      = d.url  || '';
+  document.getElementById('res-total-produtos').textContent = d.total_produtos;
+  document.getElementById('res-faturamento').textContent   = fmt(d.faturamento_30d);
+  document.getElementById('res-total-vendas').textContent  = d.total_vendas_30d + ' un.';
+
+  if (d.melhor_produto) {
+    const mp = d.melhor_produto;
+    document.getElementById('res-mais-vendido').innerHTML =
+      `${mp.nome.substring(0,40)}${mp.nome.length>40?'…':''}<br><span style="font-size:10px;color:var(--g500)">${mp.vendas_30d} vendas · ${fmt(mp.preco)}</span>`;
+  }
+
+  // Insights
+  const tipoMap = {
+    positivo: { cls: 'ic-positivo', ico: '✅' },
+    atencao:  { cls: 'ic-atencao',  ico: '⚠️' },
+    critico:  { cls: 'ic-critico',  ico: '🚨' },
+    info:     { cls: 'ic-info',     ico: '💡' },
+  };
+  const insightsEl = document.getElementById('res-insights');
+  insightsEl.innerHTML = (d.insights || []).map(ins => {
+    const { cls, ico } = tipoMap[ins.tipo] || tipoMap.info;
+    return `<div class="insight-card ${cls}">
+      <div class="ic-ico">${ico}</div>
+      <div class="ic-body">
+        <div class="ic-ttl">${ins.titulo}</div>
+        <div class="ic-desc">${ins.descricao}</div>
+      </div>
+    </div>`;
+  }).join('');
+
+  // Tabela de produtos
+  const tbody = document.getElementById('res-produtos-tbody');
+  tbody.innerHTML = (d.produtos || []).map((p, i) => `
+    <tr>
+      <td>
+        <div style="font-weight:700;color:var(--g800);max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${p.nome}">
+          ${i === 0 ? '🥇 ' : i === 1 ? '🥈 ' : i === 2 ? '🥉 ' : ''}${p.nome}
+        </div>
+        ${p.avaliacao > 0 ? `<div style="font-size:11px;color:var(--g400)">⭐ ${p.avaliacao} · ${p.vendas_por_dia}/dia</div>` : ''}
+      </td>
+      <td class="td-mon">${fmt(p.preco)}</td>
+      <td style="font-weight:700;color:var(--bl)">${p.vendas_30d}</td>
+      <td class="td-pos">${fmt(p.faturamento_30d)}</td>
+      <td style="font-weight:700;color:#16a34a">${fmt(p.preco_compra_30pct)}</td>
+      <td style="font-weight:700;color:#2563eb">${fmt(p.preco_compra_40pct)}</td>
+    </tr>
+  `).join('');
+
+  document.getElementById('analise-result').style.display = 'block';
+  window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
 </script>
