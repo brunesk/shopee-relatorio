@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Shopee Financeiro — Acelera Shopee</title>
+<title>Acelera Financeiro — Acelera Shopee</title>
 <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
@@ -407,7 +407,7 @@ footer strong{color:var(--or)}
     <div class="auth-right">
       <div class="auth-card">
         <img src="logo.png" class="auth-logo" alt="Acelera Shopee">
-        <div class="auth-title">Shopee Financeiro</div>
+        <div class="auth-title">Acelera Financeiro</div>
         <div class="auth-sub">Entre para ver seu painel completo</div>
         <div class="atab-wrap">
           <button class="atab active" id="atab-login" onclick="switchAuthTab('login')">Entrar</button>
@@ -436,7 +436,7 @@ footer strong{color:var(--or)}
   <header class="hdr">
     <div class="hdr-brand">
       <img src="logo.png" alt="Shopee">
-      <span>Shopee Financeiro</span>
+      <span>Acelera Financeiro</span>
     </div>
     <div class="hdr-pt" id="hdr-pt">Dashboard</div>
     <div class="hdr-right">
@@ -455,7 +455,8 @@ footer strong{color:var(--or)}
     <button class="nav-it" id="nav-upload" onclick="goPage('upload')"><span class="nav-ico">⬆️</span> Novo Upload</button>
     <button class="nav-it" id="nav-produtos" onclick="goPage('produtos')"><span class="nav-ico">💸</span> Custo dos Produtos</button>
     <button class="nav-it" id="nav-ads" onclick="goPage('ads')"><span class="nav-ico">📣</span> Análise de ADS</button>
-    <button class="nav-it" id="nav-analise" onclick="goPage('analise')"><span class="nav-ico">🔍</span> Análise de Loja</button>
+    <div class="nav-sep" id="nav-sep-admin" style="display:none"></div>
+    <button class="nav-it" id="nav-admin" onclick="goPage('admin')" style="display:none"><span class="nav-ico">🛡️</span> Administração</button>
   </nav>
 
   <div class="bnav">
@@ -464,7 +465,7 @@ footer strong{color:var(--or)}
     <button class="bn-it" id="bnav-upload" onclick="goPage('upload')"><span class="bn-ico">⬆️</span><span class="bn-lbl">Upload</span></button>
     <button class="bn-it" id="bnav-produtos" onclick="goPage('produtos')"><span class="bn-ico">💸</span><span class="bn-lbl">Produtos</span></button>
     <button class="bn-it" id="bnav-ads" onclick="goPage('ads')"><span class="bn-ico">📣</span><span class="bn-lbl">ADS</span></button>
-    <button class="bn-it" id="bnav-analise" onclick="goPage('analise')"><span class="bn-ico">🔍</span><span class="bn-lbl">Análise</span></button>
+    <button class="bn-it" id="bnav-admin" onclick="goPage('admin')" style="display:none"><span class="bn-ico">🛡️</span><span class="bn-lbl">Admin</span></button>
   </div>
 
   <main class="main">
@@ -561,93 +562,14 @@ footer strong{color:var(--or)}
       </div>
     </div>
 
-    <!-- ANÁLISE DE LOJA -->
-    <div id="page-analise" class="page">
+    <!-- ADMIN -->
+    <div id="page-admin" class="page">
       <div class="pg-hdr">
-        <h1>Análise de Loja</h1>
-        <p>Cole o link de qualquer loja Shopee para ver faturamento, produtos e preços de compra</p>
+        <h1>🛡️ Administração</h1>
+        <p>Gerencie os alunos com acesso ao Acelera Financeiro</p>
       </div>
-
-      <div class="sec">
-        <div class="analise-input-row">
-          <input type="url" id="analise-url" class="analise-url-inp"
-            placeholder="https://shopee.com.br/nomeddaloja"
-            onkeydown="if(event.key==='Enter')analisarLoja()" />
-          <button id="analise-btn" class="analise-btn" onclick="analisarLoja()">🔍 Analisar</button>
-        </div>
-        <p class="analise-hint">Cole o link completo da loja que você quer pesquisar. Pode ser a loja de um concorrente.</p>
-      </div>
-
-      <div id="analise-loading" class="analise-loading" style="display:none">
-        <div class="spin" style="flex-shrink:0"></div>
-        <div>
-          <p class="analise-loading-ttl">Acessando a loja na Shopee...</p>
-          <p class="analise-loading-sub">Estamos coletando dados de produtos e vendas. Isso pode levar até 30 segundos.</p>
-        </div>
-      </div>
-
-      <div id="analise-error" class="analise-error" style="display:none">
-        ⚠️ <span id="analise-error-msg"></span>
-      </div>
-
-      <div id="analise-result" style="display:none">
-        <div class="pg-hdr" style="margin-top:8px;margin-bottom:18px">
-          <h1 id="res-loja-nome" style="font-size:19px">—</h1>
-          <p id="res-loja-url" class="analise-loja-nome"></p>
-        </div>
-
-        <div class="kpi-grid">
-          <div class="kpi orange">
-            <div class="kpi-ico">📦</div>
-            <div class="kpi-lbl">Produtos Analisados</div>
-            <div class="kpi-val" id="res-total-produtos">—</div>
-          </div>
-          <div class="kpi green">
-            <div class="kpi-ico">💰</div>
-            <div class="kpi-lbl">Faturamento Est. 30d</div>
-            <div class="kpi-val" id="res-faturamento">—</div>
-          </div>
-          <div class="kpi blue">
-            <div class="kpi-ico">📈</div>
-            <div class="kpi-lbl">Total Vendas 30d</div>
-            <div class="kpi-val" id="res-total-vendas">—</div>
-          </div>
-          <div class="kpi purple">
-            <div class="kpi-ico">🏆</div>
-            <div class="kpi-lbl">Mais Vendido</div>
-            <div class="kpi-val" id="res-mais-vendido" style="font-size:12px;line-height:1.3">—</div>
-          </div>
-        </div>
-
-        <div class="sec">
-          <div class="sec-hd">
-            <div class="sec-ttl"><div class="sec-ico">💡</div> Insights da Loja</div>
-          </div>
-          <div id="res-insights" class="insight-list"></div>
-        </div>
-
-        <div class="sec">
-          <div class="sec-hd">
-            <div class="sec-ttl"><div class="sec-ico">📋</div> Produtos por Faturamento</div>
-            <div style="font-size:11px;color:var(--g400)">Últimos 30 dias</div>
-          </div>
-          <div style="overflow-x:auto">
-            <table class="tbl">
-              <thead>
-                <tr>
-                  <th style="text-align:left">Produto</th>
-                  <th>Preço</th>
-                  <th>Vendas<br>30d</th>
-                  <th>Faturamento<br>Est.</th>
-                  <th><span class="badge-30">30% margem</span><br>Comprar até</th>
-                  <th><span class="badge-40">40% margem</span><br>Comprar até</th>
-                </tr>
-              </thead>
-              <tbody id="res-produtos-tbody"></tbody>
-            </table>
-          </div>
-          <p class="analise-nota">* Cálculo considera 20% de taxa Shopee. Faturamento é estimativa baseada em dados públicos da plataforma.</p>
-        </div>
+      <div id="admin-body">
+        <div class="empty"><div class="empty-ico">⏳</div><div class="empty-ttl">Carregando...</div></div>
       </div>
     </div>
 
@@ -700,6 +622,12 @@ auth.onAuthStateChanged(async user => {
     document.getElementById('state-auth').style.display  = 'none';
     document.getElementById('app-shell').style.display   = 'block';
 
+    // Show admin nav only for admin email
+    const isAdmin = em === ADMIN_EMAIL;
+    document.getElementById('nav-admin').style.display     = isAdmin ? '' : 'none';
+    document.getElementById('nav-sep-admin').style.display = isAdmin ? '' : 'none';
+    document.getElementById('bnav-admin').style.display    = isAdmin ? '' : 'none';
+
     await loadAllData();
     renderCurrentPage();
   } else {
@@ -712,9 +640,11 @@ auth.onAuthStateChanged(async user => {
 // ── LOAD DATA ─────────────────────────────────────────
 async function loadAllData() {
   try {
-    // User doc (custos)
+    // User doc (custos + email)
     const udoc = await db.collection('shopee_users').doc(currentUser.uid).get();
     if (udoc.exists) savedCustos = udoc.data().custos || {};
+    // Salva email para o admin identificar o usuário
+    db.collection('shopee_users').doc(currentUser.uid).set({ email: currentUser.email }, { merge: true });
 
     // All months
     const snap = await db.collection('shopee_users').doc(currentUser.uid)
@@ -757,6 +687,9 @@ async function saveCustos() {
 async function saveMonth(key, data) {
   await db.collection('shopee_users').doc(currentUser.uid)
     .collection('months').doc(key).set(data);
+  // Atualiza contagem de meses no doc principal para o admin ver
+  const monthCount = Object.keys(allMonths).length + 1;
+  db.collection('shopee_users').doc(currentUser.uid).set({ monthCount }, { merge: true });
 }
 
 // ── AUTH UI ───────────────────────────────────────────
@@ -838,7 +771,7 @@ const PAGE_TITLES = {
   upload:    'Novo Upload',
   produtos:  'Custo dos Produtos',
   ads:       'Análise de ADS',
-  analise:   'Análise de Loja'
+  admin:     'Administração'
 };
 
 function goPage(p) {
@@ -846,7 +779,7 @@ function goPage(p) {
   document.querySelectorAll('.page').forEach(el => el.classList.remove('active'));
   document.getElementById('page-' + p).classList.add('active');
 
-  ['dashboard','mes','upload','produtos','ads','analise'].forEach(id => {
+  ['dashboard','mes','upload','produtos','ads','admin'].forEach(id => {
     const nv  = document.getElementById('nav-' + id);
     const bnv = document.getElementById('bnav-' + id);
     if (nv)  nv.classList.toggle('active',  id === p);
@@ -863,6 +796,7 @@ function renderCurrentPage() {
   else if (currentPage === 'mes')  renderMes();
   else if (currentPage === 'produtos') renderProdutos();
   else if (currentPage === 'ads') renderAds();
+  else if (currentPage === 'admin') renderAdmin();
 }
 
 // ── UTILS ─────────────────────────────────────────────
@@ -2058,101 +1992,110 @@ function updateCusto(name, val) {
   scheduleSave();
 }
 
-// ── ANÁLISE DE LOJA ──────────────────────────────────
-const ANALISE_API = 'https://shopee-relatorio-production.up.railway.app';
+// ── ADMIN ─────────────────────────────────────────────
+const ADMIN_EMAIL = 'brunoferrack@gmail.com';
 
-async function analisarLoja() {
-  const urlInput = document.getElementById('analise-url');
-  const url = urlInput.value.trim();
-  if (!url) { urlInput.focus(); return; }
-
-  const btn      = document.getElementById('analise-btn');
-  const loading  = document.getElementById('analise-loading');
-  const errorEl  = document.getElementById('analise-error');
-  const resultEl = document.getElementById('analise-result');
-
-  btn.disabled = true;
-  btn.textContent = 'Analisando...';
-  loading.style.display  = 'flex';
-  errorEl.style.display  = 'none';
-  resultEl.style.display = 'none';
+async function renderAdmin() {
+  const body = document.getElementById('admin-body');
+  body.innerHTML = `<div class="empty"><div class="empty-ico">⏳</div><div class="empty-ttl">Carregando alunos...</div></div>`;
 
   try {
-    const res = await fetch(ANALISE_API + '/analisar', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ url })
-    });
+    // Busca lista de emails autorizados
+    const allowedSnap = await db.collection('allowed_users').orderBy('addedAt','desc').get();
+    const allowed = [];
+    allowedSnap.forEach(d => allowed.push({ id: d.id, ...d.data() }));
 
-    const data = await res.json();
+    // Busca dados de quem já fez upload (shopee_users com months)
+    const usersSnap = await db.collection('shopee_users').get();
+    const usersData = {};
+    usersSnap.forEach(d => { usersData[d.id] = d.data(); });
 
-    if (!res.ok) {
-      throw new Error(data.detail || 'Erro ao analisar a loja.');
-    }
+    body.innerHTML = `
+      <div class="sec">
+        <div class="sec-hd">
+          <div class="sec-ttl"><div class="sec-ico">➕</div>Adicionar Aluno</div>
+        </div>
+        <div style="display:flex;gap:10px;align-items:stretch">
+          <input type="email" id="admin-email-inp" placeholder="email@aluno.com"
+            style="flex:1;padding:13px 15px;border:1.5px solid var(--g200);border-radius:12px;font-size:14px;outline:none;font-family:inherit;color:var(--g800)"
+            onkeydown="if(event.key==='Enter')adminAddEmail()"
+            onfocus="this.style.borderColor='var(--or)'" onblur="this.style.borderColor='var(--g200)'">
+          <button onclick="adminAddEmail()" style="padding:13px 22px;background:linear-gradient(135deg,var(--or),#ff7043);color:#fff;border:none;border-radius:12px;font-size:14px;font-weight:800;cursor:pointer;white-space:nowrap;font-family:inherit">Adicionar</button>
+        </div>
+        <p style="font-size:12px;color:var(--g400);margin-top:10px">Após adicionar, o aluno pode criar conta com esse email.</p>
+      </div>
 
-    renderAnalise(data);
-  } catch (err) {
-    document.getElementById('analise-error-msg').textContent = err.message || 'Não foi possível conectar ao servidor.';
-    errorEl.style.display = 'block';
-  } finally {
-    loading.style.display = 'none';
-    btn.disabled = false;
-    btn.textContent = '🔍 Analisar';
+      <div class="sec">
+        <div class="sec-hd">
+          <div class="sec-ttl"><div class="sec-ico">👥</div>Alunos Autorizados</div>
+          <div style="font-size:13px;font-weight:700;color:var(--g500)">${allowed.length} aluno${allowed.length !== 1 ? 's' : ''}</div>
+        </div>
+        ${allowed.length === 0 ? `<p style="color:var(--g400);font-size:13px">Nenhum aluno adicionado ainda.</p>` : `
+        <div style="overflow-x:auto">
+          <table class="tbl">
+            <thead><tr>
+              <th style="text-align:left">Email</th>
+              <th style="text-align:left">Adicionado em</th>
+              <th style="text-align:right">Uploads</th>
+              <th style="text-align:right">Ações</th>
+            </tr></thead>
+            <tbody>
+              ${allowed.map(u => {
+                const ud = Object.values(usersData).find(x => x.email === u.id) || {};
+                const mc = ud.monthCount || 0;
+                const addedDate = u.addedAt ? new Date(u.addedAt.seconds * 1000).toLocaleDateString('pt-BR') : '—';
+                const hasData = mc > 0;
+                return `<tr>
+                  <td style="font-weight:600;color:var(--g800)">${u.id}</td>
+                  <td style="color:var(--g500);font-size:13px">${addedDate}</td>
+                  <td style="text-align:right">
+                    ${hasData
+                      ? `<span style="font-weight:700;color:var(--gr)">${mc} ${mc===1?'mês':'meses'}</span>`
+                      : `<span style="color:var(--g400);font-size:12px">sem dados</span>`}
+                  </td>
+                  <td style="text-align:right">
+                    <button onclick="adminRemoveEmail('${u.id}')" style="background:#fee2e2;color:#dc2626;border:none;border-radius:8px;padding:5px 12px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit">Remover</button>
+                  </td>
+                </tr>`;
+              }).join('')}
+            </tbody>
+          </table>
+        </div>`}
+      </div>
+    `;
+  } catch(e) {
+    console.error(e);
+    body.innerHTML = `<div class="sec"><p style="color:var(--re)">Erro ao carregar dados: ${e.message}</p></div>`;
   }
 }
 
-function renderAnalise(d) {
-  document.getElementById('res-loja-nome').textContent     = d.loja || 'Loja Shopee';
-  document.getElementById('res-loja-url').textContent      = d.url  || '';
-  document.getElementById('res-total-produtos').textContent = d.total_produtos;
-  document.getElementById('res-faturamento').textContent   = fmt(d.faturamento_30d);
-  document.getElementById('res-total-vendas').textContent  = d.total_vendas_30d + ' un.';
+async function adminAddEmail() {
+  const inp = document.getElementById('admin-email-inp');
+  const email = (inp.value || '').trim().toLowerCase();
+  if (!email || !email.includes('@')) { inp.focus(); return; }
 
-  if (d.melhor_produto) {
-    const mp = d.melhor_produto;
-    document.getElementById('res-mais-vendido').innerHTML =
-      `${mp.nome.substring(0,40)}${mp.nome.length>40?'…':''}<br><span style="font-size:10px;color:var(--g500)">${mp.vendas_30d} vendas · ${fmt(mp.preco)}</span>`;
+  try {
+    await db.collection('allowed_users').doc(email).set({
+      addedAt: firebase.firestore.FieldValue.serverTimestamp(),
+      addedBy: currentUser.email
+    });
+    inp.value = '';
+    showToast('✅ ' + email + ' adicionado com sucesso!', 'ok');
+    renderAdmin();
+  } catch(e) {
+    showToast('Erro ao adicionar: ' + e.message, 'err');
   }
+}
 
-  // Insights
-  const tipoMap = {
-    positivo: { cls: 'ic-positivo', ico: '✅' },
-    atencao:  { cls: 'ic-atencao',  ico: '⚠️' },
-    critico:  { cls: 'ic-critico',  ico: '🚨' },
-    info:     { cls: 'ic-info',     ico: '💡' },
-  };
-  const insightsEl = document.getElementById('res-insights');
-  insightsEl.innerHTML = (d.insights || []).map(ins => {
-    const { cls, ico } = tipoMap[ins.tipo] || tipoMap.info;
-    return `<div class="insight-card ${cls}">
-      <div class="ic-ico">${ico}</div>
-      <div class="ic-body">
-        <div class="ic-ttl">${ins.titulo}</div>
-        <div class="ic-desc">${ins.descricao}</div>
-      </div>
-    </div>`;
-  }).join('');
-
-  // Tabela de produtos
-  const tbody = document.getElementById('res-produtos-tbody');
-  tbody.innerHTML = (d.produtos || []).map((p, i) => `
-    <tr>
-      <td>
-        <div style="font-weight:700;color:var(--g800);max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${p.nome}">
-          ${i === 0 ? '🥇 ' : i === 1 ? '🥈 ' : i === 2 ? '🥉 ' : ''}${p.nome}
-        </div>
-        ${p.avaliacao > 0 ? `<div style="font-size:11px;color:var(--g400)">⭐ ${p.avaliacao} · ${p.vendas_por_dia}/dia</div>` : ''}
-      </td>
-      <td class="td-mon">${fmt(p.preco)}</td>
-      <td style="font-weight:700;color:var(--bl)">${p.vendas_30d}</td>
-      <td class="td-pos">${fmt(p.faturamento_30d)}</td>
-      <td style="font-weight:700;color:#16a34a">${fmt(p.preco_compra_30pct)}</td>
-      <td style="font-weight:700;color:#2563eb">${fmt(p.preco_compra_40pct)}</td>
-    </tr>
-  `).join('');
-
-  document.getElementById('analise-result').style.display = 'block';
-  window.scrollTo({ top: 0, behavior: 'smooth' });
+async function adminRemoveEmail(email) {
+  if (!confirm(`Remover acesso de ${email}?`)) return;
+  try {
+    await db.collection('allowed_users').doc(email).delete();
+    showToast('Aluno removido.', 'ok');
+    renderAdmin();
+  } catch(e) {
+    showToast('Erro: ' + e.message, 'err');
+  }
 }
 
 </script>
