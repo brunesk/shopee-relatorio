@@ -895,61 +895,6 @@ function renderDashboard() {
   // Chart data (últimos 12 meses)
   const chartKeys = keys.slice(-12);
   const chartVals = chartKeys.map(k => calcLucroMes(allMonths[k]));
-  const maxAbs    = Math.max(...chartVals.map(Math.abs), 1);
-
-  function niceNum(v) {
-    if (v <= 0) return 1;
-    const exp  = Math.floor(Math.log10(v));
-    const f    = v / Math.pow(10, exp);
-    const nice = f < 1.5 ? 1 : f < 3 ? 2 : f < 7 ? 5 : 10;
-    return nice * Math.pow(10, exp);
-  }
-  function compactFmt(v) {
-    const abs = Math.abs(v), s = v >= 0 ? '+' : '-';
-    if (abs >= 10000) return s+'R$'+(abs/1000).toFixed(0)+'k';
-    if (abs >= 1000)  return s+'R$'+(abs/1000).toFixed(1).replace('.0','')+'k';
-    return s+'R$'+abs.toFixed(0);
-  }
-
-  const CHART_H = 200;
-  const yMax    = niceNum(maxAbs);
-  const yStep   = yMax / 4;
-
-  const yLblsHTML = [4,3,2,1,0].map(i => {
-    const val = i * yStep;
-    const lbl = val >= 10000 ? 'R$'+(val/1000).toFixed(0)+'k'
-              : val >= 1000  ? 'R$'+(val/1000).toFixed(1).replace('.0','')+'k'
-              : 'R$'+val.toFixed(0);
-    return `<span class="y-lbl">${lbl}</span>`;
-  }).join('');
-
-  const gridHTML = [1,2,3,4].map(i => {
-    const bot = (i * yStep / yMax * CHART_H).toFixed(0);
-    return `<div class="chart-gl" style="bottom:${bot}px"></div>`;
-  }).join('');
-
-  const bars = chartKeys.map((k, i) => {
-    const v     = chartVals[i];
-    const px    = Math.max(Math.abs(v) / yMax * CHART_H, 3).toFixed(0);
-    const cls   = v > 0 ? 'pos' : v < 0 ? 'neg' : 'zero';
-    const isCur = i === chartKeys.length - 1;
-    return `<div class="c-col${isCur?' c-cur':''}">
-      <div class="c-val ${cls}">${compactFmt(v)}</div>
-      <div class="c-tip">${monthLabel(k)}<br>${v>=0?'+':''}${fmt(v)}</div>
-      <div class="c-bar ${cls}" style="height:${px}px"></div>
-    </div>`;
-  }).join('');
-
-  const lbls = chartKeys.map(k => `<div class="c-lbl">${monthLabel(k)}</div>`).join('');
-
-  const avg     = chartVals.reduce((s,v) => s+v, 0) / chartVals.length;
-  const bestIdx = chartVals.indexOf(Math.max(...chartVals));
-  const trendUp = chartVals.length > 1 && chartVals[chartVals.length-1] > chartVals[chartVals.length-2];
-  const chartFooter = `<div class="chart-footer">
-    <div class="cf-item">📊 Média mensal: <strong>${fmt(avg)}</strong></div>
-    <div class="cf-item">🏆 Melhor mês: <strong>${monthLabel(chartKeys[bestIdx])} (${fmt(chartVals[bestIdx])})</strong></div>
-    ${chartVals.length > 1 ? `<div class="cf-item">${trendUp?'📈':'📉'} Tendência: <strong style="color:${trendUp?'var(--gr)':'var(--re)'}">${trendUp?'Alta':'Baixa'}</strong></div>` : ''}
-  </div>`;
 
   // Tabela de meses
   const rows = [...keys].reverse().map(k => {
