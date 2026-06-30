@@ -361,11 +361,12 @@ input[type=file]{display:none}
 .how-arrow.open{transform:rotate(90deg)}
 .how-body{display:none;margin-top:16px}
 .how-body.open{display:block}
-.how-steps{display:grid;grid-template-columns:repeat(auto-fit,minmax(155px,1fr));gap:12px}
-.how-step{background:var(--g50);border:1px solid var(--g200);border-radius:12px;padding:16px}
-.how-n{width:24px;height:24px;background:var(--or);color:#fff;border-radius:7px;font-size:12px;font-weight:800;display:flex;align-items:center;justify-content:center;margin-bottom:10px}
+.how-steps{display:flex;flex-direction:column;gap:12px}
+.how-step{background:var(--g50);border:1px solid var(--g200);border-radius:12px;padding:16px;display:flex;gap:14px;align-items:flex-start}
+.how-n{width:28px;height:28px;background:var(--or);color:#fff;border-radius:8px;font-size:13px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:2px}
 .how-step h4{font-size:13px;font-weight:700;margin-bottom:4px}
 .how-step p{font-size:12px;color:var(--g500);line-height:1.5}
+.how-img{display:block;width:100%;max-width:420px;border-radius:8px;border:1px solid var(--g200);margin-top:10px;box-shadow:var(--sh1)}
 
 .note{font-size:12px;color:var(--g400);text-align:center;padding:10px 0}
 footer{text-align:center;padding:24px 0 16px;font-size:12px;color:var(--g400)}
@@ -541,7 +542,7 @@ footer strong{color:var(--or)}
     <div id="page-ads" class="page">
       <div class="pg-hdr">
         <h1>Análise de ADS</h1>
-        <p>Exporte o relatório de anúncios CPC da Shopee e faça o upload para analisar a performance, identificar problemas e receber sugestões.</p>
+        <p>Exporte o relatório de anúncios da Shopee e faça o upload para analisar a performance, identificar problemas e receber sugestões.</p>
       </div>
       <div id="ads-body"></div>
     </div>
@@ -1664,12 +1665,52 @@ function renderAds() {
         </div>
         <div class="how-body">
           <div class="how-steps">
-            <div class="how-step"><div class="how-n">1</div><h4>🖥️ Seller Center</h4><p>Acesse <strong>seller.shopee.com.br</strong> e faça login</p></div>
-            <div class="how-step"><div class="how-n">2</div><h4>📣 Anúncios</h4><p>Menu lateral → <strong>Anúncios CPC</strong> → <strong>Gerenciar Anúncios</strong></p></div>
-            <div class="how-step"><div class="how-n">3</div><h4>📊 Relatório</h4><p>No topo da página, clique em <strong>"Relatório"</strong></p></div>
-            <div class="how-step"><div class="how-n">4</div><h4>📅 Período</h4><p>Selecione o intervalo desejado (sugerido: último mês completo)</p></div>
-            <div class="how-step"><div class="how-n">5</div><h4>📋 Tipo</h4><p>Selecione <strong>"Dados Gerais de Anúncios CPC"</strong></p></div>
-            <div class="how-step"><div class="how-n">6</div><h4>⬇️ Exportar</h4><p>Clique em <strong>"Exportar"</strong> e baixe o arquivo <strong>.csv</strong></p></div>
+
+            <div class="how-step">
+              <div class="how-n">1</div>
+              <div>
+                <h4>📣 Shopee Ads</h4>
+                <p>Menu lateral → <strong>Central de Marketing</strong> → clique em <strong>Shopee Ads</strong></p>
+                <img src="guia-ads-1.png" class="how-img" alt="Shopee Ads no menu">
+              </div>
+            </div>
+
+            <div class="how-step">
+              <div class="how-n">2</div>
+              <div>
+                <h4>📦 Todos os Anúncios de Produtos</h4>
+                <p>Na página de Anúncios, clique na aba <strong>Todos os Anúncios de Produtos</strong></p>
+                <img src="guia-ads-2.png" class="how-img" alt="Todos os Anúncios de Produtos">
+              </div>
+            </div>
+
+            <div class="how-step">
+              <div class="how-n">3</div>
+              <div>
+                <h4>📅 Selecione o Período</h4>
+                <p>Clique no seletor de datas e escolha o período — ex: <strong>01/06 – 30/06</strong></p>
+                <img src="guia-ads-3.png" class="how-img" alt="Seletor de período">
+              </div>
+            </div>
+
+            <div class="how-step">
+              <div class="how-n">4</div>
+              <div>
+                <h4>📤 Exportar Dados Gerais</h4>
+                <p>Clique em <strong>Exportar dados</strong> → selecione <strong>Dados Gerais de Anúncios</strong></p>
+                <img src="guia-ads-4.png" class="how-img" alt="Exportar dados gerais">
+              </div>
+            </div>
+
+            <div class="how-step">
+              <div class="how-n">5</div>
+              <div>
+                <h4>⬇️ Baixar o Relatório</h4>
+                <p>Em <strong>Últimos Relatórios</strong>, aguarde gerar e clique em <strong>Baixar</strong></p>
+                <img src="guia-ads-5.png" class="how-img" alt="Baixar relatório">
+              </div>
+            </div>
+
           </div>
           <p style="font-size:12px;color:var(--g400);margin-top:14px;padding-top:12px;border-top:1px solid var(--g100)">💡 Dica: exporte mês a mês para comparar a evolução da sua campanha ao longo do tempo</p>
         </div>
@@ -1679,8 +1720,8 @@ function renderAds() {
         ondragleave="this.classList.remove('drag')"
         ondrop="event.preventDefault();this.classList.remove('drag');const f=event.dataTransfer.files[0];if(f)readAdsFile(f)">
         <div class="ads-drop-ico">📣</div>
-        <div class="ads-drop-ttl">Relatório de Anúncios CPC</div>
-        <div class="ads-drop-sub">Arraste o arquivo CSV aqui ou clique para selecionar<br><small style="color:var(--g400)">Arquivo exportado em: Anúncios CPC → Relatório → Dados Gerais de Anúncios</small></div>
+        <div class="ads-drop-ttl">Relatório de Anúncios</div>
+        <div class="ads-drop-sub">Arraste o arquivo CSV aqui ou clique para selecionar<br><small style="color:var(--g400)">Arquivo exportado em: Shopee Ads → Exportar dados → Dados Gerais de Anúncios</small></div>
         <button class="uz-btn" style="margin-top:16px" onclick="document.getElementById('ads-fi').click();event.preventDefault()">Selecionar arquivo CSV</button>
         <input type="file" accept=".csv,.txt" id="ads-fi" style="display:none" onchange="onAdsFile(this)">
         <div class="uz-hint" style="margin-top:12px">🔒 Arquivo processado no seu dispositivo — nenhum dado é enviado</div>
@@ -1697,7 +1738,7 @@ function readAdsFile(file) {
   const reader = new FileReader();
   reader.onload = e => {
     const result = processAdsCSV(e.target.result);
-    if (!result) { showToast('Arquivo inválido — use "Dados Gerais de Anúncios CPC" da Shopee'); return; }
+    if (!result) { showToast('Arquivo inválido — use "Dados Gerais de Anúncios" da Shopee'); return; }
     adsData = result;
     renderAds();
   };
