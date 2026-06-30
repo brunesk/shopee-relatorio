@@ -2010,7 +2010,7 @@ async function renderAdmin() {
     const users = [];
     usersSnap.forEach(d => {
       const data = d.data();
-      if (data.email) users.push({ uid: d.id, ...data });
+      users.push({ uid: d.id, email: data.email || '(email não salvo — uid: ' + d.id.slice(0,8) + ')', ...data });
     });
 
     // Totais gerais
