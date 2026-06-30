@@ -687,9 +687,12 @@ async function saveCustos() {
 async function saveMonth(key, data) {
   await db.collection('shopee_users').doc(currentUser.uid)
     .collection('months').doc(key).set(data);
-  // Atualiza contagem de meses no doc principal para o admin ver
-  const monthCount = Object.keys(allMonths).length + 1;
-  db.collection('shopee_users').doc(currentUser.uid).set({ monthCount }, { merge: true });
+  // Atualiza sumário no doc principal para o admin ver sem ler subcoleções
+  const allM = { ...allMonths, [key]: data };
+  const monthCount   = Object.keys(allM).length;
+  const totalBruto   = Object.values(allM).reduce((s, m) => s + (m.bruto   || 0), 0);
+  const totalLiquido = Object.values(allM).reduce((s, m) => s + (m.liquido || 0), 0);
+  db.collection('shopee_users').doc(currentUser.uid).set({ monthCount, totalBruto, totalLiquido }, { merge: true });
 }
 
 // ── AUTH UI ───────────────────────────────────────────
@@ -1995,77 +1998,151 @@ function updateCusto(name, val) {
 // ── ADMIN ─────────────────────────────────────────────
 const ADMIN_EMAIL = 'brunoferrack@gmail.com';
 
+let adminSelectedUser = null;
+
 async function renderAdmin() {
   const body = document.getElementById('admin-body');
   body.innerHTML = `<div class="empty"><div class="empty-ico">⏳</div><div class="empty-ttl">Carregando alunos...</div></div>`;
 
   try {
-    // Busca lista de emails autorizados
-    const allowedSnap = await db.collection('allowed_users').orderBy('addedAt','desc').get();
-    const allowed = [];
-    allowedSnap.forEach(d => allowed.push({ id: d.id, ...d.data() }));
-
-    // Busca dados de quem já fez upload (shopee_users com months)
+    // Busca todos os usuários cadastrados (shopee_users)
     const usersSnap = await db.collection('shopee_users').get();
-    const usersData = {};
-    usersSnap.forEach(d => { usersData[d.id] = d.data(); });
+    const users = [];
+    usersSnap.forEach(d => {
+      const data = d.data();
+      if (data.email) users.push({ uid: d.id, ...data });
+    });
+
+    // Totais gerais
+    const totalAlunos   = users.length;
+    const totalBruto    = users.reduce((s, u) => s + (u.totalBruto  || 0), 0);
+    const totalLiquido  = users.reduce((s, u) => s + (u.totalLiquido|| 0), 0);
+    const totalUploads  = users.reduce((s, u) => s + (u.monthCount  || 0), 0);
 
     body.innerHTML = `
+      <div class="kpi-grid">
+        <div class="kpi blue"><div class="kpi-ico">👥</div><div class="kpi-lbl">Alunos Cadastrados</div><div class="kpi-val">${totalAlunos}</div><div class="kpi-sub">${totalUploads} meses enviados</div></div>
+        <div class="kpi green"><div class="kpi-ico">💵</div><div class="kpi-lbl">Faturamento Bruto Total</div><div class="kpi-val">${fmt(totalBruto)}</div><div class="kpi-sub">soma de todos os alunos</div></div>
+        <div class="kpi orange"><div class="kpi-ico">💰</div><div class="kpi-lbl">Líquido Shopee Total</div><div class="kpi-val">${fmt(totalLiquido)}</div><div class="kpi-sub">após taxas Shopee</div></div>
+        <div class="kpi purple"><div class="kpi-ico">📈</div><div class="kpi-lbl">Alunos com Dados</div><div class="kpi-val">${users.filter(u=>(u.monthCount||0)>0).length}</div><div class="kpi-sub">já fizeram upload</div></div>
+      </div>
+
       <div class="sec">
         <div class="sec-hd">
-          <div class="sec-ttl"><div class="sec-ico">➕</div>Adicionar Aluno</div>
+          <div class="sec-ttl"><div class="sec-ico">➕</div>Liberar Acesso</div>
         </div>
         <div style="display:flex;gap:10px;align-items:stretch">
           <input type="email" id="admin-email-inp" placeholder="email@aluno.com"
             style="flex:1;padding:13px 15px;border:1.5px solid var(--g200);border-radius:12px;font-size:14px;outline:none;font-family:inherit;color:var(--g800)"
             onkeydown="if(event.key==='Enter')adminAddEmail()"
             onfocus="this.style.borderColor='var(--or)'" onblur="this.style.borderColor='var(--g200)'">
-          <button onclick="adminAddEmail()" style="padding:13px 22px;background:linear-gradient(135deg,var(--or),#ff7043);color:#fff;border:none;border-radius:12px;font-size:14px;font-weight:800;cursor:pointer;white-space:nowrap;font-family:inherit">Adicionar</button>
+          <button onclick="adminAddEmail()" style="padding:13px 22px;background:linear-gradient(135deg,var(--or),#ff7043);color:#fff;border:none;border-radius:12px;font-size:14px;font-weight:800;cursor:pointer;white-space:nowrap;font-family:inherit">+ Adicionar</button>
         </div>
-        <p style="font-size:12px;color:var(--g400);margin-top:10px">Após adicionar, o aluno pode criar conta com esse email.</p>
+        <p style="font-size:12px;color:var(--g400);margin-top:10px">Após adicionar, o aluno cria conta com esse email.</p>
       </div>
 
       <div class="sec">
         <div class="sec-hd">
-          <div class="sec-ttl"><div class="sec-ico">👥</div>Alunos Autorizados</div>
-          <div style="font-size:13px;font-weight:700;color:var(--g500)">${allowed.length} aluno${allowed.length !== 1 ? 's' : ''}</div>
+          <div class="sec-ttl"><div class="sec-ico">👥</div>Todos os Alunos</div>
+          <div style="font-size:13px;font-weight:700;color:var(--g500)">${totalAlunos} cadastrado${totalAlunos!==1?'s':''}</div>
         </div>
-        ${allowed.length === 0 ? `<p style="color:var(--g400);font-size:13px">Nenhum aluno adicionado ainda.</p>` : `
-        <div style="overflow-x:auto">
-          <table class="tbl">
-            <thead><tr>
-              <th style="text-align:left">Email</th>
-              <th style="text-align:left">Adicionado em</th>
-              <th style="text-align:right">Uploads</th>
-              <th style="text-align:right">Ações</th>
-            </tr></thead>
-            <tbody>
-              ${allowed.map(u => {
-                const ud = Object.values(usersData).find(x => x.email === u.id) || {};
-                const mc = ud.monthCount || 0;
-                const addedDate = u.addedAt ? new Date(u.addedAt.seconds * 1000).toLocaleDateString('pt-BR') : '—';
-                const hasData = mc > 0;
-                return `<tr>
-                  <td style="font-weight:600;color:var(--g800)">${u.id}</td>
-                  <td style="color:var(--g500);font-size:13px">${addedDate}</td>
-                  <td style="text-align:right">
-                    ${hasData
-                      ? `<span style="font-weight:700;color:var(--gr)">${mc} ${mc===1?'mês':'meses'}</span>`
-                      : `<span style="color:var(--g400);font-size:12px">sem dados</span>`}
-                  </td>
-                  <td style="text-align:right">
-                    <button onclick="adminRemoveEmail('${u.id}')" style="background:#fee2e2;color:#dc2626;border:none;border-radius:8px;padding:5px 12px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit">Remover</button>
-                  </td>
-                </tr>`;
-              }).join('')}
-            </tbody>
-          </table>
-        </div>`}
+        ${users.length === 0
+          ? `<p style="color:var(--g400);font-size:13px">Nenhum aluno cadastrado ainda.</p>`
+          : `<div style="overflow-x:auto">
+              <table class="tbl">
+                <thead><tr>
+                  <th style="text-align:left">Email</th>
+                  <th style="text-align:right">Meses</th>
+                  <th style="text-align:right">Faturamento Bruto</th>
+                  <th style="text-align:right">Líquido Shopee</th>
+                  <th style="text-align:right">Dados</th>
+                </tr></thead>
+                <tbody>
+                  ${users.sort((a,b)=>(b.monthCount||0)-(a.monthCount||0)).map(u => {
+                    const mc  = u.monthCount   || 0;
+                    const br  = u.totalBruto   || 0;
+                    const lq  = u.totalLiquido || 0;
+                    return `<tr style="cursor:pointer" onclick="adminOpenUser('${u.uid}','${u.email}')">
+                      <td style="font-weight:600;color:var(--g800)">${u.email}</td>
+                      <td style="text-align:right;font-weight:700;color:${mc>0?'var(--bl)':'var(--g400)'}">${mc > 0 ? mc : '—'}</td>
+                      <td style="text-align:right;font-weight:700;color:${br>0?'var(--g800)':'var(--g400)'}">${br>0?fmt(br):'—'}</td>
+                      <td style="text-align:right;font-weight:700;color:${lq>0?'var(--gr)':'var(--g400)'}">${lq>0?fmt(lq):'—'}</td>
+                      <td style="text-align:right"><button style="background:var(--or-l);color:var(--or);border:none;border-radius:8px;padding:5px 12px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit">Ver →</button></td>
+                    </tr>`;
+                  }).join('')}
+                </tbody>
+              </table>
+             </div>`}
       </div>
+
+      <div id="admin-user-detail" style="display:none"></div>
     `;
   } catch(e) {
     console.error(e);
     body.innerHTML = `<div class="sec"><p style="color:var(--re)">Erro ao carregar dados: ${e.message}</p></div>`;
+  }
+}
+
+async function adminOpenUser(uid, email) {
+  const det = document.getElementById('admin-user-detail');
+  det.style.display = 'block';
+  det.innerHTML = `<div class="sec"><div class="empty"><div class="empty-ico">⏳</div><div class="empty-ttl">Carregando dados de ${email}...</div></div></div>`;
+  det.scrollIntoView({ behavior: 'smooth' });
+
+  try {
+    const snap = await db.collection('shopee_users').doc(uid).collection('months').orderBy('uploadedAt','desc').get();
+    const months = [];
+    snap.forEach(d => months.push({ key: d.id, ...d.data() }));
+
+    if (!months.length) {
+      det.innerHTML = `<div class="sec"><div class="sec-hd"><div class="sec-ttl"><div class="sec-ico">📊</div>${email}</div></div><p style="color:var(--g400)">Nenhum dado enviado ainda.</p></div>`;
+      return;
+    }
+
+    const rows = months.map(m => {
+      const taxas = (m.descontos||0)+(m.comissao||0)+(m.servico||0)+(m.transacao||0);
+      return `<tr>
+        <td style="font-weight:700">${monthFull(m.monthKey||m.key)}</td>
+        <td style="text-align:right">${(m.pedidos||0).toLocaleString('pt-BR')}</td>
+        <td style="text-align:right;color:var(--g800);font-weight:700">${fmt(m.bruto||0)}</td>
+        <td style="text-align:right;color:var(--re)">${fmt(taxas)}</td>
+        <td style="text-align:right;color:var(--gr);font-weight:700">${fmt(m.liquido||0)}</td>
+        <td style="text-align:right;color:var(--g500);font-size:12px">${m.arquivo||'—'}</td>
+      </tr>`;
+    }).join('');
+
+    const totBruto  = months.reduce((s,m)=>s+(m.bruto||0),0);
+    const totLiq    = months.reduce((s,m)=>s+(m.liquido||0),0);
+    const totPed    = months.reduce((s,m)=>s+(m.pedidos||0),0);
+
+    det.innerHTML = `
+      <div class="sec">
+        <div class="sec-hd">
+          <div class="sec-ttl"><div class="sec-ico">📊</div>${email}</div>
+          <button onclick="document.getElementById('admin-user-detail').style.display='none'" style="background:var(--g100);border:none;border-radius:8px;padding:6px 12px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;color:var(--g600)">Fechar</button>
+        </div>
+        <div class="kpi-grid" style="margin-bottom:18px">
+          <div class="kpi blue"><div class="kpi-lbl">Pedidos</div><div class="kpi-val" style="font-size:18px">${totPed.toLocaleString('pt-BR')}</div></div>
+          <div class="kpi green"><div class="kpi-lbl">Bruto Total</div><div class="kpi-val" style="font-size:18px">${fmt(totBruto)}</div></div>
+          <div class="kpi orange"><div class="kpi-lbl">Líquido Total</div><div class="kpi-val" style="font-size:18px">${fmt(totLiq)}</div></div>
+          <div class="kpi purple"><div class="kpi-lbl">Meses</div><div class="kpi-val" style="font-size:18px">${months.length}</div></div>
+        </div>
+        <div style="overflow-x:auto">
+          <table class="tbl">
+            <thead><tr>
+              <th style="text-align:left">Mês</th>
+              <th style="text-align:right">Pedidos</th>
+              <th style="text-align:right">Bruto</th>
+              <th style="text-align:right">Taxas Shopee</th>
+              <th style="text-align:right">Líquido</th>
+              <th style="text-align:right">Arquivo</th>
+            </tr></thead>
+            <tbody>${rows}</tbody>
+          </table>
+        </div>
+      </div>`;
+  } catch(e) {
+    det.innerHTML = `<div class="sec"><p style="color:var(--re)">Erro: ${e.message}</p></div>`;
   }
 }
 
@@ -2080,21 +2157,10 @@ async function adminAddEmail() {
       addedBy: currentUser.email
     });
     inp.value = '';
-    showToast('✅ ' + email + ' adicionado com sucesso!', 'ok');
+    showToast('✅ ' + email + ' adicionado!', 'ok');
     renderAdmin();
   } catch(e) {
     showToast('Erro ao adicionar: ' + e.message, 'err');
-  }
-}
-
-async function adminRemoveEmail(email) {
-  if (!confirm(`Remover acesso de ${email}?`)) return;
-  try {
-    await db.collection('allowed_users').doc(email).delete();
-    showToast('Aluno removido.', 'ok');
-    renderAdmin();
-  } catch(e) {
-    showToast('Erro: ' + e.message, 'err');
   }
 }
 
