@@ -6,6 +6,7 @@
 <title>Acelera Shopee - Gestão Financeira — Acelera Shopee</title>
 <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.165.0/build/three.min.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,700;12..96,800&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -398,6 +399,11 @@ input[type=file]{display:none}
 .note{font-size:12px;color:var(--s400);text-align:center;padding:10px 0}
 footer{text-align:center;padding:24px 0 16px;font-size:12px;color:var(--s400)}
 footer strong{color:var(--or)}
+
+/* ── 3D SCENE ── */
+#auth-3d-canvas{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:0}
+.auth-left .auth-lc{z-index:2}
+.auth-left{overflow:hidden}
 /* ── ANÁLISE DE LOJA ── */
 .analise-input-row{display:flex;gap:10px;align-items:stretch}
 .analise-url-inp{flex:1;padding:14px 16px;border:2px solid var(--s200);border-radius:12px;font-size:14px;outline:none;transition:all .2s;font-family:inherit;color:var(--s800);background:#fff}
@@ -2294,6 +2300,149 @@ async function adminAddEmail() {
     showToast('Erro ao adicionar: ' + e.message, 'err');
   }
 }
+
+/* ════════════════════════════════════════════
+   3D AUTH SCENE — Three.js
+   Floating geometric shapes on the login panel
+   ════════════════════════════════════════════ */
+let _3dRenderer = null;
+
+function initAuthScene() {
+  if (typeof THREE === 'undefined') return;
+  if (window.matchMedia('(max-width:859px)').matches) return;
+  if (_3dRenderer) { _3dRenderer.dispose(); _3dRenderer = null; }
+
+  const container = document.querySelector('.auth-left');
+  if (!container) return;
+
+  const W = container.clientWidth, H = container.clientHeight;
+
+  // Scene
+  const scene = new THREE.Scene();
+  const camera = new THREE.PerspectiveCamera(60, W / H, 0.1, 100);
+  camera.position.set(0, 0, 7);
+
+  const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+  renderer.setSize(W, H);
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  renderer.setClearColor(0x000000, 0);
+  renderer.domElement.id = 'auth-3d-canvas';
+  container.prepend(renderer.domElement);
+  _3dRenderer = renderer;
+
+  // Materials
+  const matWire = new THREE.MeshBasicMaterial({ color: 0xee4d2d, wireframe: true, transparent: true, opacity: 0.55 });
+  const matGlow = new THREE.MeshBasicMaterial({ color: 0xff7043, wireframe: true, transparent: true, opacity: 0.3 });
+  const matRing = new THREE.MeshBasicMaterial({ color: 0xffa07a, wireframe: true, transparent: true, opacity: 0.2 });
+
+  // Floating shapes
+  const shapes = [];
+
+  const addShape = (geo, mat, x, y, z, rx, ry, rz, speed) => {
+    const mesh = new THREE.Mesh(geo, mat);
+    mesh.position.set(x, y, z);
+    mesh.rotation.set(rx, ry, rz);
+    mesh._speed = speed;
+    mesh._floatOffset = Math.random() * Math.PI * 2;
+    mesh._floatAmp = 0.08 + Math.random() * 0.12;
+    scene.add(mesh);
+    shapes.push(mesh);
+    return mesh;
+  };
+
+  // Large torus knot — centerpiece
+  addShape(new THREE.TorusKnotGeometry(1.4, 0.38, 120, 16), matWire, 1.8, 0.4, -1, 0.4, 0.6, 0, 0.003);
+  // Icosahedron — top left
+  addShape(new THREE.IcosahedronGeometry(0.9, 1), matGlow, -3.2, 2.2, 0.5, 0.2, 0.4, 0.1, 0.005);
+  // Small torus — bottom right
+  addShape(new THREE.TorusGeometry(0.7, 0.22, 16, 40), matRing, 3.0, -2.5, 0.3, 1.0, 0.3, 0, 0.007);
+  // Octahedron — top right
+  addShape(new THREE.OctahedronGeometry(0.7, 0), matWire, 3.5, 2.0, -0.5, 0.5, 0.2, 0.3, 0.006);
+  // Small icosa — bottom left
+  addShape(new THREE.IcosahedronGeometry(0.5, 0), matGlow, -3.5, -2.2, 0.8, 0.3, 0.7, 0.1, 0.008);
+
+  // Particles
+  const ptCount = 90;
+  const ptPositions = new Float32Array(ptCount * 3);
+  for (let i = 0; i < ptCount; i++) {
+    ptPositions[i * 3]     = (Math.random() - 0.5) * 12;
+    ptPositions[i * 3 + 1] = (Math.random() - 0.5) * 9;
+    ptPositions[i * 3 + 2] = (Math.random() - 0.5) * 4 - 2;
+  }
+  const ptGeo = new THREE.BufferGeometry();
+  ptGeo.setAttribute('position', new THREE.BufferAttribute(ptPositions, 3));
+  const ptMat = new THREE.PointsMaterial({ color: 0xffffff, size: 0.04, transparent: true, opacity: 0.4 });
+  scene.add(new THREE.Points(ptGeo, ptMat));
+
+  // Mouse parallax
+  let mx = 0, my = 0;
+  const onMouse = e => {
+    const r = container.getBoundingClientRect();
+    mx = ((e.clientX - r.left) / r.width  - 0.5) * 2;
+    my = ((e.clientY - r.top)  / r.height - 0.5) * 2;
+  };
+  container.addEventListener('mousemove', onMouse);
+
+  // Resize
+  const onResize = () => {
+    const w = container.clientWidth, h = container.clientHeight;
+    camera.aspect = w / h;
+    camera.updateProjectionMatrix();
+    renderer.setSize(w, h);
+  };
+  window.addEventListener('resize', onResize);
+
+  // Animation
+  let frameId;
+  const clock = new THREE.Clock();
+  const animate = () => {
+    frameId = requestAnimationFrame(animate);
+    const t = clock.getElapsedTime();
+
+    shapes.forEach(m => {
+      m.rotation.x += m._speed;
+      m.rotation.y += m._speed * 1.3;
+      m.position.y += Math.sin(t * 0.6 + m._floatOffset) * m._floatAmp * 0.01;
+    });
+
+    // Subtle parallax
+    camera.position.x += (mx * 0.3 - camera.position.x) * 0.03;
+    camera.position.y += (-my * 0.2 - camera.position.y) * 0.03;
+    camera.lookAt(scene.position);
+
+    renderer.render(scene, camera);
+  };
+
+  // Only animate when auth panel is visible
+  const startStop = () => {
+    const visible = document.getElementById('state-auth')?.style.display !== 'none';
+    if (visible && !frameId) { clock.start(); animate(); }
+    else if (!visible && frameId) { cancelAnimationFrame(frameId); frameId = null; }
+  };
+
+  const obs = new MutationObserver(startStop);
+  const authEl = document.getElementById('state-auth');
+  if (authEl) obs.observe(authEl, { attributes: true, attributeFilter: ['style'] });
+
+  // Start immediately if auth is already showing
+  if (authEl && authEl.style.display !== 'none') animate();
+
+  // Cleanup ref
+  renderer._cleanup = () => {
+    cancelAnimationFrame(frameId);
+    container.removeEventListener('mousemove', onMouse);
+    window.removeEventListener('resize', onResize);
+    obs.disconnect();
+    renderer.domElement.remove();
+    renderer.dispose();
+  };
+}
+
+// Boot — wait for THREE to be available and DOM ready
+window.addEventListener('load', () => {
+  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  setTimeout(initAuthScene, 100);
+});
 
 </script>
 </body>
