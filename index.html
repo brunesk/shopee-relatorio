@@ -464,6 +464,46 @@ footer strong{color:var(--or)}
   </div>
 </div>
 
+<!-- ═══════════ ACESSO BLOQUEADO (sem licença ativa) ═══════════ -->
+<div id="state-blocked" style="display:none">
+  <div class="auth-wrap">
+    <div class="auth-left">
+      <div class="auth-left-bg"></div>
+      <div class="auth-left-bg"></div>
+      <div class="auth-lc">
+        <h2>Falta só um passo para ver seu lucro real</h2>
+        <p>Libere o acesso completo por 12 meses e descubra quanto sua loja Shopee realmente lucra — taxas, frete, custos e ADS incluídos na conta.</p>
+        <div class="alf"><div class="alf-i">📊</div><div>Dashboard com todos os seus meses salvos</div></div>
+        <div class="alf"><div class="alf-i">💸</div><div>Custo de produtos e ADS no cálculo do lucro</div></div>
+        <div class="alf"><div class="alf-i">🛡️</div><div>Garantia de 7 dias — não gostou, devolvemos</div></div>
+      </div>
+    </div>
+    <div class="auth-right">
+      <div class="auth-card">
+        <img src="logo.png" class="auth-logo" alt="Acelera Shopee">
+        <div class="auth-title">Ative seu acesso</div>
+        <div class="auth-sub" id="blocked-sub">Sua conta ainda não tem uma licença ativa</div>
+
+        <div style="background:#fff7ed;border:1px solid #fed7aa;border-radius:14px;padding:18px;text-align:center;margin-bottom:18px">
+          <div style="font-size:11px;font-weight:800;letter-spacing:.08em;color:#c2410c;text-transform:uppercase">Acesso completo · 12 meses</div>
+          <div style="font-size:34px;font-weight:900;color:#111827;margin-top:6px">R$149,90</div>
+          <div style="font-size:12px;color:#6b7280;margin-top:2px">pagamento único · Pix ou cartão em até 12x</div>
+        </div>
+
+        <button class="abtn" id="btn-comprar" onclick="comprarAcesso()">Liberar meu acesso →</button>
+        <div class="amsg" id="blocked-msg"></div>
+
+        <div style="display:flex;gap:8px;margin-top:14px">
+          <button onclick="verificarLicenca(true)" style="flex:1;padding:11px;border-radius:12px;border:1px solid #e5e7eb;background:#fff;font-size:13px;font-weight:700;color:#374151;cursor:pointer">↻ Já paguei</button>
+          <button onclick="logoutUser()" style="flex:1;padding:11px;border-radius:12px;border:1px solid #e5e7eb;background:#fff;font-size:13px;font-weight:700;color:#9ca3af;cursor:pointer">Sair</button>
+        </div>
+
+        <div class="afoot">Pagou por Pix direto? Envie o comprovante no Instagram <b>@acelerashopee</b> que liberamos na hora.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- ═══════════ APP ═══════════ -->
 <div id="app-shell">
 
@@ -640,34 +680,109 @@ let fileName    = '';
 let saveTimer   = null;
 let currentPage = 'dashboard';
 
+// ── LICENÇA ──────────────────────────────────────────
+// API de pagamentos (Vercel) — atualizar após o deploy da api-pagamentos
+const PAY_API = 'https://acelera-pagamentos.vercel.app';
+
+async function temLicencaAtiva(email) {
+  const em = (email || '').toLowerCase().trim();
+  if (em === ADMIN_EMAIL) return true;
+  try {
+    const doc = await db.collection('licencas').doc(em).get();
+    if (!doc.exists) return false;
+    const l = doc.data();
+    if (l.status !== 'ativa') return false;
+    if (!l.expiraEm) return true;              // vitalícia
+    return l.expiraEm.toDate() > new Date();   // dentro da validade
+  } catch (e) {
+    console.error('licenca:', e);
+    return false; // na dúvida, bloqueia
+  }
+}
+
+async function verificarLicenca(manual) {
+  if (!currentUser) return;
+  if (manual) {
+    const b = document.getElementById('blocked-msg');
+    b.textContent = 'Verificando...'; b.style.display = 'block';
+    b.style.background = '#f3f4f6'; b.style.color = '#374151';
+  }
+  const ok = await temLicencaAtiva(currentUser.email);
+  if (ok) {
+    entrarNoApp();
+  } else if (manual) {
+    const b = document.getElementById('blocked-msg');
+    b.textContent = 'Ainda não localizamos seu pagamento. Pix/boleto podem levar alguns minutos.';
+    b.style.background = '#fee2e2'; b.style.color = '#991b1b'; b.style.display = 'block';
+  }
+}
+
+async function comprarAcesso() {
+  const btn = document.getElementById('btn-comprar');
+  btn.textContent = 'Abrindo pagamento...'; btn.disabled = true;
+  try {
+    const r = await fetch(`${PAY_API}/api/checkout`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: currentUser?.email || '' })
+    });
+    const d = await r.json();
+    if (!r.ok || !d.url) throw new Error(d.error || 'erro');
+    window.location.href = d.url;
+  } catch (e) {
+    const b = document.getElementById('blocked-msg');
+    b.textContent = 'Não foi possível abrir o pagamento. Tente de novo ou chame o suporte no Instagram @acelerashopee.';
+    b.style.background = '#fee2e2'; b.style.color = '#991b1b'; b.style.display = 'block';
+    btn.textContent = 'Liberar meu acesso →'; btn.disabled = false;
+  }
+}
+
+async function entrarNoApp() {
+  const em = currentUser.email || '';
+  document.getElementById('hdr-em').textContent = em;
+  document.getElementById('hdr-av').textContent = em[0]?.toUpperCase() || '?';
+
+  // greeting by name
+  const firstName = em.split('@')[0].split('.')[0];
+  const cap = firstName.charAt(0).toUpperCase() + firstName.slice(1);
+  document.getElementById('dash-greeting').textContent = `Olá, ${cap}! 👋`;
+
+  document.getElementById('state-auth').style.display    = 'none';
+  document.getElementById('state-blocked').style.display = 'none';
+  document.getElementById('app-shell').style.display     = 'block';
+
+  // Show admin nav only for admin email
+  const isAdmin = em === ADMIN_EMAIL;
+  document.getElementById('nav-admin').style.display     = isAdmin ? '' : 'none';
+  document.getElementById('nav-sep-admin').style.display = isAdmin ? '' : 'none';
+  document.getElementById('bnav-admin').style.display    = isAdmin ? '' : 'none';
+
+  await loadAllData();
+  renderCurrentPage();
+}
+
 // ── AUTH STATE ────────────────────────────────────────
 auth.onAuthStateChanged(async user => {
   if (user) {
     currentUser = user;
-    const em = user.email || '';
-    document.getElementById('hdr-em').textContent = em;
-    document.getElementById('hdr-av').textContent = em[0]?.toUpperCase() || '?';
-
-    // greeting by name
-    const firstName = em.split('@')[0].split('.')[0];
-    const cap = firstName.charAt(0).toUpperCase() + firstName.slice(1);
-    document.getElementById('dash-greeting').textContent = `Olá, ${cap}! 👋`;
-
-    document.getElementById('state-auth').style.display  = 'none';
-    document.getElementById('app-shell').style.display   = 'block';
-
-    // Show admin nav only for admin email
-    const isAdmin = em === ADMIN_EMAIL;
-    document.getElementById('nav-admin').style.display     = isAdmin ? '' : 'none';
-    document.getElementById('nav-sep-admin').style.display = isAdmin ? '' : 'none';
-    document.getElementById('bnav-admin').style.display    = isAdmin ? '' : 'none';
-
-    await loadAllData();
-    renderCurrentPage();
+    const ok = await temLicencaAtiva(user.email);
+    if (ok) {
+      await entrarNoApp();
+    } else {
+      // volta do Mercado Pago com ?pago=1 → mensagem de processamento
+      document.getElementById('blocked-sub').textContent =
+        new URLSearchParams(location.search).get('pago') === '1'
+          ? 'Pagamento em confirmação — clique em "Já paguei" em instantes'
+          : `A conta ${user.email} ainda não tem licença ativa`;
+      document.getElementById('state-auth').style.display    = 'none';
+      document.getElementById('app-shell').style.display     = 'none';
+      document.getElementById('state-blocked').style.display = 'flex';
+    }
   } else {
     currentUser = null;
-    document.getElementById('state-auth').style.display  = 'flex';
-    document.getElementById('app-shell').style.display   = 'none';
+    document.getElementById('state-auth').style.display    = 'flex';
+    document.getElementById('state-blocked').style.display = 'none';
+    document.getElementById('app-shell').style.display     = 'none';
   }
 });
 

@@ -1,0 +1,38 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function ehAdmin() {
+      return request.auth != null
+        && request.auth.token.email.lower() == 'brunoferrack@gmail.com';
+    }
+
+    // Licenças: o usuário só LÊ a própria (doc id = seu email). Escrita apenas via
+    // Admin SDK (webhook de pagamento) ou console — nunca pelo app.
+    match /licencas/{email} {
+      allow read: if ehAdmin()
+                  || (request.auth != null && request.auth.token.email.lower() == email);
+      allow write: if false;
+    }
+
+    // Tem licença ativa?
+    function licencaAtiva() {
+      return exists(/databases/$(database)/documents/licencas/$(request.auth.token.email.lower()))
+        && get(/databases/$(database)/documents/licencas/$(request.auth.token.email.lower())).data.status == 'ativa'
+        && (
+          !('expiraEm' in get(/databases/$(database)/documents/licencas/$(request.auth.token.email.lower())).data)
+          || get(/databases/$(database)/documents/licencas/$(request.auth.token.email.lower())).data.expiraEm > request.time
+        );
+    }
+
+    // Dados do app: dono com licença ativa — ou admin (página de administração lê todos)
+    match /shopee_users/{uid} {
+      allow read, write: if ehAdmin()
+        || (request.auth != null && request.auth.uid == uid && licencaAtiva());
+      match /months/{month} {
+        allow read, write: if ehAdmin()
+          || (request.auth != null && request.auth.uid == uid && licencaAtiva());
+      }
+    }
+  }
+}
