@@ -104,8 +104,8 @@ body{font-family:var(--ff-body);background:#f0f0ee;color:var(--s800);min-height:
 /* ── LAYOUT ── */
 .main{padding-top:58px;padding-bottom:80px;min-height:100vh}
 @media(min-width:900px){.main{margin-left:var(--sid);padding-bottom:48px}}
-.page{display:none;padding:28px 20px;max-width:960px;margin:0 auto}
-@media(min-width:1100px){.page{padding:36px 48px}}
+.page{display:none;padding:28px 24px;max-width:1340px;margin:0 auto}
+@media(min-width:1100px){.page{padding:36px 40px}}
 .page.active{display:block}
 .pg-hdr{margin-bottom:28px}
 .pg-hdr h1{font-family:var(--ff-display);font-size:26px;font-weight:800;letter-spacing:-.4px;color:var(--s900);margin-bottom:5px;line-height:1.2}
@@ -2639,7 +2639,7 @@ function renderAdsDash(body) {
     else if (a.roas > 0 && a.roas < 10) metaDiag = '<span class="acao-badge ab-elevar">↑ elevar meta</span>';
     else if (a.roas >= 10 && a.roas < 20) metaDiag = '<span class="acao-badge ab-ajustar">↑ ajustar</span>';
     return `<tr>
-      <td style="max-width:190px;font-size:12px;font-weight:600;color:var(--s800)">${truncNome(a.nome,38)}</td>
+      <td style="max-width:320px;font-size:12.5px;font-weight:600;color:var(--s800)">${truncNome(a.nome,54)}</td>
       <td><span class="perf-badge ${bc}">${bl}</span></td>
       <td class="td-muted">${a.impressoes>0?a.impressoes.toLocaleString('pt-BR'):'—'}</td>
       <td class="${ctrCl}">${a.ctr>0?a.ctr.toFixed(2)+'%':'—'}</td>
