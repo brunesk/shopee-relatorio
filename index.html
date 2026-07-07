@@ -452,6 +452,10 @@ body{background:radial-gradient(1100px 480px at 85% -8%,#fdeee8 0%,transparent 6
 .est-wa-off:hover{background:var(--s200);color:var(--s600)}
 .est-lista-btn{background:linear-gradient(135deg,var(--or),#ff7043);color:#fff;border:none;border-radius:9px;padding:8px 14px;font-size:12px;font-weight:800;cursor:pointer;font-family:inherit;white-space:nowrap}
 .est-lista-btn:hover{filter:brightness(1.05)}
+.trend{display:inline-flex;align-items:center;gap:2px;font-size:11px;font-weight:800;padding:2px 7px;border-radius:20px}
+.trend-up{background:#dcfce7;color:#15803d}
+.trend-down{background:#fee2e2;color:#b91c1c}
+.trend-flat{background:var(--s100);color:var(--s500)}
 /* ── 3D SCENE ── */
 #auth-3d-canvas{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:0}
 .auth-left .auth-lc{z-index:2}
@@ -740,6 +744,7 @@ let currentUser = null;
 let allMonths   = {};   // { 'YYYY-MM': monthDoc }
 let savedCustos = {};   // { productName: unitCost }
 let savedEstoque = {};  // { productName: {qtd, cor, fornecedor} }
+let savedMeta    = {};  // { lucroMensal }
 let allProds    = {};   // { productName: {qty, valor} } aggregated across all months
 let fileData    = null;
 let fileName    = '';
@@ -861,6 +866,7 @@ async function loadAllData() {
     if (udoc.exists) {
       savedCustos  = udoc.data().custos  || {};
       savedEstoque = udoc.data().estoque || {};
+      savedMeta    = udoc.data().meta    || {};
     }
     // Salva email para o admin identificar o usuário
     db.collection('shopee_users').doc(currentUser.uid).set({ email: currentUser.email }, { merge: true });
@@ -982,7 +988,7 @@ function translateErr(code) {
 
 function logoutUser() {
   auth.signOut();
-  allMonths = {}; savedCustos = {}; savedEstoque = {}; fileData = null; fileName = '';
+  allMonths = {}; savedCustos = {}; savedEstoque = {}; savedMeta = {}; fileData = null; fileName = '';
   clearFile();
 }
 
@@ -1084,6 +1090,49 @@ function calcLucroMes(m) {
 }
 
 // ── DASHBOARD ─────────────────────────────────────────
+function trendBadge(cur, prev, opt) {
+  opt = opt || {};
+  const mode = opt.mode || 'pct';
+  const goodDown = !!opt.goodDown;
+  if (prev == null) return '';
+  let d, txt;
+  if (mode === 'pp') {
+    d = cur - prev;
+    if (Math.abs(d) < 0.05) return '<span class="trend trend-flat">≈ estável</span>';
+    txt = (d > 0 ? '+' : '') + d.toFixed(1) + ' pp';
+  } else {
+    if (prev === 0) return '';
+    d = (cur - prev) / Math.abs(prev) * 100;
+    if (Math.abs(d) < 0.5) return '<span class="trend trend-flat">≈ estável</span>';
+    txt = (d > 0 ? '+' : '') + d.toFixed(0) + '%';
+  }
+  const positive = goodDown ? d < 0 : d > 0;
+  const arrow = d > 0 ? '↑' : '↓';
+  return '<span class="trend ' + (positive ? 'trend-up' : 'trend-down') + '">' + arrow + ' ' + txt + '</span>';
+}
+
+let metaTimer = null;
+function updateMeta(val) {
+  savedMeta.lucroMensal = parseFloat(String(val).replace(',', '.')) || 0;
+  const keys = Object.keys(allMonths).sort();
+  const lastK = keys[keys.length - 1];
+  const lucro = lastK ? calcLucroMes(allMonths[lastK]) : 0;
+  const meta = savedMeta.lucroMensal;
+  const pct = meta > 0 ? Math.min(100, Math.round(lucro / meta * 100)) : 0;
+  const bar = document.getElementById('meta-bar');
+  const txt = document.getElementById('meta-txt');
+  if (bar) bar.style.width = pct + '%';
+  if (txt) txt.textContent = meta > 0
+    ? ('Lucro de ' + monthLabel(lastK) + ': ' + fmtL(lucro) + ' de ' + fmt(meta) + ' (' + pct + '%)')
+    : 'Defina uma meta para acompanhar seu progresso.';
+  clearTimeout(metaTimer);
+  metaTimer = setTimeout(async () => {
+    if (!currentUser) return;
+    try { await db.collection('shopee_users').doc(currentUser.uid).set({ meta: savedMeta }, { merge: true }); }
+    catch(e) { console.error('saveMeta', e); }
+  }, 900);
+}
+
 function renderDashboard() {
   const keys = Object.keys(allMonths).sort();
   const body = document.getElementById('dashboard-body');
@@ -1099,7 +1148,7 @@ function renderDashboard() {
     return;
   }
 
-  // Totais globais
+  // Totais acumulados
   let totBruto = 0, totLiq = 0, totPed = 0, totLucro = 0;
   keys.forEach(k => {
     const m = allMonths[k];
@@ -1108,24 +1157,130 @@ function renderDashboard() {
     totPed   += m.pedidos || 0;
     totLucro += calcLucroMes(m);
   });
+  const melhorMes = keys.reduce((best, k) => calcLucroMes(allMonths[k]) > calcLucroMes(allMonths[best]) ? k : best, keys[0]);
 
-  const melhorMes = keys.reduce((best, k) => {
-    return calcLucroMes(allMonths[k]) > calcLucroMes(allMonths[best]) ? k : best;
-  }, keys[0]);
+  // Métricas por mês (último fechado vs anterior)
+  const mMetrics = k => {
+    const m = allMonths[k]; const bruto = m.bruto || 0; const lc = calcLucroMes(m);
+    const ped = m.pedidos || 0; const canc = m.cancelados || 0;
+    return {
+      bruto, lucro: lc, ped, canc,
+      margem: bruto > 0 ? lc / bruto * 100 : 0,
+      ticket: ped > 0 ? bruto / ped : 0,
+      cancRate: (ped + canc) > 0 ? canc / (ped + canc) * 100 : 0,
+    };
+  };
+  const lastKey = keys[keys.length - 1];
+  const prevKey = keys.length > 1 ? keys[keys.length - 2] : null;
+  const cur  = mMetrics(lastKey);
+  const prev = prevKey ? mMetrics(prevKey) : null;
+  const pv = f => prev ? prev[f] : null;
 
-  // Chart data (últimos 12 meses)
-  const chartKeys = keys.slice(-12);
-  const chartVals = chartKeys.map(k => calcLucroMes(allMonths[k]));
+  // ── Custos agregados (para onde vai o dinheiro) ──
+  const agC = { com:0, svc:0, trx:0, dsc:0, ads:0, cp:0 };
+  let baseFat = 0;
+  keys.forEach(k => {
+    const m = allMonths[k];
+    agC.com += m.comissao || 0; agC.svc += m.servico || 0; agC.trx += m.transacao || 0;
+    agC.dsc += m.descontos || 0; agC.ads += m.adsGasto || 0;
+    agC.cp  += (m.produtos || []).reduce((s, pr) => s + (savedCustos[pr.name] || 0) * pr.qty, 0);
+    baseFat += m.bruto || 0;
+  });
+  const maxRef = Math.max(agC.com, agC.svc, agC.trx, agC.dsc, agC.ads, agC.cp, totLucro, 1);
+  const costBar = (lbl, val, color) => val > 0 ? `<div style="display:flex;align-items:center;gap:12px;margin-bottom:10px">
+      <div style="width:140px;font-size:12px;color:var(--s600);text-align:right;flex-shrink:0">${lbl}</div>
+      <div style="flex:1;height:22px;background:var(--s100);border-radius:11px;overflow:hidden;min-width:60px"><div style="height:100%;width:${(val/maxRef*100).toFixed(1)}%;background:${color};border-radius:11px"></div></div>
+      <div style="width:160px;font-size:12px;font-weight:700;color:var(--s700);flex-shrink:0">${fmt(val)} <span style="color:var(--s400);font-weight:500">· ${baseFat>0?(val/baseFat*100).toFixed(1):'0'}%</span></div>
+    </div>` : '';
+  const dinheiroBars = costBar('Comissão Shopee', agC.com, '#ef4444')
+    + costBar('Taxa de serviço', agC.svc, '#f97316')
+    + costBar('Taxa de transação', agC.trx, '#f59e0b')
+    + costBar('Descontos concedidos', agC.dsc, '#a855f7')
+    + costBar('Investimento em ADS', agC.ads, '#3b82f6')
+    + costBar('Custo dos produtos', agC.cp, '#ec4899')
+    + `<div style="display:flex;align-items:center;gap:12px;margin-top:14px;padding-top:14px;border-top:2px solid var(--s150)">
+        <div style="width:140px;font-size:13px;font-weight:800;color:var(--gr);text-align:right;flex-shrink:0">💰 Lucro que sobra</div>
+        <div style="flex:1;height:26px;background:var(--s100);border-radius:13px;overflow:hidden;min-width:60px"><div style="height:100%;width:${(Math.max(0,totLucro)/maxRef*100).toFixed(1)}%;background:linear-gradient(90deg,#15803d,#4ade80);border-radius:13px"></div></div>
+        <div style="width:160px;font-size:13px;font-weight:800;color:var(--gr);flex-shrink:0">${fmtL(totLucro)} <span style="color:var(--s400);font-weight:500">· ${baseFat>0?(totLucro/baseFat*100).toFixed(1):'0'}%</span></div>
+      </div>`;
 
-  // Tabela de meses
+  // ── Produtos ──
+  const prodArr = Object.entries(allProds).map(([name, d]) => {
+    const custoUn = savedCustos[name] || 0;
+    return { name, qty: d.qty, valor: d.valor, margem: d.valor - custoUn * d.qty, temCusto: custoUn > 0 };
+  });
+  const topVend  = [...prodArr].sort((a,b) => b.qty - a.qty).slice(0,5);
+  const topLucro = [...prodArr].filter(pp => pp.temCusto).sort((a,b) => b.margem - a.margem).slice(0,5);
+  const sortedVal = [...prodArr].sort((a,b) => b.valor - a.valor);
+  const totProdVal = sortedVal.reduce((s, pp) => s + pp.valor, 0);
+  let cum = 0, abcN = 0;
+  for (const pp of sortedVal) { cum += pp.valor; abcN++; if (cum >= totProdVal * 0.8) break; }
+  const rankRow = (arr, valFn) => arr.map((pp, i) => `<div style="display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--s50)">
+      <div class="rnk ${i<3?['r1','r2','r3'][i]:'rn'}">${i+1}</div>
+      <div style="flex:1;min-width:0"><div style="font-size:12.5px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${pp.name}</div><div style="font-size:11px;color:var(--s400)">${valFn(pp)}</div></div>
+    </div>`).join('');
+  const vendList  = rankRow(topVend, pp => Math.round(pp.qty) + ' un · ' + fmt(pp.valor));
+  const lucroList = topLucro.length
+    ? rankRow(topLucro, pp => 'margem ' + fmt(pp.margem) + ' · ' + Math.round(pp.qty) + ' un')
+    : '<p class="note" style="padding:16px 0">💡 Cadastre os custos na aba "Custo dos Produtos" para descobrir quais produtos realmente dão mais lucro.</p>';
+
+  // ── Estados ──
+  const ufMap = {};
+  keys.forEach(k => (allMonths[k].ufs || []).forEach(u => {
+    if (!ufMap[u.uf]) ufMap[u.uf] = { n:0, valor:0 };
+    ufMap[u.uf].n += u.n; ufMap[u.uf].valor += u.valor;
+  }));
+  const ufArr = Object.entries(ufMap).map(([uf, d]) => ({ uf, ...d })).sort((a,b) => b.valor - a.valor);
+  const totUfVal = ufArr.reduce((s, u) => s + u.valor, 0) || 1;
+  const topUf = ufArr.slice(0, 6);
+  const maxUf = topUf[0] ? topUf[0].valor : 1;
+  const ufBars = topUf.map(u => `<div class="hbar">
+      <div class="hbar-lbl">${u.uf}</div>
+      <div class="hbar-trk"><div class="hbar-fil" style="width:${(u.valor/maxUf*100).toFixed(0)}%"></div></div>
+      <div class="hbar-val">&nbsp;${fmt(u.valor)}</div>
+      <div class="hbar-qty">&nbsp;· ${(u.valor/totUfVal*100).toFixed(0)}%</div>
+    </div>`).join('');
+
+  // ── Destaques inteligentes ──
+  const ins = [];
+  ins.push({ t:'positivo', i:'🏆', ttl:'Seu melhor mês foi ' + monthFull(melhorMes), d:'Lucro real de ' + fmtL(calcLucroMes(allMonths[melhorMes])) + ' nesse mês.' });
+  if (prev) {
+    const dm = cur.margem - prev.margem;
+    if (Math.abs(dm) >= 0.5) ins.push({ t: dm >= 0 ? 'positivo' : 'critico', i: dm >= 0 ? '📈' : '📉',
+      ttl:'Sua margem ' + (dm >= 0 ? 'subiu' : 'caiu') + ' ' + Math.abs(dm).toFixed(1) + ' pontos',
+      d:'De ' + prev.margem.toFixed(1) + '% para ' + cur.margem.toFixed(1) + '% do faturamento vs o mês anterior.' });
+  }
+  const semCusto = Object.keys(allProds).filter(n => !(savedCustos[n] > 0)).length;
+  if (semCusto > 0) ins.push({ t:'atencao', i:'🧮', ttl: semCusto + ' produto(s) sem custo cadastrado',
+    d:'Seu lucro real pode estar impreciso. Cadastre os custos na aba "Custo dos Produtos".' });
+  let repN = 0;
+  Object.keys(allProds).forEach(n => { if (REPOR_LEVELS.includes(computeRepo(n).level)) repN++; });
+  if (repN > 0) ins.push({ t:'critico', i:'📦', ttl: repN + ' produto(s) precisam de reposição',
+    d:'Veja na aba "Estoque" o que está acabando e peça ao fornecedor com 1 clique.' });
+  if (agC.ads > 0) { const adsShare = baseFat > 0 ? agC.ads / baseFat * 100 : 0;
+    ins.push({ t: adsShare > 15 ? 'atencao' : 'info', i:'📣', ttl:'Você investe ' + adsShare.toFixed(1) + '% do faturamento em ADS',
+      d: adsShare > 15 ? 'Acima de 15% costuma apertar a margem — confira o ROAS na aba Análise de ADS.' : 'Patamar saudável. Acompanhe o ROAS na aba Análise de ADS.' }); }
+  if (sortedVal.length >= 3 && totProdVal > 0) {
+    const top3 = Math.round(sortedVal.slice(0,3).reduce((s,pp)=>s+pp.valor,0)/totProdVal*100);
+    if (top3 >= 60) ins.push({ t:'atencao', i:'🎯', ttl:'Seus 3 principais produtos = ' + top3 + '% do faturamento',
+      d:'Alta dependência de poucos produtos. Diversificar reduz o risco do seu negócio.' });
+  }
+  const insCards = ins.slice(0,5).map(x => `<div class="insight-card ic-${x.t}">
+      <div class="ic-ico">${x.i}</div>
+      <div class="ic-body"><div class="ic-ttl">${x.ttl}</div><div class="ic-desc">${x.d}</div></div>
+    </div>`).join('');
+
+  // ── Meta ──
+  const metaVal = savedMeta.lucroMensal || 0;
+  const metaPct = metaVal > 0 ? Math.min(100, Math.round(cur.lucro / metaVal * 100)) : 0;
+
+  // ── Tabela histórico ──
   const rows = [...keys].reverse().map(k => {
-    const m         = allMonths[k];
-    const custoProd = (m.produtos || []).reduce((s, p) => s + (savedCustos[p.name] || 0) * p.qty, 0);
-    const ads       = m.adsGasto || 0;
-    const lc        = calcLucroMes(m);
-    const cl        = lc >= 0 ? 'td-pos' : 'td-neg';
-    const ticket    = (m.pedidos || 0) > 0 ? (m.bruto || 0) / m.pedidos : 0;
-    const margem    = (m.bruto || 0) > 0 ? lc / m.bruto * 100 : null;
+    const m = allMonths[k];
+    const custoProd = (m.produtos || []).reduce((s, pr) => s + (savedCustos[pr.name] || 0) * pr.qty, 0);
+    const ads = m.adsGasto || 0; const lc = calcLucroMes(m);
+    const ticket = (m.pedidos || 0) > 0 ? (m.bruto || 0) / m.pedidos : 0;
+    const margem = (m.bruto || 0) > 0 ? lc / m.bruto * 100 : null;
     return `<tr class="clk" onclick="openMes('${k}')">
       <td class="td-mon">${monthFull(k)}</td>
       <td class="td-neu">${(m.pedidos||0).toLocaleString('pt-BR')}</td>
@@ -1134,24 +1289,58 @@ function renderDashboard() {
       <td>${fmt(m.liquido||0)}</td>
       <td class="${custoProd > 0 ? 'td-cost' : 'td-muted'}">${custoProd > 0 ? '- '+fmt(custoProd) : '—'}</td>
       <td class="${ads > 0 ? 'td-cost' : 'td-muted'}">${ads > 0 ? '- '+fmt(ads) : '—'}</td>
-      <td class="${cl}">${fmtL(lc)}</td>
+      <td class="${lc >= 0 ? 'td-pos' : 'td-neg'}">${fmtL(lc)}</td>
       <td class="${margem !== null ? (margem >= 0 ? 'td-pos' : 'td-neg') : 'td-muted'}">${margem !== null ? margem.toFixed(1)+'%' : '—'}</td>
     </tr>`;
   }).join('');
 
-  const brutoVals  = chartKeys.map(k => allMonths[k].bruto   || 0);
-  const liqVals    = chartKeys.map(k => allMonths[k].liquido || 0);
+  // ── Chart ──
+  const chartKeys   = keys.slice(-12);
+  const chartVals   = chartKeys.map(k => calcLucroMes(allMonths[k]));
+  const brutoVals   = chartKeys.map(k => allMonths[k].bruto || 0);
   const chartLabels = chartKeys.map(k => monthLabel(k));
-  const avg     = chartVals.reduce((s,v) => s+v, 0) / chartVals.length;
+  const avg = chartVals.reduce((s,v) => s+v, 0) / chartVals.length;
   const bestIdx = chartVals.indexOf(Math.max(...chartVals));
   const trendUp = chartVals.length > 1 && chartVals[chartVals.length-1] > chartVals[chartVals.length-2];
 
+  const mLbl = monthLabel(lastKey);
+
   body.innerHTML = `
-    <div class="kpi-grid">
-      <div class="kpi blue"><div class="kpi-ico">📦</div><div class="kpi-lbl">Total de Pedidos</div><div class="kpi-val" data-cv="${totPed}" data-k="int">${totPed.toLocaleString('pt-BR')}</div><div class="kpi-sub">${keys.length} ${keys.length===1?'mês':'meses'} registrados</div></div>
-      <div class="kpi green"><div class="kpi-ico">💵</div><div class="kpi-lbl">Faturamento Total</div><div class="kpi-val" data-cv="${totBruto}">${fmt(totBruto)}</div><div class="kpi-sub">bruto acumulado</div></div>
-      <div class="kpi orange"><div class="kpi-ico">💰</div><div class="kpi-lbl">Líquido Shopee</div><div class="kpi-val" data-cv="${totLiq}">${fmt(totLiq)}</div><div class="kpi-sub">após taxas Shopee</div></div>
-      <div class="kpi ${totLucro>=0?'green':'red'}"><div class="kpi-ico">${totLucro>=0?'🏆':'⚠️'}</div><div class="kpi-lbl">Lucro Real Total</div><div class="kpi-val" data-cv="${totLucro}" data-k="moneyL" style="color:${totLucro>=0?'var(--gr)':'var(--re)'}">${fmtL(totLucro)}</div><div class="kpi-sub">após produtos e ADS</div></div>
+    <div style="background:linear-gradient(135deg,#1f2937,#111827);color:#fff;border-radius:14px;padding:14px 20px;margin-bottom:20px;display:flex;flex-wrap:wrap;gap:18px;align-items:center;font-size:13px">
+      <span style="font-weight:800;font-size:12px;letter-spacing:.5px;text-transform:uppercase;color:#9ca3af">Desde o início</span>
+      <span>📦 <strong>${totPed.toLocaleString('pt-BR')}</strong> pedidos</span>
+      <span>💵 <strong>${fmt(totBruto)}</strong> faturado</span>
+      <span>🏆 <strong style="color:#4ade80">${fmtL(totLucro)}</strong> de lucro</span>
+      <span style="color:#9ca3af">em ${keys.length} ${keys.length===1?'mês':'meses'}</span>
+    </div>
+
+    <div style="font-size:13px;font-weight:800;color:var(--s500);text-transform:uppercase;letter-spacing:.6px;margin-bottom:10px">Resultado de ${monthFull(lastKey)}${prev?' <span style="font-weight:500;text-transform:none;color:var(--s400)">· comparado a '+monthLabel(prevKey)+'</span>':''}</div>
+    <div class="kpi-grid" style="grid-template-columns:repeat(auto-fit,minmax(150px,1fr))">
+      <div class="kpi green"><div class="kpi-ico">💵</div><div class="kpi-lbl">Faturamento</div><div class="kpi-val" data-cv="${cur.bruto}">${fmt(cur.bruto)}</div><div class="kpi-sub">${trendBadge(cur.bruto, pv('bruto'))} em ${mLbl}</div></div>
+      <div class="kpi ${cur.lucro>=0?'green':'red'}"><div class="kpi-ico">${cur.lucro>=0?'🏆':'⚠️'}</div><div class="kpi-lbl">Lucro Real</div><div class="kpi-val" data-cv="${cur.lucro}" data-k="moneyL" style="color:${cur.lucro>=0?'var(--gr)':'var(--re)'}">${fmtL(cur.lucro)}</div><div class="kpi-sub">${trendBadge(cur.lucro, pv('lucro'))} em ${mLbl}</div></div>
+      <div class="kpi orange"><div class="kpi-ico">📊</div><div class="kpi-lbl">Margem de Lucro</div><div class="kpi-val">${cur.margem.toFixed(1)}%</div><div class="kpi-sub">${trendBadge(cur.margem, pv('margem'), {mode:'pp'})} em ${mLbl}</div></div>
+      <div class="kpi blue"><div class="kpi-ico">🎟️</div><div class="kpi-lbl">Ticket Médio</div><div class="kpi-val" data-cv="${cur.ticket}">${fmt(cur.ticket)}</div><div class="kpi-sub">${trendBadge(cur.ticket, pv('ticket'))} em ${mLbl}</div></div>
+      <div class="kpi purple"><div class="kpi-ico">📦</div><div class="kpi-lbl">Pedidos</div><div class="kpi-val" data-cv="${cur.ped}" data-k="int">${cur.ped.toLocaleString('pt-BR')}</div><div class="kpi-sub">${trendBadge(cur.ped, pv('ped'))} em ${mLbl}</div></div>
+      <div class="kpi red"><div class="kpi-ico">↩️</div><div class="kpi-lbl">Cancelamento</div><div class="kpi-val">${cur.cancRate.toFixed(1)}%</div><div class="kpi-sub">${trendBadge(cur.cancRate, pv('cancRate'), {mode:'pp', goodDown:true})} em ${mLbl}</div></div>
+    </div>
+
+    ${insCards ? `<div class="sec">
+      <div class="sec-hd"><div class="sec-ttl"><div class="sec-ico">💡</div>Destaques da sua operação</div></div>
+      <div class="insight-list">${insCards}</div>
+    </div>` : ''}
+
+    <div class="sec">
+      <div class="sec-hd"><div class="sec-ttl"><div class="sec-ico">🎯</div>Meta de lucro mensal</div></div>
+      <div style="display:flex;align-items:center;gap:18px;flex-wrap:wrap">
+        <div style="display:flex;align-items:center;gap:8px">
+          <span style="font-size:13px;color:var(--s500);font-weight:600">Minha meta: R$</span>
+          <input class="cost-inp" style="width:120px" type="number" min="0" step="50" placeholder="ex: 8000" value="${metaVal||''}" oninput="updateMeta(this.value)">
+        </div>
+        <div style="flex:1;min-width:220px">
+          <div style="height:16px;background:var(--s100);border-radius:8px;overflow:hidden"><div id="meta-bar" style="height:100%;width:${metaPct}%;background:linear-gradient(90deg,var(--or),#ff7043);border-radius:8px;transition:width .5s"></div></div>
+          <div id="meta-txt" style="font-size:12px;color:var(--s500);margin-top:7px;font-weight:600">${metaVal>0 ? ('Lucro de '+mLbl+': '+fmtL(cur.lucro)+' de '+fmt(metaVal)+' ('+metaPct+'%)') : 'Defina uma meta para acompanhar seu progresso mês a mês.'}</div>
+        </div>
+      </div>
     </div>
 
     <div class="sec">
@@ -1162,32 +1351,50 @@ function renderDashboard() {
           <span style="display:flex;align-items:center;gap:5px;color:var(--s500)"><span style="width:10px;height:10px;border-radius:2px;background:#10b981;display:inline-block"></span>Lucro Real</span>
         </div>
       </div>
-      <div style="position:relative;height:240px;margin:0 -4px 8px">
-        <canvas id="dash-chart-canvas"></canvas>
-      </div>
+      <div style="position:relative;height:240px;margin:0 -4px 8px"><canvas id="dash-chart-canvas"></canvas></div>
       <div class="chart-footer">
-        <div class="cf-item">Média mensal: <strong>${fmt(avg)}</strong></div>
+        <div class="cf-item">Média mensal de lucro: <strong>${fmtL(avg)}</strong></div>
         <div class="cf-item">Melhor mês: <strong>${monthLabel(chartKeys[bestIdx])}</strong></div>
         ${chartVals.length > 1 ? `<div class="cf-item">Tendência: <strong style="color:${trendUp?'var(--gr)':'var(--re)'}">${trendUp?'↗ Alta':'↘ Baixa'}</strong></div>` : ''}
       </div>
     </div>
 
     <div class="sec">
-      <div class="sec-hd">
-        <div class="sec-ttl"><div class="sec-ico">📅</div>Histórico por Mês</div>
+      <div class="sec-hd"><div class="sec-ttl"><div class="sec-ico">💸</div>Para onde vai o seu dinheiro</div><span style="font-size:12px;color:var(--s400)">de todo o período</span></div>
+      <p style="font-size:13px;color:var(--s500);margin-bottom:18px">De cada venda, veja quanto fica com a Shopee, custos e ADS — e quanto realmente sobra pra você.</p>
+      ${dinheiroBars}
+    </div>
+
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px;margin-bottom:16px">
+      <div class="sec" style="margin:0">
+        <div class="sec-hd"><div class="sec-ttl"><div class="sec-ico">🔥</div>Mais vendidos</div></div>
+        ${vendList}
       </div>
+      <div class="sec" style="margin:0">
+        <div class="sec-hd"><div class="sec-ttl"><div class="sec-ico">💎</div>Mais lucrativos</div></div>
+        ${lucroList}
+      </div>
+    </div>
+
+    ${sortedVal.length >= 3 ? `<div class="sec" style="background:linear-gradient(135deg,#fffbeb,#fff);border-color:#fde68a">
+      <div style="display:flex;align-items:center;gap:12px">
+        <div style="font-size:26px">📊</div>
+        <div><div style="font-size:14px;font-weight:800;color:var(--s900)">Curva ABC: ${abcN} de ${sortedVal.length} produtos geram 80% do seu faturamento</div>
+        <div style="font-size:12.5px;color:var(--s500);margin-top:2px">Foque energia (estoque, anúncios, fotos) nesses campeões — eles sustentam o seu negócio.</div></div>
+      </div>
+    </div>` : ''}
+
+    ${topUf.length ? `<div class="sec">
+      <div class="sec-hd"><div class="sec-ttl"><div class="sec-ico">📍</div>Vendas por estado</div></div>
+      ${ufBars}
+    </div>` : ''}
+
+    <div class="sec">
+      <div class="sec-hd"><div class="sec-ttl"><div class="sec-ico">📅</div>Histórico por Mês</div></div>
       <div style="overflow-x:auto">
         <table class="tbl">
           <thead><tr>
-            <th style="text-align:left">Mês</th>
-            <th>Pedidos</th>
-            <th>Bruto</th>
-            <th>Ticket Médio</th>
-            <th>Líquido</th>
-            <th>C. Produtos</th>
-            <th>C. ADS</th>
-            <th>Lucro Real</th>
-            <th>Margem</th>
+            <th style="text-align:left">Mês</th><th>Pedidos</th><th>Bruto</th><th>Ticket Médio</th><th>Líquido</th><th>C. Produtos</th><th>C. ADS</th><th>Lucro Real</th><th>Margem</th>
           </tr></thead>
           <tbody>${rows}</tbody>
         </table>
@@ -1196,7 +1403,6 @@ function renderDashboard() {
     </div>
   `;
 
-  // Inicializa Chart.js após o DOM estar pronto
   requestAnimationFrame(() => { initDashChart(chartLabels, brutoVals, chartVals); animateKpis(); });
 }
 
