@@ -443,6 +443,15 @@ body{background:radial-gradient(1100px 480px at 85% -8%,#fdeee8 0%,transparent 6
 .lucro-box{box-shadow:0 8px 28px rgba(5,150,105,.1),inset 0 1px 0 rgba(255,255,255,.6)}
 .nota-grade{transition:transform .25s}.nota-wrap:hover .nota-grade{transform:scale(1.05) rotate(-2deg)}
 
+.est-wa{display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:800;padding:8px 12px;border-radius:9px;cursor:pointer;border:none;font-family:inherit;text-decoration:none;white-space:nowrap;transition:all .15s}
+.est-wa-hot{background:#22c55e;color:#fff;box-shadow:0 3px 10px rgba(34,197,94,.3)}
+.est-wa-hot:hover{background:#16a34a;transform:translateY(-1px)}
+.est-wa-on{background:#dcfce7;color:#15803d}
+.est-wa-on:hover{background:#bbf7d0}
+.est-wa-off{background:var(--s100);color:var(--s400)}
+.est-wa-off:hover{background:var(--s200);color:var(--s600)}
+.est-lista-btn{background:linear-gradient(135deg,var(--or),#ff7043);color:#fff;border:none;border-radius:9px;padding:8px 14px;font-size:12px;font-weight:800;cursor:pointer;font-family:inherit;white-space:nowrap}
+.est-lista-btn:hover{filter:brightness(1.05)}
 /* ── 3D SCENE ── */
 #auth-3d-canvas{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:0}
 .auth-left .auth-lc{z-index:2}
@@ -659,8 +668,8 @@ body{background:radial-gradient(1100px 480px at 85% -8%,#fdeee8 0%,transparent 6
     <!-- ESTOQUE -->
     <div id="page-estoque" class="page">
       <div class="pg-hdr">
-        <h1>Estoque</h1>
-        <p>Controle a quantidade, cor e fornecedor de cada produto da sua loja</p>
+        <h1>Estoque &amp; Reposição</h1>
+        <p>Saiba quando cada produto vai acabar e peça a reposição ao fornecedor com 1 clique no WhatsApp</p>
       </div>
       <div id="estoque-body">
         <div class="spin-wrap"><div class="spin"></div><p>Carregando produtos...</p></div>
@@ -983,7 +992,7 @@ const PAGE_TITLES = {
   mes:       'Análise por Mês',
   upload:    'Novo Upload',
   produtos:  'Custo dos Produtos',
-  estoque:   'Estoque',
+  estoque:   'Estoque & Reposição',
   ads:       'Análise de ADS',
   admin:     'Administração'
 };
@@ -1761,8 +1770,19 @@ function renderProdutos() {
   `;
 }
 
-// ── ESTOQUE ────────────────────────────────────────────
+// ── ESTOQUE & REPOSIÇÃO ─────────────────────────────────
 let estoqueTimer = null;
+let estoqueProdList = [];
+
+function escAttr(s) { return String(s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/'/g,'&#39;').replace(/</g,'&lt;'); }
+
+function estoqueBadge(e) {
+  const q = e && e.qtd;
+  if (q == null || q === '') return '<span class="pill pp">— sem dado</span>';
+  if (q === 0)  return '<span class="pill pr">Esgotado</span>';
+  if (q <= 5)   return '<span class="pill py">⚠ Baixo</span>';
+  return '<span class="pill pg">OK</span>';
+}
 
 function scheduleEstoqueSave() {
   clearTimeout(estoqueTimer);
@@ -1780,34 +1800,110 @@ function scheduleEstoqueSave() {
   }, 900);
 }
 
-function updateEstoque(name, field, value) {
+function nMesesDados() { return Object.keys(allMonths).length || 1; }
+
+function computeRepo(name) {
+  const vm = (allProds[name] ? allProds[name].qty : 0) / nMesesDados();
+  const e  = savedEstoque[name] || {};
+  const q  = (e.qtd == null || e.qtd === '') ? null : e.qtd;
+  const vd = vm / 30;
+  const dias = (q != null && vd > 0) ? q / vd : null;
+  const sugestao = vm > 0 ? Math.max(0, Math.ceil(vm) - (q || 0)) : 0;
+  let level;
+  if (vm <= 0) level = 'novendas';
+  else if (q == null) level = 'semdado';
+  else if (q === 0) level = 'esgotado';
+  else if (dias <= 7) level = 'critico';
+  else if (dias <= 15) level = 'atencao';
+  else level = 'ok';
+  return { vm, q, dias, sugestao, level };
+}
+
+const REPOR_LEVELS = ['esgotado','critico','atencao'];
+
+function waNum(tel) {
+  const d = String(tel || '').replace(/\D/g, '');
+  if (!d) return '';
+  return d.length <= 11 ? '55' + d : d;
+}
+function waLink(tel, msg) {
+  const n = waNum(tel);
+  return n ? 'https://wa.me/' + n + '?text=' + encodeURIComponent(msg) : '';
+}
+function msgRepo(name, e, sug) {
+  const cor = e.cor ? ' (' + e.cor + ')' : '';
+  const qtd = sug > 0 ? sug + ' unidades' : 'reposição';
+  return 'Olá! Gostaria de fazer um pedido de reposição:\n\n• ' + name + cor + ' — ' + qtd + '\n\nPode me passar disponibilidade, prazo e valor? Obrigado!';
+}
+
+function htmlCob(repo) {
+  if (repo.level === 'novendas') return '<span class="td-muted" style="font-size:12px">sem vendas</span>';
+  if (repo.level === 'semdado')  return '<span class="pill pp">preencha estoque</span>';
+  if (repo.level === 'esgotado') return '<span class="pill pr">Esgotado</span>';
+  const dTxt = repo.dias >= 60 ? '60+ dias' : Math.round(repo.dias) + ' dias';
+  if (repo.level === 'critico')  return '<span class="pill pr">🔴 acaba em ' + dTxt + '</span>';
+  if (repo.level === 'atencao')  return '<span class="pill py">⚠ ' + dTxt + '</span>';
+  return '<span class="pill pg">✓ ' + dTxt + '</span>';
+}
+
+function htmlWa(i, name, e, repo) {
+  const tel = e.fornecedorTel;
+  if (!tel) {
+    return '<button class="est-wa est-wa-off" onclick="document.getElementById(\'est-tel-' + i + '\').focus()" title="Cadastre o WhatsApp do fornecedor para pedir com 1 clique">📱 add contato</button>';
+  }
+  const sug = repo.sugestao;
+  const link = waLink(tel, msgRepo(name, e, sug));
+  const label = sug > 0 ? '📱 Pedir ' + sug + ' un' : '📱 Contatar';
+  const cls = sug > 0 ? 'est-wa est-wa-hot' : 'est-wa est-wa-on';
+  return '<a class="' + cls + '" href="' + link + '" target="_blank" rel="noopener">' + label + '</a>';
+}
+
+function fichaPct(e) {
+  let f = 0;
+  if (e.qtd != null && e.qtd !== '') f++;
+  if (e.cor) f++;
+  if (e.fornecedor) f++;
+  if (e.fornecedorTel) f++;
+  return Math.round(f / 4 * 100);
+}
+function htmlCmp(e) {
+  const pct = fichaPct(e);
+  const col = pct === 100 ? 'var(--gr)' : pct >= 50 ? 'var(--am)' : 'var(--re)';
+  return '<div style="display:flex;align-items:center;gap:6px">'
+    + '<div style="flex:1;height:5px;background:var(--s100);border-radius:3px;overflow:hidden;min-width:44px"><div style="height:100%;width:' + pct + '%;background:' + col + ';border-radius:3px;transition:width .3s"></div></div>'
+    + '<span style="font-size:10px;font-weight:700;color:' + col + '">' + pct + '%</span></div>';
+}
+
+function updateEstoque(i, field, value) {
+  const name = estoqueProdList[i];
+  if (!name) return;
   if (!savedEstoque[name]) savedEstoque[name] = {};
-  if (field === 'qtd') savedEstoque[name].qtd = value === '' ? null : Math.max(0, parseInt(value) || 0);
-  else savedEstoque[name][field] = String(value).trim();
-
-  // badge de estoque baixo em tempo real
-  const prods = Object.entries(allProds).sort((a,b) => b[1].qty - a[1].qty);
-  const idx = prods.findIndex(([n]) => n === name);
-  const badge = document.getElementById('est-badge-' + idx);
-  if (badge) badge.innerHTML = estoqueBadge(savedEstoque[name]);
-
+  const e = savedEstoque[name];
+  if (field === 'qtd') e.qtd = value === '' ? null : Math.max(0, parseInt(value) || 0);
+  else if (field === 'cor') e.cor = String(value).trim();
+  else if (field === 'fornecedor') e.fornecedor = String(value).trim();
+  else if (field === 'tel') e.fornecedorTel = String(value).trim();
+  updateEstoqueRow(i);
   scheduleEstoqueSave();
 }
 
-function estoqueBadge(e) {
-  const q = e?.qtd;
-  if (q == null || q === '') return '<span class="pill pp">— sem dado</span>';
-  if (q === 0)  return '<span class="pill pr">Esgotado</span>';
-  if (q <= 5)   return '<span class="pill py">⚠ Baixo</span>';
-  return '<span class="pill pg">OK</span>';
+function updateEstoqueRow(i) {
+  const name = estoqueProdList[i];
+  const e = savedEstoque[name] || {};
+  const repo = computeRepo(name);
+  const cob = document.getElementById('est-cob-' + i);
+  const wa  = document.getElementById('est-wa-' + i);
+  const cmp = document.getElementById('est-cmp-' + i);
+  if (cob) cob.innerHTML = htmlCob(repo);
+  if (wa)  wa.innerHTML  = htmlWa(i, name, e, repo);
+  if (cmp) cmp.innerHTML = htmlCmp(e);
 }
-
-function escAttr(s) { return String(s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/'/g,'&#39;').replace(/</g,'&lt;'); }
 
 function renderEstoque() {
   const body = document.getElementById('estoque-body');
   if (!body) return;
   const prods = Object.entries(allProds).sort((a,b) => b[1].qty - a[1].qty);
+  estoqueProdList = prods.map(function(x){ return x[0]; });
 
   if (!prods.length) {
     body.innerHTML = `
@@ -1820,55 +1916,89 @@ function renderEstoque() {
     return;
   }
 
-  const baixo = prods.filter(([n]) => { const q = savedEstoque[n]?.qtd; return q != null && q <= 5; }).length;
-  const semDado = prods.filter(([n]) => savedEstoque[n]?.qtd == null).length;
+  let capital = 0, repor = 0, semForn = 0;
+  const reporItens = [];
+  prods.forEach(([name, d]) => {
+    const e = savedEstoque[name] || {};
+    const repo = computeRepo(name);
+    if (e.qtd) capital += e.qtd * (savedCustos[name] || 0);
+    if (REPOR_LEVELS.includes(repo.level)) { repor++; reporItens.push({ name, e, repo }); }
+    if (repo.vm > 0 && !e.fornecedor) semForn++;
+  });
+
+  const heroCards = reporItens.slice(0, 6).map(it => {
+    const acao = it.e.fornecedorTel
+      ? '<a class="est-wa est-wa-hot" href="' + waLink(it.e.fornecedorTel, msgRepo(it.name, it.e, it.repo.sugestao)) + '" target="_blank" rel="noopener">📱 Pedir ' + (it.repo.sugestao || '') + ' un</a>'
+      : '<span style="font-size:11px;font-weight:700;color:var(--or)">⚠ Cadastre o fornecedor abaixo para pedir com 1 clique</span>';
+    return `<div style="background:#fff;border:1.5px solid #fde0d8;border-radius:14px;padding:14px 16px;display:flex;flex-direction:column;gap:8px">
+      <div style="font-size:13px;font-weight:700;color:var(--s800);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${it.name}</div>
+      <div>${htmlCob(it.repo)}</div>
+      <div style="font-size:12px;color:var(--s500)">Vende ~${Math.round(it.repo.vm)}/mês · tem ${it.e.qtd != null ? it.e.qtd : '?'} em estoque${it.repo.sugestao > 0 ? ' · <strong style="color:var(--or)">repor ' + it.repo.sugestao + ' un</strong>' : ''}</div>
+      <div>${acao}</div>
+    </div>`;
+  }).join('');
+
+  const heroSection = reporItens.length ? `
+    <div class="sec" style="border-color:#fde0d8;background:linear-gradient(180deg,#fff8f6,#fff)">
+      <div class="sec-hd" style="border:none;margin-bottom:8px">
+        <div class="sec-ttl"><div class="sec-ico" style="background:#fee2e2">🔴</div>Precisa repor (${reporItens.length})</div>
+        <button class="est-lista-btn" onclick="gerarListaCompras()">🧾 Gerar lista de compras</button>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px">${heroCards}</div>
+    </div>` : '';
 
   const rows = prods.map(([name, d], i) => {
     const e = savedEstoque[name] || {};
-    const nameEsc = escAttr(name);
+    const repo = computeRepo(name);
     return `<tr>
       <td>
         <div style="display:flex;align-items:center;gap:10px">
           <div class="rnk ${i<3?['r1','r2','r3'][i]:'rn'}">${i+1}</div>
-          <div style="min-width:0">
-            <div style="font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:240px">${name}</div>
-            <div style="font-size:11px;color:var(--s400)">${Math.round(d.qty)} un. vendidas no total</div>
+          <div style="min-width:0;flex:1">
+            <div style="font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:230px">${name}</div>
+            <div style="font-size:11px;color:var(--s400)">vende ~${Math.round(repo.vm)}/mês · ${Math.round(d.qty)} vendidas</div>
+            <div id="est-cmp-${i}" style="margin-top:5px;max-width:150px">${htmlCmp(e)}</div>
           </div>
         </div>
       </td>
-      <td><input class="cost-inp" style="width:80px" type="number" min="0" step="1" placeholder="0"
-             value="${e.qtd != null ? e.qtd : ''}"
-             oninput="updateEstoque('${nameEsc}','qtd',this.value)"></td>
-      <td><input class="cost-inp" style="width:110px;text-align:left" type="text" placeholder="ex: Azul"
-             value="${escAttr(e.cor || '')}"
-             oninput="updateEstoque('${nameEsc}','cor',this.value)"></td>
-      <td><input class="cost-inp" style="width:150px;text-align:left" type="text" placeholder="ex: Fábrica XYZ"
-             value="${escAttr(e.fornecedor || '')}"
-             oninput="updateEstoque('${nameEsc}','fornecedor',this.value)"></td>
-      <td style="text-align:right" id="est-badge-${i}">${estoqueBadge(e)}</td>
+      <td><input class="cost-inp" style="width:74px" type="number" min="0" step="1" placeholder="0"
+             value="${e.qtd != null ? e.qtd : ''}" oninput="updateEstoque(${i},'qtd',this.value)" onchange="renderEstoque()"></td>
+      <td id="est-cob-${i}" style="text-align:right">${htmlCob(repo)}</td>
+      <td><input class="cost-inp" style="width:96px;text-align:left" type="text" placeholder="ex: Azul"
+             value="${escAttr(e.cor || '')}" oninput="updateEstoque(${i},'cor',this.value)"></td>
+      <td>
+        <input class="cost-inp" style="width:160px;text-align:left;margin-bottom:5px" type="text" placeholder="Fornecedor"
+             value="${escAttr(e.fornecedor || '')}" oninput="updateEstoque(${i},'fornecedor',this.value)" onchange="renderEstoque()">
+        <input class="cost-inp" id="est-tel-${i}" style="width:160px;text-align:left" type="tel" placeholder="WhatsApp: (11) 9..."
+             value="${escAttr(e.fornecedorTel || '')}" oninput="updateEstoque(${i},'tel',this.value)" onchange="renderEstoque()">
+      </td>
+      <td id="est-wa-${i}" style="text-align:right">${htmlWa(i, name, e, repo)}</td>
     </tr>`;
   }).join('');
 
   body.innerHTML = `
+    ${heroSection}
+    <div id="lista-compras-box"></div>
     <div class="kpi-grid" style="grid-template-columns:repeat(3,1fr)">
-      <div class="kpi blue"><div class="kpi-ico">📦</div><div class="kpi-lbl">Produtos</div><div class="kpi-val">${prods.length}</div><div class="kpi-sub">no catálogo (via uploads)</div></div>
-      <div class="kpi ${baixo>0?'red':'green'}"><div class="kpi-ico">${baixo>0?'⚠️':'✅'}</div><div class="kpi-lbl">Estoque baixo</div><div class="kpi-val">${baixo}</div><div class="kpi-sub">com 5 un. ou menos</div></div>
-      <div class="kpi orange"><div class="kpi-ico">📝</div><div class="kpi-lbl">Sem dado</div><div class="kpi-val">${semDado}</div><div class="kpi-sub">ainda não preenchidos</div></div>
+      <div class="kpi purple"><div class="kpi-ico">💎</div><div class="kpi-lbl">Capital em estoque</div><div class="kpi-val">${fmt(capital)}</div><div class="kpi-sub">parado em produtos (estoque × custo)</div></div>
+      <div class="kpi ${repor>0?'red':'green'}"><div class="kpi-ico">${repor>0?'🔴':'✅'}</div><div class="kpi-lbl">Precisa repor</div><div class="kpi-val">${repor}</div><div class="kpi-sub">produtos acabando</div></div>
+      <div class="kpi orange"><div class="kpi-ico">📇</div><div class="kpi-lbl">Sem fornecedor</div><div class="kpi-val">${semForn}</div><div class="kpi-sub">preencha para pedir com 1 clique</div></div>
     </div>
     <div class="sec">
       <div class="sec-hd">
-        <div class="sec-ttl"><div class="sec-ico">📦</div>Estoque por produto</div>
+        <div class="sec-ttl"><div class="sec-ico">📦</div>Controle de estoque</div>
         <div class="ads-ok" id="estoque-ok">✓ Salvo</div>
       </div>
-      <p style="font-size:13px;color:var(--s500);margin-bottom:18px">Preencha a <strong>quantidade em estoque</strong>, a <strong>cor/variação</strong> e o <strong>fornecedor</strong> de cada produto. Tudo é salvo automaticamente.</p>
+      <p style="font-size:13px;color:var(--s500);margin-bottom:18px">Preencha <strong>estoque</strong>, <strong>cor</strong> e o <strong>fornecedor com WhatsApp</strong> de cada produto. Assim o sistema avisa quando cada item vai acabar e você <strong>pede a reposição com 1 clique</strong>.${nMesesDados()<2?' <span style="color:var(--am)">💡 A previsão fica mais precisa com 2+ meses enviados.</span>':''}</p>
       <div style="overflow-x:auto">
         <table class="tbl" style="font-size:13px">
           <thead><tr>
             <th style="text-align:left">Produto</th>
             <th>Estoque</th>
-            <th>Cor / Variação</th>
-            <th>Fornecedor</th>
-            <th>Situação</th>
+            <th>Cobertura</th>
+            <th>Cor</th>
+            <th>Fornecedor + WhatsApp</th>
+            <th>Pedir</th>
           </tr></thead>
           <tbody>${rows}</tbody>
         </table>
@@ -1877,6 +2007,64 @@ function renderEstoque() {
     <p class="note">Alterações salvas automaticamente na sua conta</p>
   `;
 }
+
+function gerarListaCompras() {
+  const box = document.getElementById('lista-compras-box');
+  if (!box) return;
+  const prods = Object.entries(allProds).sort((a,b) => b[1].qty - a[1].qty);
+  const grupos = {};
+  prods.forEach(([name]) => {
+    const e = savedEstoque[name] || {};
+    const repo = computeRepo(name);
+    if (!REPOR_LEVELS.includes(repo.level) || repo.sugestao <= 0) return;
+    const key = e.fornecedor || '__sem__';
+    if (!grupos[key]) grupos[key] = { tel: e.fornecedorTel || '', itens: [] };
+    if (!grupos[key].tel && e.fornecedorTel) grupos[key].tel = e.fornecedorTel;
+    grupos[key].itens.push({ name, cor: e.cor || '', sug: repo.sugestao });
+  });
+
+  const keys = Object.keys(grupos);
+  if (!keys.length) {
+    box.innerHTML = `<div class="sec"><p style="color:var(--gr);font-weight:600">✅ Nenhum produto precisando de reposição no momento.</p></div>`;
+    box.scrollIntoView({ behavior: 'smooth' });
+    return;
+  }
+
+  const blocos = keys.sort((a,b) => (a === '__sem__' ? 1 : b === '__sem__' ? -1 : 0)).map(k => {
+    const g = grupos[k];
+    const semForn = k === '__sem__';
+    const titulo = semForn ? '⚠ Sem fornecedor definido' : k;
+    const itensHtml = g.itens.map(it => `<div style="display:flex;justify-content:space-between;gap:10px;padding:7px 0;border-bottom:1px solid var(--s50);font-size:13px">
+        <span style="color:var(--s700)">${it.name}${it.cor ? ' <span style="color:var(--s400)">('+it.cor+')</span>' : ''}</span>
+        <strong style="color:var(--or);white-space:nowrap">${it.sug} un</strong>
+      </div>`).join('');
+    let acao;
+    if (semForn) {
+      acao = '<div style="margin-top:10px;font-size:12px;font-weight:700;color:var(--or)">👉 Cadastre o fornecedor destes produtos na tabela abaixo para pedir tudo com 1 clique no WhatsApp.</div>';
+    } else if (g.tel) {
+      const msg = 'Olá! Gostaria de fazer um pedido de reposição:\n\n' + g.itens.map(it => '• ' + it.name + (it.cor ? ' (' + it.cor + ')' : '') + ' — ' + it.sug + ' un').join('\n') + '\n\nPode me passar disponibilidade, prazo e valor total? Obrigado!';
+      acao = '<a class="est-wa est-wa-hot" style="margin-top:12px" href="' + waLink(g.tel, msg) + '" target="_blank" rel="noopener">📱 Enviar pedido no WhatsApp</a>';
+    } else {
+      acao = '<div style="margin-top:10px;font-size:12px;font-weight:700;color:var(--or)">👉 Adicione o WhatsApp de <strong>' + k + '</strong> na tabela para enviar o pedido com 1 clique.</div>';
+    }
+    return `<div style="background:#fff;border:1.5px solid ${semForn?'#fdba74':'var(--s200)'};border-radius:14px;padding:16px 18px;margin-bottom:12px">
+      <div style="font-size:14px;font-weight:800;color:var(--s900);margin-bottom:8px">${titulo}</div>
+      ${itensHtml}
+      ${acao}
+    </div>`;
+  }).join('');
+
+  box.innerHTML = `<div class="sec">
+    <div class="sec-hd">
+      <div class="sec-ttl"><div class="sec-ico">🧾</div>Lista de compras — reposição</div>
+      <button class="est-lista-btn" onclick="document.getElementById('lista-compras-box').innerHTML=''">✕ Fechar</button>
+    </div>
+    ${blocos}
+    <p class="note">Organizada por fornecedor. Preencha o WhatsApp de cada fornecedor para enviar o pedido direto.</p>
+  </div>`;
+  box.scrollIntoView({ behavior: 'smooth' });
+}
+
 
 // ── ADS ────────────────────────────────────────────────
 let adsData = null;
@@ -2645,6 +2833,7 @@ async function adminOpenUser(uid, email) {
         <td style="text-align:right;font-weight:700">${e.qtd!=null?e.qtd:'—'}</td>
         <td style="text-align:right;color:var(--s600)">${e.cor||'—'}</td>
         <td style="text-align:right;color:var(--pu);font-weight:600">${e.fornecedor||'—'}</td>
+        <td style="text-align:right;color:var(--s600);font-size:12px">${e.fornecedorTel||'—'}</td>
         <td style="text-align:right">${estoqueBadge(e)}</td>
       </tr>`;
     }).join('');
@@ -2703,6 +2892,7 @@ async function adminOpenUser(uid, email) {
               <th style="text-align:right">Estoque</th>
               <th style="text-align:right">Cor</th>
               <th style="text-align:right">Fornecedor</th>
+              <th style="text-align:right">WhatsApp</th>
               <th style="text-align:right">Situação</th>
             </tr></thead>
             <tbody>${estRows}</tbody>
