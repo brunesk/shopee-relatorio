@@ -6,7 +6,7 @@
 <title>Acelera Shopee - Gestão Financeira — Acelera Shopee</title>
 <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/three@0.165.0/build/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.147.0/build/three.min.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,700;12..96,800&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -400,6 +400,49 @@ input[type=file]{display:none}
 footer{text-align:center;padding:24px 0 16px;font-size:12px;color:var(--s400)}
 footer strong{color:var(--or)}
 
+/* ── PREMIUM ── */
+body{background:radial-gradient(1100px 480px at 85% -8%,#fdeee8 0%,transparent 60%),radial-gradient(900px 420px at -8% 108%,#edf2fc 0%,transparent 55%),#f2f1ef}
+::selection{background:rgba(238,77,45,.16)}
+::-webkit-scrollbar{width:10px;height:10px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--s300);border-radius:6px;border:2px solid #f2f1ef}
+::-webkit-scrollbar-thumb:hover{background:var(--s400)}
+:focus-visible{outline:2px solid var(--or);outline-offset:2px;border-radius:6px}
+.hdr{background:rgba(255,255,255,.82);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px)}
+.page.active>*{animation:pgUp .45s cubic-bezier(.22,1,.36,1) backwards}
+.page.active>*:nth-child(1){animation-delay:.02s}
+.page.active>*:nth-child(2){animation-delay:.07s}
+.page.active>*:nth-child(3){animation-delay:.12s}
+.page.active>*:nth-child(4){animation-delay:.17s}
+.page.active>*:nth-child(5){animation-delay:.22s}
+.page.active>*:nth-child(6){animation-delay:.27s}
+@keyframes pgUp{from{opacity:0;transform:translateY(12px)}}
+@media(prefers-reduced-motion:reduce){.page.active>*{animation:none}}
+.kpi{transition:transform .22s cubic-bezier(.22,1,.36,1),box-shadow .22s}
+.kpi:hover{transform:translateY(-3px)}
+.kpi.blue:hover{box-shadow:0 12px 28px rgba(37,99,235,.14),var(--sh1)}
+.kpi.green:hover{box-shadow:0 12px 28px rgba(5,150,105,.14),var(--sh1)}
+.kpi.red:hover{box-shadow:0 12px 28px rgba(220,38,38,.13),var(--sh1)}
+.kpi.orange:hover{box-shadow:0 12px 28px rgba(238,77,45,.15),var(--sh1)}
+.kpi.purple:hover{box-shadow:0 12px 28px rgba(124,58,237,.14),var(--sh1)}
+.kpi.blue .kpi-ico{background:linear-gradient(135deg,#60a5fa,#2563eb);color:#fff;box-shadow:0 4px 12px rgba(37,99,235,.28)}
+.kpi.green .kpi-ico{background:linear-gradient(135deg,#34d399,#059669);color:#fff;box-shadow:0 4px 12px rgba(5,150,105,.28)}
+.kpi.red .kpi-ico{background:linear-gradient(135deg,#f87171,#dc2626);color:#fff;box-shadow:0 4px 12px rgba(220,38,38,.28)}
+.kpi.orange .kpi-ico{background:linear-gradient(135deg,#ff8a5c,#ee4d2d);color:#fff;box-shadow:0 4px 12px rgba(238,77,45,.3)}
+.kpi.purple .kpi-ico{background:linear-gradient(135deg,#a78bfa,#7c3aed);color:#fff;box-shadow:0 4px 12px rgba(124,58,237,.28)}
+.kpi-val,.td-mon,.td-pos,.td-neg,.td-neu,.td-cost,.ns-val{font-variant-numeric:tabular-nums}
+.sec{transition:box-shadow .25s,border-color .25s}
+.sec:hover{box-shadow:var(--sh2);border-color:var(--s300)}
+.nav-it.active{background:linear-gradient(135deg,var(--or),#ff6a3d);box-shadow:0 4px 14px rgba(238,77,45,.35)}
+.mp.active{background:linear-gradient(135deg,var(--or),#ff6a3d);border-color:transparent}
+.btn-pri,.abtn,.uz-btn,.btn-empty,.analise-btn{position:relative;overflow:hidden}
+.btn-pri::after,.abtn::after,.uz-btn::after,.btn-empty::after{content:'';position:absolute;top:0;left:-70%;width:45%;height:100%;background:linear-gradient(100deg,transparent,rgba(255,255,255,.45),transparent);transform:skewX(-22deg);transition:left .5s cubic-bezier(.22,1,.36,1)}
+.btn-pri:hover::after,.abtn:hover::after,.uz-btn:hover::after,.btn-empty:hover::after{left:130%}
+.tbl tbody tr{transition:background .12s}
+.toast{backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);border-left:4px solid rgba(255,255,255,.35)}
+.lucro-box{box-shadow:0 8px 28px rgba(5,150,105,.1),inset 0 1px 0 rgba(255,255,255,.6)}
+.nota-grade{transition:transform .25s}.nota-wrap:hover .nota-grade{transform:scale(1.05) rotate(-2deg)}
+
 /* ── 3D SCENE ── */
 #auth-3d-canvas{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:0}
 .auth-left .auth-lc{z-index:2}
@@ -758,6 +801,7 @@ async function entrarNoApp() {
   document.getElementById('bnav-admin').style.display    = isAdmin ? '' : 'none';
 
   await loadAllData();
+  restoreAdsLocal();
   renderCurrentPage();
 }
 
@@ -954,6 +998,7 @@ function renderCurrentPage() {
 // ── UTILS ─────────────────────────────────────────────
 const fmt = v => 'R$ ' + Math.abs(+v||0).toFixed(2).replace('.',',').replace(/\B(?=(\d{3})+(?!\d))/g,'.');
 const fmtSigned = v => (v < 0 ? '- ' : '+ ') + fmt(v);
+const fmtL = v => (v < 0 ? '− ' : '') + fmt(v);   // exibe sinal só quando negativo (lucro)
 
 function pn(v) {
   if (v == null || v === '' || v === '-') return 0;
@@ -985,6 +1030,24 @@ function showToast(msg, type='') {
   t.textContent = msg;
   t.className = 'toast ' + type + ' show';
   setTimeout(() => t.classList.remove('show'), 3000);
+}
+
+// Contador animado para valores de KPI (easeOutCubic)
+function animateKpis() {
+  document.querySelectorAll('.kpi-val[data-cv]').forEach(el => {
+    const target = parseFloat(el.dataset.cv);
+    if (isNaN(target)) return;
+    const kind = el.dataset.k || 'money';
+    const t0 = performance.now(), dur = 800;
+    const render = v => kind === 'int' ? Math.round(v).toLocaleString('pt-BR')
+                     : kind === 'moneyL' ? fmtL(v) : fmt(v);
+    const tick = t => {
+      const p = Math.min((t - t0) / dur, 1);
+      el.textContent = render(target * (1 - Math.pow(1 - p, 3)));
+      if (p < 1) requestAnimationFrame(tick);
+    };
+    requestAnimationFrame(tick);
+  });
 }
 
 function calcLucroMes(m) {
@@ -1043,7 +1106,7 @@ function renderDashboard() {
       <td>${fmt(m.liquido||0)}</td>
       <td class="${custoProd > 0 ? 'td-cost' : 'td-muted'}">${custoProd > 0 ? '- '+fmt(custoProd) : '—'}</td>
       <td class="${ads > 0 ? 'td-cost' : 'td-muted'}">${ads > 0 ? '- '+fmt(ads) : '—'}</td>
-      <td class="${cl}">${fmt(lc)}</td>
+      <td class="${cl}">${fmtL(lc)}</td>
       <td class="${margem !== null ? (margem >= 0 ? 'td-pos' : 'td-neg') : 'td-muted'}">${margem !== null ? margem.toFixed(1)+'%' : '—'}</td>
     </tr>`;
   }).join('');
@@ -1057,10 +1120,10 @@ function renderDashboard() {
 
   body.innerHTML = `
     <div class="kpi-grid">
-      <div class="kpi blue"><div class="kpi-ico">📦</div><div class="kpi-lbl">Total de Pedidos</div><div class="kpi-val">${totPed.toLocaleString('pt-BR')}</div><div class="kpi-sub">${keys.length} ${keys.length===1?'mês':'meses'} registrados</div></div>
-      <div class="kpi green"><div class="kpi-ico">💵</div><div class="kpi-lbl">Faturamento Total</div><div class="kpi-val">${fmt(totBruto)}</div><div class="kpi-sub">bruto acumulado</div></div>
-      <div class="kpi orange"><div class="kpi-ico">💰</div><div class="kpi-lbl">Líquido Shopee</div><div class="kpi-val">${fmt(totLiq)}</div><div class="kpi-sub">após taxas Shopee</div></div>
-      <div class="kpi ${totLucro>=0?'green':'red'}"><div class="kpi-ico">${totLucro>=0?'🏆':'⚠️'}</div><div class="kpi-lbl">Lucro Real Total</div><div class="kpi-val" style="color:${totLucro>=0?'var(--gr)':'var(--re)'}">${fmt(totLucro)}</div><div class="kpi-sub">após produtos e ADS</div></div>
+      <div class="kpi blue"><div class="kpi-ico">📦</div><div class="kpi-lbl">Total de Pedidos</div><div class="kpi-val" data-cv="${totPed}" data-k="int">${totPed.toLocaleString('pt-BR')}</div><div class="kpi-sub">${keys.length} ${keys.length===1?'mês':'meses'} registrados</div></div>
+      <div class="kpi green"><div class="kpi-ico">💵</div><div class="kpi-lbl">Faturamento Total</div><div class="kpi-val" data-cv="${totBruto}">${fmt(totBruto)}</div><div class="kpi-sub">bruto acumulado</div></div>
+      <div class="kpi orange"><div class="kpi-ico">💰</div><div class="kpi-lbl">Líquido Shopee</div><div class="kpi-val" data-cv="${totLiq}">${fmt(totLiq)}</div><div class="kpi-sub">após taxas Shopee</div></div>
+      <div class="kpi ${totLucro>=0?'green':'red'}"><div class="kpi-ico">${totLucro>=0?'🏆':'⚠️'}</div><div class="kpi-lbl">Lucro Real Total</div><div class="kpi-val" data-cv="${totLucro}" data-k="moneyL" style="color:${totLucro>=0?'var(--gr)':'var(--re)'}">${fmtL(totLucro)}</div><div class="kpi-sub">após produtos e ADS</div></div>
     </div>
 
     <div class="sec">
@@ -1106,7 +1169,7 @@ function renderDashboard() {
   `;
 
   // Inicializa Chart.js após o DOM estar pronto
-  requestAnimationFrame(() => initDashChart(chartLabels, brutoVals, chartVals));
+  requestAnimationFrame(() => { initDashChart(chartLabels, brutoVals, chartVals); animateKpis(); });
 }
 
 let dashChartInstance = null;
@@ -1176,8 +1239,8 @@ function initDashChart(labels, brutoVals, lucroVals) {
           bodyColor: '#fff',
           padding: 12,
           cornerRadius: 10,
-          titleFont: { family: "'Fira Sans', sans-serif", size: 11, weight: '600' },
-          bodyFont: { family: "'Fira Code', monospace", size: 13, weight: '500' },
+          titleFont: { family: "'DM Sans', sans-serif", size: 11, weight: '600' },
+          bodyFont: { family: "'JetBrains Mono', monospace", size: 13, weight: '500' },
           callbacks: {
             label: ctx => {
               const v = ctx.raw;
@@ -1191,13 +1254,13 @@ function initDashChart(labels, brutoVals, lucroVals) {
         x: {
           grid: { display: false },
           border: { display: false },
-          ticks: { font: { family: "'Fira Sans', sans-serif", size: 11 }, color: '#94a3b8' }
+          ticks: { font: { family: "'DM Sans', sans-serif", size: 11 }, color: '#94a3b8' }
         },
         y: {
           grid: { color: 'rgba(226,232,240,.7)', drawBorder: false },
           border: { display: false, dash: [4,4] },
           ticks: {
-            font: { family: "'Fira Code', monospace", size: 11 },
+            font: { family: "'JetBrains Mono', monospace", size: 11 },
             color: '#94a3b8',
             callback: v => {
               const abs = Math.abs(v);
@@ -1325,10 +1388,10 @@ function renderMesDetail(key) {
     </div>
 
     <div class="kpi-grid">
-      <div class="kpi blue"><div class="kpi-ico">📦</div><div class="kpi-lbl">Pedidos</div><div class="kpi-val">${(m.pedidos||0).toLocaleString('pt-BR')}</div><div class="kpi-sub">${m.cancelados||0} cancelados</div></div>
-      <div class="kpi green"><div class="kpi-ico">💵</div><div class="kpi-lbl">Faturamento Bruto</div><div class="kpi-val">${fmt(m.bruto||0)}</div><div class="kpi-sub">ticket ${fmt(ticket)}</div></div>
-      <div class="kpi red"><div class="kpi-ico">🏷️</div><div class="kpi-lbl">Taxas Shopee</div><div class="kpi-val">${fmt(taxas)}</div><div class="kpi-sub">${txPct.toFixed(1)}% do faturamento</div></div>
-      <div class="kpi orange"><div class="kpi-ico">💰</div><div class="kpi-lbl">Líquido Shopee</div><div class="kpi-val">${fmt(m.liquido||0)}</div><div class="kpi-sub">${m.bruto > 0 ? ((m.liquido||0)/m.bruto*100).toFixed(1)+'% do bruto' : ''}</div></div>
+      <div class="kpi blue"><div class="kpi-ico">📦</div><div class="kpi-lbl">Pedidos</div><div class="kpi-val" data-cv="${m.pedidos||0}" data-k="int">${(m.pedidos||0).toLocaleString('pt-BR')}</div><div class="kpi-sub">${m.cancelados||0} cancelados</div></div>
+      <div class="kpi green"><div class="kpi-ico">💵</div><div class="kpi-lbl">Faturamento Bruto</div><div class="kpi-val" data-cv="${m.bruto||0}">${fmt(m.bruto||0)}</div><div class="kpi-sub">ticket ${fmt(ticket)}</div></div>
+      <div class="kpi red"><div class="kpi-ico">🏷️</div><div class="kpi-lbl">Taxas Shopee</div><div class="kpi-val" data-cv="${taxas}">${fmt(taxas)}</div><div class="kpi-sub">${txPct.toFixed(1)}% do faturamento</div></div>
+      <div class="kpi orange"><div class="kpi-ico">💰</div><div class="kpi-lbl">Líquido Shopee</div><div class="kpi-val" data-cv="${m.liquido||0}">${fmt(m.liquido||0)}</div><div class="kpi-sub">${m.bruto > 0 ? ((m.liquido||0)/m.bruto*100).toFixed(1)+'% do bruto' : ''}</div></div>
     </div>
 
     <div class="ads-blk">
@@ -1390,7 +1453,7 @@ function renderMesDetail(key) {
         </div>
         <div class="lb-row lb-fin">
           <span class="lb-lbl">🏆 Lucro Real</span>
-          <span class="lb-val ${lucroFinal>=0?'pos':'neg'}" id="lb-final-${key}">${fmt(lucroFinal)}</span>
+          <span class="lb-val ${lucroFinal>=0?'pos':'neg'}" id="lb-final-${key}">${fmtL(lucroFinal)}</span>
         </div>
       </div>
       <p class="note">🔒 Pedidos processados no seu dispositivo • Dados salvos com segurança</p>
@@ -1400,6 +1463,7 @@ function renderMesDetail(key) {
       <button onclick="window.print()" style="background:linear-gradient(135deg,var(--or),#ff7043);color:#fff;border:none;padding:14px 32px;border-radius:12px;font-size:14px;font-weight:800;cursor:pointer;box-shadow:0 4px 14px rgba(238,77,45,.3);font-family:inherit">🖨️ Salvar como PDF</button>
     </div>
   `;
+  animateKpis();
 }
 
 let adsTimer = {};
@@ -1420,7 +1484,7 @@ function updateAds(key, val) {
   const lucro     = (allMonths[key].liquido||0) - custoProd - ads;
 
   if (lbFinal) {
-    lbFinal.textContent = fmt(lucro);
+    lbFinal.textContent = fmtL(lucro);
     lbFinal.className   = 'lb-val ' + (lucro >= 0 ? 'pos' : 'neg');
   }
 
@@ -1431,7 +1495,10 @@ function updateAds(key, val) {
         .collection('months').doc(key).set({ adsGasto: ads }, { merge: true });
       const ok = document.getElementById('ads-ok-' + key);
       if (ok) { ok.style.opacity='1'; setTimeout(()=>ok.style.opacity='0',2000); }
-    } catch(e) { console.error(e); }
+    } catch(e) {
+      console.error(e);
+      showToast('⚠️ Sem conexão — o gasto de ADS não foi salvo. Verifique sua internet e digite novamente.', 'err');
+    }
   }, 900);
 }
 
@@ -1575,7 +1642,12 @@ async function processarESalvar() {
 
     const existing = allMonths[monthKey];
     if (existing) {
-      const ok = confirm(`O mês ${monthFull(monthKey)} já tem dados salvos.\nDeseja substituir com o novo arquivo?`);
+      const ok = confirm(
+        `${monthFull(monthKey)} já tem dados salvos:\n` +
+        `   • Atual: ${existing.pedidos || 0} pedidos · ${fmt(existing.bruto || 0)} bruto\n` +
+        `   • Novo arquivo: ${validos.length} pedidos · ${fmt(sub)} bruto\n\n` +
+        `Substituir pelos dados do novo arquivo?\n(O gasto de ADS já lançado será mantido.)`
+      );
       if (!ok) { btn.textContent = 'Processar e Salvar →'; btn.disabled = false; return; }
     }
 
@@ -1672,6 +1744,18 @@ function renderProdutos() {
 
 // ── ADS ────────────────────────────────────────────────
 let adsData = null;
+
+// Persistência local da última análise de ADS (sobrevive ao F5)
+function adsStorageKey() { return 'acelera_ads_' + (currentUser?.uid || 'anon'); }
+function saveAdsLocal() {
+  try { localStorage.setItem(adsStorageKey(), JSON.stringify(adsData)); } catch(e) {}
+}
+function restoreAdsLocal() {
+  try {
+    const raw = localStorage.getItem(adsStorageKey());
+    if (raw) adsData = JSON.parse(raw);
+  } catch(e) {}
+}
 
 function parseCSVRow(line) {
   const res = []; let inQ = false, cur = '';
@@ -1962,6 +2046,7 @@ function readAdsFile(file) {
     const result = processAdsCSV(e.target.result);
     if (!result) { showToast('Arquivo inválido — use "Dados Gerais de Anúncios" da Shopee'); return; }
     adsData = result;
+    saveAdsLocal();
     renderAds();
   };
   reader.readAsText(file, 'UTF-8');
@@ -2052,7 +2137,7 @@ function renderAdsDash(body) {
         ${loja?`<div style="font-size:17px;font-weight:800;color:var(--s900)">${loja}</div>`:''}
         ${periodo?`<div class="ads-period" style="align-self:flex-start">📅 ${periodo}</div>`:''}
       </div>
-      <button class="ads-reload" onclick="adsData=null;renderAds()">↩ Outro arquivo</button>
+      <button class="ads-reload" onclick="adsData=null;saveAdsLocal();renderAds()">↩ Outro arquivo</button>
     </div>
 
     <div class="nota-wrap">
