@@ -1514,11 +1514,22 @@ async function processarESalvar() {
     const validos = rows.filter(r => String(r['Status do pedido']||'').trim() !== 'Cancelado' && String(r['Status do pedido']||'').trim() !== '');
     const canc    = rows.filter(r => String(r['Status do pedido']||'').trim() === 'Cancelado');
 
+    // A Shopee exporta duas colunas com o nome "Desconto do vendedor" — o SheetJS
+    // desambigua com sufixo "_1", "_2" etc. Somamos TODAS as variantes encontradas
+    // em vez de depender de um sufixo fixo (evita perder a 2ª coluna silenciosamente).
+    function somaDescontoVendedor(r) {
+      let s = 0;
+      for (const k in r) {
+        if (k === 'Desconto do vendedor' || k.startsWith('Desconto do vendedor_')) s += pn(r[k]);
+      }
+      return s;
+    }
+
     let sub=0,frt=0,dsc=0,com=0,svc=0,trx=0;
     for (const r of validos) {
       sub += pn(r['Subtotal do produto']);
       frt += pn(r['Taxa de envio pagas pelo comprador']);
-      dsc += pn(r['Desconto do vendedor']) + pn(r['Desconto do vendedor.1']);
+      dsc += somaDescontoVendedor(r);
       com += pn(r['Taxa de comissão líquida']);
       svc += pn(r['Taxa de serviço líquida']);
       trx += pn(r['Taxa de transação']);
