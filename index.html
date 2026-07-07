@@ -1153,15 +1153,19 @@ function renderDashboard() {
   }
 
   // Totais acumulados
-  let totBruto = 0, totLiq = 0, totPed = 0, totLucro = 0;
+  let totBruto = 0, totLiq = 0, totPed = 0, totLucro = 0, totCanc = 0;
   keys.forEach(k => {
     const m = allMonths[k];
     totBruto += m.bruto || 0;
     totLiq   += m.liquido || 0;
     totPed   += m.pedidos || 0;
+    totCanc  += m.cancelados || 0;
     totLucro += calcLucroMes(m);
   });
   const melhorMes = keys.reduce((best, k) => calcLucroMes(allMonths[k]) > calcLucroMes(allMonths[best]) ? k : best, keys[0]);
+  const margemGeral = totBruto > 0 ? totLucro / totBruto * 100 : 0;
+  const ticketGeral = totPed > 0 ? totBruto / totPed : 0;
+  const cancGeral   = (totPed + totCanc) > 0 ? totCanc / (totPed + totCanc) * 100 : 0;
 
   // Métricas por mês (último fechado vs anterior)
   const mMetrics = k => {
@@ -1310,22 +1314,25 @@ function renderDashboard() {
   const mLbl = monthLabel(lastKey);
 
   body.innerHTML = `
-    <div style="background:linear-gradient(135deg,#1f2937,#111827);color:#fff;border-radius:14px;padding:14px 20px;margin-bottom:20px;display:flex;flex-wrap:wrap;gap:18px;align-items:center;font-size:13px">
-      <span style="font-weight:800;font-size:12px;letter-spacing:.5px;text-transform:uppercase;color:#9ca3af">Desde o início</span>
-      <span>📦 <strong>${totPed.toLocaleString('pt-BR')}</strong> pedidos</span>
-      <span>💵 <strong>${fmt(totBruto)}</strong> faturado</span>
-      <span>🏆 <strong style="color:#4ade80">${fmtL(totLucro)}</strong> de lucro</span>
-      <span style="color:#9ca3af">em ${keys.length} ${keys.length===1?'mês':'meses'}</span>
+    <div style="font-size:13px;font-weight:800;color:var(--s500);text-transform:uppercase;letter-spacing:.6px;margin-bottom:10px">Visão geral · todo o período (${keys.length} ${keys.length===1?'mês':'meses'})</div>
+    <div class="kpi-grid dash-kpis" style="grid-template-columns:repeat(auto-fit,minmax(200px,1fr))">
+      <div class="kpi blue"><div class="kpi-ico">📦</div><div class="kpi-lbl">Total de Pedidos</div><div class="kpi-val" data-cv="${totPed}" data-k="int">${totPed.toLocaleString('pt-BR')}</div><div class="kpi-sub">em ${keys.length} ${keys.length===1?'mês':'meses'}</div></div>
+      <div class="kpi green"><div class="kpi-ico">💵</div><div class="kpi-lbl">Faturamento Total</div><div class="kpi-val" data-cv="${totBruto}">${fmt(totBruto)}</div><div class="kpi-sub">bruto acumulado</div></div>
+      <div class="kpi orange"><div class="kpi-ico">💰</div><div class="kpi-lbl">Líquido Shopee</div><div class="kpi-val" data-cv="${totLiq}">${fmt(totLiq)}</div><div class="kpi-sub">após taxas Shopee</div></div>
+      <div class="kpi ${totLucro>=0?'green':'red'}"><div class="kpi-ico">${totLucro>=0?'🏆':'⚠️'}</div><div class="kpi-lbl">Lucro Real Total</div><div class="kpi-val" data-cv="${totLucro}" data-k="moneyL" style="color:${totLucro>=0?'var(--gr)':'var(--re)'}">${fmtL(totLucro)}</div><div class="kpi-sub">após produtos e ADS</div></div>
+      <div class="kpi purple"><div class="kpi-ico">📊</div><div class="kpi-lbl">Margem Geral</div><div class="kpi-val">${margemGeral.toFixed(1)}%</div><div class="kpi-sub">lucro sobre faturamento</div></div>
+      <div class="kpi blue"><div class="kpi-ico">🎟️</div><div class="kpi-lbl">Ticket Médio</div><div class="kpi-val" data-cv="${ticketGeral}">${fmt(ticketGeral)}</div><div class="kpi-sub">por pedido</div></div>
     </div>
 
-    <div style="font-size:13px;font-weight:800;color:var(--s500);text-transform:uppercase;letter-spacing:.6px;margin-bottom:10px">Resultado de ${monthFull(lastKey)}${prev?' <span style="font-weight:500;text-transform:none;color:var(--s400)">· comparado a '+monthLabel(prevKey)+'</span>':''}</div>
-    <div class="kpi-grid dash-kpis" style="grid-template-columns:repeat(auto-fit,minmax(200px,1fr))">
-      <div class="kpi green"><div class="kpi-ico">💵</div><div class="kpi-lbl">Faturamento</div><div class="kpi-val" data-cv="${cur.bruto}">${fmt(cur.bruto)}</div><div class="kpi-sub">${trendBadge(cur.bruto, pv('bruto'))} em ${mLbl}</div></div>
-      <div class="kpi ${cur.lucro>=0?'green':'red'}"><div class="kpi-ico">${cur.lucro>=0?'🏆':'⚠️'}</div><div class="kpi-lbl">Lucro Real</div><div class="kpi-val" data-cv="${cur.lucro}" data-k="moneyL" style="color:${cur.lucro>=0?'var(--gr)':'var(--re)'}">${fmtL(cur.lucro)}</div><div class="kpi-sub">${trendBadge(cur.lucro, pv('lucro'))} em ${mLbl}</div></div>
-      <div class="kpi orange"><div class="kpi-ico">📊</div><div class="kpi-lbl">Margem de Lucro</div><div class="kpi-val">${cur.margem.toFixed(1)}%</div><div class="kpi-sub">${trendBadge(cur.margem, pv('margem'), {mode:'pp'})} em ${mLbl}</div></div>
-      <div class="kpi blue"><div class="kpi-ico">🎟️</div><div class="kpi-lbl">Ticket Médio</div><div class="kpi-val" data-cv="${cur.ticket}">${fmt(cur.ticket)}</div><div class="kpi-sub">${trendBadge(cur.ticket, pv('ticket'))} em ${mLbl}</div></div>
-      <div class="kpi purple"><div class="kpi-ico">📦</div><div class="kpi-lbl">Pedidos</div><div class="kpi-val" data-cv="${cur.ped}" data-k="int">${cur.ped.toLocaleString('pt-BR')}</div><div class="kpi-sub">${trendBadge(cur.ped, pv('ped'))} em ${mLbl}</div></div>
-      <div class="kpi red"><div class="kpi-ico">↩️</div><div class="kpi-lbl">Cancelamento</div><div class="kpi-val">${cur.cancRate.toFixed(1)}%</div><div class="kpi-sub">${trendBadge(cur.cancRate, pv('cancRate'), {mode:'pp', goodDown:true})} em ${mLbl}</div></div>
+    <div class="sec">
+      <div class="sec-hd"><div class="sec-ttl"><div class="sec-ico">📆</div>Último mês fechado · ${monthFull(lastKey)}</div>${prev?`<span style="font-size:12px;color:var(--s400)">vs ${monthLabel(prevKey)}</span>`:''}</div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:16px">
+        <div><div style="font-size:11px;font-weight:700;color:var(--s400);text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px">Faturamento</div><div style="font-family:var(--ff-mono);font-size:18px;font-weight:700;color:var(--s900)">${fmt(cur.bruto)}</div><div style="margin-top:5px">${trendBadge(cur.bruto, pv('bruto'))}</div></div>
+        <div><div style="font-size:11px;font-weight:700;color:var(--s400);text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px">Lucro Real</div><div style="font-family:var(--ff-mono);font-size:18px;font-weight:700;color:${cur.lucro>=0?'var(--gr)':'var(--re)'}">${fmtL(cur.lucro)}</div><div style="margin-top:5px">${trendBadge(cur.lucro, pv('lucro'))}</div></div>
+        <div><div style="font-size:11px;font-weight:700;color:var(--s400);text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px">Margem</div><div style="font-family:var(--ff-mono);font-size:18px;font-weight:700;color:var(--s900)">${cur.margem.toFixed(1)}%</div><div style="margin-top:5px">${trendBadge(cur.margem, pv('margem'), {mode:'pp'})}</div></div>
+        <div><div style="font-size:11px;font-weight:700;color:var(--s400);text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px">Pedidos</div><div style="font-family:var(--ff-mono);font-size:18px;font-weight:700;color:var(--s900)">${cur.ped.toLocaleString('pt-BR')}</div><div style="margin-top:5px">${trendBadge(cur.ped, pv('ped'))}</div></div>
+        <div><div style="font-size:11px;font-weight:700;color:var(--s400);text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px">Cancelamento</div><div style="font-family:var(--ff-mono);font-size:18px;font-weight:700;color:var(--s900)">${cur.cancRate.toFixed(1)}%</div><div style="margin-top:5px">${trendBadge(cur.cancRate, pv('cancRate'), {mode:'pp', goodDown:true})}</div></div>
+      </div>
     </div>
 
     ${insCards ? `<div class="sec">
