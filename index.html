@@ -571,6 +571,7 @@ body{background:radial-gradient(1100px 480px at 85% -8%,#fdeee8 0%,transparent 6
     <div class="nav-sec">Ferramentas</div>
     <button class="nav-it" id="nav-upload" onclick="goPage('upload')"><span class="nav-ico">⬆️</span> Novo Upload</button>
     <button class="nav-it" id="nav-produtos" onclick="goPage('produtos')"><span class="nav-ico">💸</span> Custo dos Produtos</button>
+    <button class="nav-it" id="nav-estoque" onclick="goPage('estoque')"><span class="nav-ico">📦</span> Estoque</button>
     <button class="nav-it" id="nav-ads" onclick="goPage('ads')"><span class="nav-ico">📣</span> Análise de ADS</button>
     <div class="nav-sep" id="nav-sep-admin" style="display:none"></div>
     <button class="nav-it" id="nav-admin" onclick="goPage('admin')" style="display:none"><span class="nav-ico">🛡️</span> Administração</button>
@@ -581,6 +582,7 @@ body{background:radial-gradient(1100px 480px at 85% -8%,#fdeee8 0%,transparent 6
     <button class="bn-it" id="bnav-mes" onclick="goPage('mes')"><span class="bn-ico">📅</span><span class="bn-lbl">Por Mês</span></button>
     <button class="bn-it" id="bnav-upload" onclick="goPage('upload')"><span class="bn-ico">⬆️</span><span class="bn-lbl">Upload</span></button>
     <button class="bn-it" id="bnav-produtos" onclick="goPage('produtos')"><span class="bn-ico">💸</span><span class="bn-lbl">Produtos</span></button>
+    <button class="bn-it" id="bnav-estoque" onclick="goPage('estoque')"><span class="bn-ico">📦</span><span class="bn-lbl">Estoque</span></button>
     <button class="bn-it" id="bnav-ads" onclick="goPage('ads')"><span class="bn-ico">📣</span><span class="bn-lbl">ADS</span></button>
     <button class="bn-it" id="bnav-admin" onclick="goPage('admin')" style="display:none"><span class="bn-ico">🛡️</span><span class="bn-lbl">Admin</span></button>
   </div>
@@ -654,6 +656,17 @@ body{background:radial-gradient(1100px 480px at 85% -8%,#fdeee8 0%,transparent 6
       </div>
     </div>
 
+    <!-- ESTOQUE -->
+    <div id="page-estoque" class="page">
+      <div class="pg-hdr">
+        <h1>Estoque</h1>
+        <p>Controle a quantidade, cor e fornecedor de cada produto da sua loja</p>
+      </div>
+      <div id="estoque-body">
+        <div class="spin-wrap"><div class="spin"></div><p>Carregando produtos...</p></div>
+      </div>
+    </div>
+
     <!-- ADS -->
     <div id="page-ads" class="page">
       <div class="pg-hdr">
@@ -717,6 +730,7 @@ const db   = firebase.firestore();
 let currentUser = null;
 let allMonths   = {};   // { 'YYYY-MM': monthDoc }
 let savedCustos = {};   // { productName: unitCost }
+let savedEstoque = {};  // { productName: {qtd, cor, fornecedor} }
 let allProds    = {};   // { productName: {qty, valor} } aggregated across all months
 let fileData    = null;
 let fileName    = '';
@@ -835,7 +849,10 @@ async function loadAllData() {
   try {
     // User doc (custos + email)
     const udoc = await db.collection('shopee_users').doc(currentUser.uid).get();
-    if (udoc.exists) savedCustos = udoc.data().custos || {};
+    if (udoc.exists) {
+      savedCustos  = udoc.data().custos  || {};
+      savedEstoque = udoc.data().estoque || {};
+    }
     // Salva email para o admin identificar o usuário
     db.collection('shopee_users').doc(currentUser.uid).set({ email: currentUser.email }, { merge: true });
 
@@ -956,7 +973,7 @@ function translateErr(code) {
 
 function logoutUser() {
   auth.signOut();
-  allMonths = {}; savedCustos = {}; fileData = null; fileName = '';
+  allMonths = {}; savedCustos = {}; savedEstoque = {}; fileData = null; fileName = '';
   clearFile();
 }
 
@@ -966,6 +983,7 @@ const PAGE_TITLES = {
   mes:       'Análise por Mês',
   upload:    'Novo Upload',
   produtos:  'Custo dos Produtos',
+  estoque:   'Estoque',
   ads:       'Análise de ADS',
   admin:     'Administração'
 };
@@ -975,7 +993,7 @@ function goPage(p) {
   document.querySelectorAll('.page').forEach(el => el.classList.remove('active'));
   document.getElementById('page-' + p).classList.add('active');
 
-  ['dashboard','mes','upload','produtos','ads','admin'].forEach(id => {
+  ['dashboard','mes','upload','produtos','estoque','ads','admin'].forEach(id => {
     const nv  = document.getElementById('nav-' + id);
     const bnv = document.getElementById('bnav-' + id);
     if (nv)  nv.classList.toggle('active',  id === p);
@@ -991,6 +1009,7 @@ function renderCurrentPage() {
   if (currentPage === 'dashboard') renderDashboard();
   else if (currentPage === 'mes')  renderMes();
   else if (currentPage === 'produtos') renderProdutos();
+  else if (currentPage === 'estoque') renderEstoque();
   else if (currentPage === 'ads') renderAds();
   else if (currentPage === 'admin') renderAdmin();
 }
@@ -1742,6 +1761,123 @@ function renderProdutos() {
   `;
 }
 
+// ── ESTOQUE ────────────────────────────────────────────
+let estoqueTimer = null;
+
+function scheduleEstoqueSave() {
+  clearTimeout(estoqueTimer);
+  estoqueTimer = setTimeout(async () => {
+    if (!currentUser) return;
+    try {
+      await db.collection('shopee_users').doc(currentUser.uid)
+        .set({ estoque: savedEstoque }, { merge: true });
+      const el = document.getElementById('estoque-ok');
+      if (el) { el.style.opacity = '1'; setTimeout(() => el.style.opacity = '0', 2000); }
+    } catch(e) {
+      console.error('saveEstoque:', e);
+      showToast('⚠️ Sem conexão — o estoque não foi salvo. Verifique sua internet.', 'err');
+    }
+  }, 900);
+}
+
+function updateEstoque(name, field, value) {
+  if (!savedEstoque[name]) savedEstoque[name] = {};
+  if (field === 'qtd') savedEstoque[name].qtd = value === '' ? null : Math.max(0, parseInt(value) || 0);
+  else savedEstoque[name][field] = String(value).trim();
+
+  // badge de estoque baixo em tempo real
+  const prods = Object.entries(allProds).sort((a,b) => b[1].qty - a[1].qty);
+  const idx = prods.findIndex(([n]) => n === name);
+  const badge = document.getElementById('est-badge-' + idx);
+  if (badge) badge.innerHTML = estoqueBadge(savedEstoque[name]);
+
+  scheduleEstoqueSave();
+}
+
+function estoqueBadge(e) {
+  const q = e?.qtd;
+  if (q == null || q === '') return '<span class="pill pp">— sem dado</span>';
+  if (q === 0)  return '<span class="pill pr">Esgotado</span>';
+  if (q <= 5)   return '<span class="pill py">⚠ Baixo</span>';
+  return '<span class="pill pg">OK</span>';
+}
+
+function escAttr(s) { return String(s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/'/g,'&#39;').replace(/</g,'&lt;'); }
+
+function renderEstoque() {
+  const body = document.getElementById('estoque-body');
+  if (!body) return;
+  const prods = Object.entries(allProds).sort((a,b) => b[1].qty - a[1].qty);
+
+  if (!prods.length) {
+    body.innerHTML = `
+      <div class="empty">
+        <div class="empty-ico">📦</div>
+        <div class="empty-ttl">Nenhum produto ainda</div>
+        <div class="empty-sub">Faça o upload de um arquivo de pedidos para os produtos aparecerem aqui.</div>
+        <button class="btn-empty" onclick="goPage('upload')">⬆️ Fazer Upload</button>
+      </div>`;
+    return;
+  }
+
+  const baixo = prods.filter(([n]) => { const q = savedEstoque[n]?.qtd; return q != null && q <= 5; }).length;
+  const semDado = prods.filter(([n]) => savedEstoque[n]?.qtd == null).length;
+
+  const rows = prods.map(([name, d], i) => {
+    const e = savedEstoque[name] || {};
+    const nameEsc = escAttr(name);
+    return `<tr>
+      <td>
+        <div style="display:flex;align-items:center;gap:10px">
+          <div class="rnk ${i<3?['r1','r2','r3'][i]:'rn'}">${i+1}</div>
+          <div style="min-width:0">
+            <div style="font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:240px">${name}</div>
+            <div style="font-size:11px;color:var(--s400)">${Math.round(d.qty)} un. vendidas no total</div>
+          </div>
+        </div>
+      </td>
+      <td><input class="cost-inp" style="width:80px" type="number" min="0" step="1" placeholder="0"
+             value="${e.qtd != null ? e.qtd : ''}"
+             oninput="updateEstoque('${nameEsc}','qtd',this.value)"></td>
+      <td><input class="cost-inp" style="width:110px;text-align:left" type="text" placeholder="ex: Azul"
+             value="${escAttr(e.cor || '')}"
+             oninput="updateEstoque('${nameEsc}','cor',this.value)"></td>
+      <td><input class="cost-inp" style="width:150px;text-align:left" type="text" placeholder="ex: Fábrica XYZ"
+             value="${escAttr(e.fornecedor || '')}"
+             oninput="updateEstoque('${nameEsc}','fornecedor',this.value)"></td>
+      <td style="text-align:right" id="est-badge-${i}">${estoqueBadge(e)}</td>
+    </tr>`;
+  }).join('');
+
+  body.innerHTML = `
+    <div class="kpi-grid" style="grid-template-columns:repeat(3,1fr)">
+      <div class="kpi blue"><div class="kpi-ico">📦</div><div class="kpi-lbl">Produtos</div><div class="kpi-val">${prods.length}</div><div class="kpi-sub">no catálogo (via uploads)</div></div>
+      <div class="kpi ${baixo>0?'red':'green'}"><div class="kpi-ico">${baixo>0?'⚠️':'✅'}</div><div class="kpi-lbl">Estoque baixo</div><div class="kpi-val">${baixo}</div><div class="kpi-sub">com 5 un. ou menos</div></div>
+      <div class="kpi orange"><div class="kpi-ico">📝</div><div class="kpi-lbl">Sem dado</div><div class="kpi-val">${semDado}</div><div class="kpi-sub">ainda não preenchidos</div></div>
+    </div>
+    <div class="sec">
+      <div class="sec-hd">
+        <div class="sec-ttl"><div class="sec-ico">📦</div>Estoque por produto</div>
+        <div class="ads-ok" id="estoque-ok">✓ Salvo</div>
+      </div>
+      <p style="font-size:13px;color:var(--s500);margin-bottom:18px">Preencha a <strong>quantidade em estoque</strong>, a <strong>cor/variação</strong> e o <strong>fornecedor</strong> de cada produto. Tudo é salvo automaticamente.</p>
+      <div style="overflow-x:auto">
+        <table class="tbl" style="font-size:13px">
+          <thead><tr>
+            <th style="text-align:left">Produto</th>
+            <th>Estoque</th>
+            <th>Cor / Variação</th>
+            <th>Fornecedor</th>
+            <th>Situação</th>
+          </tr></thead>
+          <tbody>${rows}</tbody>
+        </table>
+      </div>
+    </div>
+    <p class="note">Alterações salvas automaticamente na sua conta</p>
+  `;
+}
+
 // ── ADS ────────────────────────────────────────────────
 let adsData = null;
 
@@ -2438,30 +2574,80 @@ async function adminOpenUser(uid, email) {
   det.scrollIntoView({ behavior: 'smooth' });
 
   try {
-    const snap = await db.collection('shopee_users').doc(uid).collection('months').orderBy('uploadedAt','desc').get();
+    // Meses + doc do usuário (custos, estoque, fornecedores)
+    const [snap, udoc] = await Promise.all([
+      db.collection('shopee_users').doc(uid).collection('months').orderBy('uploadedAt','desc').get(),
+      db.collection('shopee_users').doc(uid).get()
+    ]);
     const months = [];
     snap.forEach(d => months.push({ key: d.id, ...d.data() }));
+    const udata   = udoc.exists ? udoc.data() : {};
+    const custos  = udata.custos  || {};
+    const estoque = udata.estoque || {};
 
-    if (!months.length) {
+    if (!months.length && !Object.keys(estoque).length) {
       det.innerHTML = `<div class="sec"><div class="sec-hd"><div class="sec-ttl"><div class="sec-ico">📊</div>${email}</div></div><p style="color:var(--s400)">Nenhum dado enviado ainda.</p></div>`;
       return;
     }
 
+    // ── Tabela de meses (com ADS e lucro real) ──
     const rows = months.map(m => {
       const taxas = (m.descontos||0)+(m.comissao||0)+(m.servico||0)+(m.transacao||0);
+      const custoProd = (m.produtos || []).reduce((sm, pr) => sm + (custos[pr.name] || 0) * pr.qty, 0);
+      const lucro = (m.liquido||0) - custoProd - (m.adsGasto||0);
       return `<tr>
         <td style="font-weight:700">${monthFull(m.monthKey||m.key)}</td>
         <td style="text-align:right">${(m.pedidos||0).toLocaleString('pt-BR')}</td>
         <td style="text-align:right;color:var(--s800);font-weight:700">${fmt(m.bruto||0)}</td>
         <td style="text-align:right;color:var(--re)">${fmt(taxas)}</td>
         <td style="text-align:right;color:var(--gr);font-weight:700">${fmt(m.liquido||0)}</td>
-        <td style="text-align:right;color:var(--s500);font-size:12px">${m.arquivo||'—'}</td>
+        <td style="text-align:right;color:${(m.adsGasto||0)>0?'var(--re)':'var(--s400)'}">${(m.adsGasto||0)>0?fmt(m.adsGasto):'—'}</td>
+        <td style="text-align:right;font-weight:800;color:${lucro>=0?'var(--gr)':'var(--re)'}">${fmtL(lucro)}</td>
       </tr>`;
     }).join('');
 
-    const totBruto  = months.reduce((s,m)=>s+(m.bruto||0),0);
-    const totLiq    = months.reduce((s,m)=>s+(m.liquido||0),0);
-    const totPed    = months.reduce((s,m)=>s+(m.pedidos||0),0);
+    const totBruto  = months.reduce((sm,m)=>sm+(m.bruto||0),0);
+    const totLiq    = months.reduce((sm,m)=>sm+(m.liquido||0),0);
+    const totPed    = months.reduce((sm,m)=>sm+(m.pedidos||0),0);
+    const totAds    = months.reduce((sm,m)=>sm+(m.adsGasto||0),0);
+
+    // ── Produtos mais vendidos (agregado de todos os meses) ──
+    const agg = {};
+    months.forEach(m => (m.produtos||[]).forEach(pr => {
+      if (!agg[pr.name]) agg[pr.name] = { qty:0, valor:0 };
+      agg[pr.name].qty   += pr.qty;
+      agg[pr.name].valor += pr.valor;
+    }));
+    const topProds = Object.entries(agg).sort((a,b)=>b[1].qty-a[1].qty).slice(0,10);
+    const prodRows = topProds.map(([name,d],i) => {
+      const e = estoque[name] || {};
+      return `<tr>
+        <td>
+          <div style="display:flex;align-items:center;gap:10px">
+            <div class="rnk ${i<3?['r1','r2','r3'][i]:'rn'}">${i+1}</div>
+            <div style="font-size:12.5px;font-weight:600;max-width:230px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${name}</div>
+          </div>
+        </td>
+        <td style="text-align:right;font-weight:700;color:var(--bl)">${Math.round(d.qty)}</td>
+        <td style="text-align:right;font-weight:700;color:var(--gr)">${fmt(d.valor)}</td>
+        <td style="text-align:right;color:${(custos[name]||0)>0?'var(--re)':'var(--s400)'}">${(custos[name]||0)>0?fmt(custos[name]):'—'}</td>
+        <td style="text-align:right">${e.qtd!=null?e.qtd:'—'}</td>
+        <td style="text-align:right;color:var(--s600);font-size:12px">${e.fornecedor||'—'}</td>
+      </tr>`;
+    }).join('');
+
+    // ── Estoque & fornecedores completo ──
+    const estKeys = Object.keys(estoque).filter(k => estoque[k] && (estoque[k].qtd!=null || estoque[k].fornecedor || estoque[k].cor));
+    const estRows = estKeys.map(name => {
+      const e = estoque[name];
+      return `<tr>
+        <td style="font-size:12.5px;font-weight:600;max-width:250px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${name}</td>
+        <td style="text-align:right;font-weight:700">${e.qtd!=null?e.qtd:'—'}</td>
+        <td style="text-align:right;color:var(--s600)">${e.cor||'—'}</td>
+        <td style="text-align:right;color:var(--pu);font-weight:600">${e.fornecedor||'—'}</td>
+        <td style="text-align:right">${estoqueBadge(e)}</td>
+      </tr>`;
+    }).join('');
 
     det.innerHTML = `
       <div class="sec">
@@ -2473,7 +2659,7 @@ async function adminOpenUser(uid, email) {
           <div class="kpi blue"><div class="kpi-lbl">Pedidos</div><div class="kpi-val" style="font-size:18px">${totPed.toLocaleString('pt-BR')}</div></div>
           <div class="kpi green"><div class="kpi-lbl">Bruto Total</div><div class="kpi-val" style="font-size:18px">${fmt(totBruto)}</div></div>
           <div class="kpi orange"><div class="kpi-lbl">Líquido Total</div><div class="kpi-val" style="font-size:18px">${fmt(totLiq)}</div></div>
-          <div class="kpi purple"><div class="kpi-lbl">Meses</div><div class="kpi-val" style="font-size:18px">${months.length}</div></div>
+          <div class="kpi purple"><div class="kpi-lbl">Gasto ADS</div><div class="kpi-val" style="font-size:18px">${totAds>0?fmt(totAds):'—'}</div></div>
         </div>
         <div style="overflow-x:auto">
           <table class="tbl">
@@ -2483,12 +2669,47 @@ async function adminOpenUser(uid, email) {
               <th style="text-align:right">Bruto</th>
               <th style="text-align:right">Taxas Shopee</th>
               <th style="text-align:right">Líquido</th>
-              <th style="text-align:right">Arquivo</th>
+              <th style="text-align:right">ADS</th>
+              <th style="text-align:right">Lucro Real</th>
             </tr></thead>
-            <tbody>${rows}</tbody>
+            <tbody>${rows || '<tr><td colspan="7" style="color:var(--s400)">Sem meses enviados</td></tr>'}</tbody>
           </table>
         </div>
-      </div>`;
+      </div>
+
+      ${topProds.length ? `<div class="sec">
+        <div class="sec-hd"><div class="sec-ttl"><div class="sec-ico">🏆</div>Produtos mais vendidos (todos os meses)</div></div>
+        <div style="overflow-x:auto">
+          <table class="tbl">
+            <thead><tr>
+              <th style="text-align:left">Produto</th>
+              <th style="text-align:right">Un. vendidas</th>
+              <th style="text-align:right">Faturamento</th>
+              <th style="text-align:right">Custo un.</th>
+              <th style="text-align:right">Estoque</th>
+              <th style="text-align:right">Fornecedor</th>
+            </tr></thead>
+            <tbody>${prodRows}</tbody>
+          </table>
+        </div>
+      </div>` : ''}
+
+      ${estRows ? `<div class="sec">
+        <div class="sec-hd"><div class="sec-ttl"><div class="sec-ico">📦</div>Estoque & Fornecedores (preenchido pelo aluno)</div></div>
+        <div style="overflow-x:auto">
+          <table class="tbl">
+            <thead><tr>
+              <th style="text-align:left">Produto</th>
+              <th style="text-align:right">Estoque</th>
+              <th style="text-align:right">Cor</th>
+              <th style="text-align:right">Fornecedor</th>
+              <th style="text-align:right">Situação</th>
+            </tr></thead>
+            <tbody>${estRows}</tbody>
+          </table>
+        </div>
+      </div>` : `<div class="sec"><p style="color:var(--s400);font-size:13px">📦 Este aluno ainda não preencheu dados de estoque/fornecedor.</p></div>`}
+    `;
   } catch(e) {
     det.innerHTML = `<div class="sec"><p style="color:var(--re)">Erro: ${e.message}</p></div>`;
   }
