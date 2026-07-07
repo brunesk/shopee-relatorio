@@ -452,6 +452,10 @@ body{background:radial-gradient(1100px 480px at 85% -8%,#fdeee8 0%,transparent 6
 .est-wa-off:hover{background:var(--s200);color:var(--s600)}
 .est-lista-btn{background:linear-gradient(135deg,var(--or),#ff7043);color:#fff;border:none;border-radius:9px;padding:8px 14px;font-size:12px;font-weight:800;cursor:pointer;font-family:inherit;white-space:nowrap}
 .est-lista-btn:hover{filter:brightness(1.05)}
+.dash-kpis .kpi{padding:18px 18px 15px}
+.dash-kpis .kpi-val{font-size:20px;white-space:nowrap;letter-spacing:-.3px;line-height:1.15}
+.dash-kpis .kpi-lbl{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dash-kpis .kpi-sub{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .trend{display:inline-flex;align-items:center;gap:2px;font-size:11px;font-weight:800;padding:2px 7px;border-radius:20px}
 .trend-up{background:#dcfce7;color:#15803d}
 .trend-down{background:#fee2e2;color:#b91c1c}
@@ -1315,7 +1319,7 @@ function renderDashboard() {
     </div>
 
     <div style="font-size:13px;font-weight:800;color:var(--s500);text-transform:uppercase;letter-spacing:.6px;margin-bottom:10px">Resultado de ${monthFull(lastKey)}${prev?' <span style="font-weight:500;text-transform:none;color:var(--s400)">· comparado a '+monthLabel(prevKey)+'</span>':''}</div>
-    <div class="kpi-grid" style="grid-template-columns:repeat(auto-fit,minmax(150px,1fr))">
+    <div class="kpi-grid dash-kpis" style="grid-template-columns:repeat(auto-fit,minmax(200px,1fr))">
       <div class="kpi green"><div class="kpi-ico">💵</div><div class="kpi-lbl">Faturamento</div><div class="kpi-val" data-cv="${cur.bruto}">${fmt(cur.bruto)}</div><div class="kpi-sub">${trendBadge(cur.bruto, pv('bruto'))} em ${mLbl}</div></div>
       <div class="kpi ${cur.lucro>=0?'green':'red'}"><div class="kpi-ico">${cur.lucro>=0?'🏆':'⚠️'}</div><div class="kpi-lbl">Lucro Real</div><div class="kpi-val" data-cv="${cur.lucro}" data-k="moneyL" style="color:${cur.lucro>=0?'var(--gr)':'var(--re)'}">${fmtL(cur.lucro)}</div><div class="kpi-sub">${trendBadge(cur.lucro, pv('lucro'))} em ${mLbl}</div></div>
       <div class="kpi orange"><div class="kpi-ico">📊</div><div class="kpi-lbl">Margem de Lucro</div><div class="kpi-val">${cur.margem.toFixed(1)}%</div><div class="kpi-sub">${trendBadge(cur.margem, pv('margem'), {mode:'pp'})} em ${mLbl}</div></div>
