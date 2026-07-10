@@ -460,6 +460,350 @@ body{background:radial-gradient(1100px 480px at 85% -8%,#fdeee8 0%,transparent 6
 .trend-up{background:#dcfce7;color:#15803d}
 .trend-down{background:#fee2e2;color:#b91c1c}
 .trend-flat{background:var(--s100);color:var(--s500)}
+/* ── PRECIFICAÇÃO (calculadora integrada) ── */
+#page-precificacao{
+  --orange:#ee4d2d;--orange-light:#f2662e;--orange-glow:rgba(238,77,45,.09);
+  --green:#059669;--green-light:#059669;--red:#dc2626;--blue:#2563eb;
+  --bg:#ffffff;--bg2:#fafafa;--bg3:#f4f4f5;--card:#ffffff;--card2:#f9fafb;
+  --border:#e7e7ea;--border2:#d4d4d8;
+  --text:#18181b;--text2:#52525b;--text3:#9598a1;
+  font-family:var(--ff-body);
+}
+#page-precificacao 400;500;600;700;800;900&display=swap');
+
+:root {
+  --orange: #EE4D2D;
+  --orange-light: #FF6B35;
+  --orange-glow: rgba(238,77,45,0.15);
+  --green: #00B14F;
+  --green-light: #00D96A;
+  --red: #FF3B30;
+  --blue: #007AFF;
+  --bg: #0A0A0F;
+  --bg2: #111118;
+  --bg3: #18181F;
+  --card: #1C1C25;
+  --card2: #22222D;
+  --border: rgba(255,255,255,0.07);
+  --border2: rgba(255,255,255,0.12);
+  --text: #F2F2F7;
+  --text2: #8E8E9A;
+  --text3: #5A5A6A;
+}
+#page-precificacao .wrap { max-width: 960px; margin: 0 auto; }
+#page-precificacao .header {
+  position: relative;
+  padding: 32px 36px;
+  background: linear-gradient(135deg, #1A0A06 0%, #1C1008 40%, #0F0F18 100%);
+  border: 1px solid var(--border2);
+  border-radius: 24px;
+  margin-bottom: 24px;
+  overflow: hidden;
+}
+#page-precificacao .header::before {
+  content: '';
+  position: absolute;
+  top: -60px; left: -60px;
+  width: 280px; height: 280px;
+  background: radial-gradient(circle, rgba(238,77,45,0.2) 0%, transparent 70%);
+  pointer-events: none;
+}
+#page-precificacao .header::after {
+  content: '';
+  position: absolute;
+  bottom: -80px; right: -40px;
+  width: 320px; height: 320px;
+  background: radial-gradient(circle, rgba(255,107,53,0.1) 0%, transparent 70%);
+  pointer-events: none;
+}
+#page-precificacao .header-inner { position: relative; z-index: 1; }
+#page-precificacao .header-top { display: flex; align-items: flex-start; justify-content: space-between; flex-wrap: wrap; gap: 12px; margin-bottom: 16px; }
+#page-precificacao .header-badge {
+  display: inline-flex; align-items: center; gap: 6px;
+  background: var(--orange-glow); border: 1px solid rgba(238,77,45,0.3);
+  color: var(--orange-light); padding: 5px 12px; border-radius: 20px;
+  font-size: 11px; font-weight: 600; letter-spacing: 0.5px;
+}
+#page-precificacao .header h1 {
+  font-size: clamp(20px, 3vw, 28px);
+  font-weight: 800;
+  background: linear-gradient(90deg, #FF6B35, #EE4D2D, #FF9A7A);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  margin-bottom: 4px; line-height: 1.2;
+}
+#page-precificacao .header p { font-size: 14px; color: var(--text2); margin-bottom: 16px; }
+#page-precificacao .header-links { display: flex; gap: 10px; flex-wrap: wrap; }
+#page-precificacao .link-btn {
+  display: inline-flex; align-items: center; gap: 7px;
+  padding: 8px 16px; border-radius: 12px;
+  font-size: 12px; font-weight: 600; text-decoration: none;
+  transition: transform 0.15s, opacity 0.15s;
+  border: none; cursor: pointer;
+}
+#page-precificacao .link-btn:hover { transform: translateY(-1px); opacity: 0.9; }
+#page-precificacao .link-ig { background: linear-gradient(135deg, #E1306C, #833AB4); color: white; }
+#page-precificacao .link-wa { background: linear-gradient(135deg, #25D366, #128C7E); color: white; }
+#page-precificacao .main-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+  margin-bottom: 20px;
+}
+@media (max-width: 700px) {
+#page-precificacao .main-grid { grid-template-columns: 1fr; }
+
+}
+#page-precificacao .card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 24px;
+  position: relative;
+  overflow: hidden;
+  transition: border-color 0.3s;
+}
+#page-precificacao .card:hover { border-color: var(--border2); }
+#page-precificacao .card-title {
+  font-size: 13px; font-weight: 700; letter-spacing: 0.5px;
+  text-transform: uppercase; color: var(--text2);
+  margin-bottom: 20px; display: flex; align-items: center; gap: 8px;
+}
+#page-precificacao .card-title span { font-size: 16px; }
+#page-precificacao .seg { display: flex; background: var(--bg3); border-radius: 12px; padding: 4px; gap: 4px; margin-bottom: 16px; }
+#page-precificacao .seg-btn {
+  flex: 1; padding: 9px; border-radius: 9px;
+  border: none; background: transparent; color: var(--text2);
+  font-size: 13px; font-weight: 600; cursor: pointer;
+  transition: all 0.2s; font-family: inherit;
+}
+#page-precificacao .seg-btn.on {
+  background: var(--card2);
+  color: var(--text);
+  box-shadow: 0 1px 6px rgba(0,0,0,0.4);
+}
+#page-precificacao .check-item {
+  display: flex; align-items: center; gap: 10px;
+  background: var(--bg3); border: 1px solid var(--border);
+  border-radius: 10px; padding: 10px 14px; margin-bottom: 10px;
+  cursor: pointer; transition: border-color 0.2s;
+}
+#page-precificacao .check-item:hover { border-color: var(--border2); }
+#page-precificacao .check-item input[type=checkbox] {
+  width: 17px; height: 17px; accent-color: var(--orange);
+  cursor: pointer; flex-shrink: 0;
+}
+#page-precificacao .check-item label { font-size: 13px; color: var(--text2); cursor: pointer; line-height: 1.4; }
+#page-precificacao .field { margin-bottom: 14px; }
+#page-precificacao .field-label {
+  font-size: 11px; font-weight: 600; letter-spacing: 0.5px;
+  text-transform: uppercase; color: var(--text3); margin-bottom: 8px;
+  display: flex; align-items: center; justify-content: space-between;
+}
+#page-precificacao .field-label small { font-size: 10px; color: var(--text3); text-transform: none; letter-spacing: 0; font-weight: 400; }
+#page-precificacao .input-wrap { position: relative; }
+#page-precificacao .input-prefix {
+  position: absolute; left: 14px; top: 50%; transform: translateY(-50%);
+  font-size: 13px; font-weight: 600; color: var(--text3); pointer-events: none; z-index: 1;
+}
+#page-precificacao .input-suffix {
+  position: absolute; right: 14px; top: 50%; transform: translateY(-50%);
+  font-size: 13px; font-weight: 600; color: var(--text3); pointer-events: none;
+}
+#page-precificacao input[type=number] {
+  width: 100%;
+  background: var(--bg3);
+  border: 1.5px solid var(--border);
+  border-radius: 12px;
+  color: var(--text);
+  font-family: inherit;
+  font-size: 15px;
+  font-weight: 600;
+  padding: 11px 14px;
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  -moz-appearance: textfield;
+}
+#page-precificacao input[type=number]::-webkit-inner-spin-button, #page-precificacao input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; }
+#page-precificacao input[type=number]:focus {
+  border-color: var(--orange);
+  box-shadow: 0 0 0 3px var(--orange-glow);
+}
+#page-precificacao input[type=number].has-prefix { padding-left: 40px; }
+#page-precificacao input[type=number].has-suffix { padding-right: 38px; }
+#page-precificacao .modes { display: flex; flex-direction: column; gap: 6px; margin-bottom: 14px; }
+#page-precificacao .mode-btn {
+  padding: 11px 14px; border-radius: 12px;
+  border: 1.5px solid var(--border);
+  background: var(--bg3); color: var(--text2);
+  font-size: 12px; font-weight: 600; cursor: pointer;
+  text-align: left; font-family: inherit;
+  transition: all 0.18s; display: flex; align-items: center; gap: 10px;
+}
+#page-precificacao .mode-btn:hover { border-color: var(--border2); color: var(--text); }
+#page-precificacao .mode-btn.on {
+  border-color: var(--orange);
+  background: var(--orange-glow);
+  color: var(--orange-light);
+}
+#page-precificacao .mode-btn .mode-icon {
+  width: 28px; height: 28px; border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 14px; background: rgba(255,255,255,0.05); flex-shrink: 0;
+}
+#page-precificacao .mode-btn.on .mode-icon { background: rgba(238,77,45,0.15); }
+#page-precificacao .main-input-block {
+  background: linear-gradient(135deg, rgba(238,77,45,0.06), rgba(255,107,53,0.03));
+  border: 1.5px solid rgba(238,77,45,0.2);
+  border-radius: 16px; padding: 16px; margin-bottom: 6px;
+}
+#page-precificacao .main-input-block .field-label { color: var(--orange-light); }
+#page-precificacao .main-input-block input[type=number] {
+  background: rgba(0,0,0,0.3);
+  font-size: 24px;
+  padding: 12px 16px;
+  border-color: rgba(238,77,45,0.2);
+  border-radius: 10px;
+}
+#page-precificacao .main-input-block input[type=number]:focus {
+  border-color: var(--orange);
+}
+#page-precificacao .main-input-block input[type=number].has-prefix { padding-left: 48px; }
+#page-precificacao .main-input-block .input-prefix { font-size: 16px; left: 16px; color: var(--orange); }
+#page-precificacao .main-input-block .input-suffix { font-size: 16px; right: 16px; color: var(--orange); }
+#page-precificacao .hero {
+  background: linear-gradient(135deg, #1A0E08, #15100E);
+  border: 1px solid rgba(238,77,45,0.2);
+  border-radius: 18px; padding: 24px 20px;
+  text-align: center; margin-bottom: 20px;
+  position: relative; overflow: hidden;
+}
+#page-precificacao .hero::before {
+  content: '';
+  position: absolute; top: 0; left: 0; right: 0; height: 2px;
+  background: linear-gradient(90deg, transparent, var(--orange), var(--orange-light), transparent);
+}
+#page-precificacao .hero-eyebrow { font-size: 11px; font-weight: 600; letter-spacing: 1px; text-transform: uppercase; color: var(--text3); margin-bottom: 8px; }
+#page-precificacao .hero-value {
+  font-size: 52px; font-weight: 900; line-height: 1;
+  background: linear-gradient(135deg, #FF6B35, #EE4D2D, #FF9A7A);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  margin-bottom: 6px; letter-spacing: -2px;
+  transition: all 0.2s;
+}
+#page-precificacao .hero-sub { font-size: 12px; color: var(--text3); }
+#page-precificacao .mode-tag {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 4px 10px; border-radius: 8px;
+  font-size: 10px; font-weight: 700; letter-spacing: 0.5px; text-transform: uppercase;
+  margin-bottom: 16px;
+}
+#page-precificacao .mode-tag.reverse { background: rgba(0,122,255,0.12); color: #60A5FA; border: 1px solid rgba(0,122,255,0.2); }
+#page-precificacao .mode-tag.direct { background: rgba(0,177,79,0.12); color: #34D399; border: 1px solid rgba(0,177,79,0.2); }
+#page-precificacao .section-title { font-size: 11px; font-weight: 700; letter-spacing: 0.5px; text-transform: uppercase; color: var(--text3); margin-bottom: 12px; }
+#page-precificacao .brow { display: flex; justify-content: space-between; align-items: center; padding: 9px 0; border-bottom: 1px solid var(--border); font-size: 13px; }
+#page-precificacao .brow:last-child { border-bottom: none; }
+#page-precificacao .brow .bl { color: var(--text2); display: flex; align-items: center; gap: 7px; }
+#page-precificacao .brow .bv { font-weight: 700; }
+#page-precificacao .bv.red { color: #FF453A; }
+#page-precificacao .bv.blue { color: #60A5FA; font-size: 15px; }
+#page-precificacao .total-row {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 14px 16px; border-radius: 14px; margin-top: 10px;
+  font-size: 13px; font-weight: 700;
+}
+#page-precificacao .total-row.blue-row { background: rgba(0,122,255,0.08); border: 1px solid rgba(0,122,255,0.15); }
+#page-precificacao .total-row.green-row { background: rgba(0,177,79,0.08); border: 1px solid rgba(0,177,79,0.15); }
+#page-precificacao .total-row.orange-row { background: var(--orange-glow); border: 1px solid rgba(238,77,45,0.2); }
+#page-precificacao .total-row .tv { font-size: 18px; font-weight: 800; }
+#page-precificacao .tv.blue { color: #60A5FA; }
+#page-precificacao .tv.green { color: var(--green-light); }
+#page-precificacao .tv.orange { color: var(--orange-light); }
+#page-precificacao .warn {
+  display: flex; gap: 10px; align-items: flex-start;
+  background: rgba(255,159,10,0.06); border: 1px solid rgba(255,159,10,0.15);
+  border-radius: 12px; padding: 12px 14px; margin-top: 14px;
+  font-size: 11px; color: var(--text2); line-height: 1.6;
+}
+#page-precificacao .warn span:first-child { font-size: 14px; flex-shrink: 0; margin-top: 1px; }
+#page-precificacao .roas-wrap {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 16px;
+  margin-top: 20px;
+}
+@media (max-width: 700px) {
+#page-precificacao .roas-wrap { grid-template-columns: 1fr; }
+
+}
+#page-precificacao .roas-card {
+  border-radius: 20px; padding: 22px; border: 1px solid;
+  position: relative; overflow: hidden;
+}
+#page-precificacao .roas-card.rcard-red {
+  background: linear-gradient(135deg, #1A0A0A, #150808);
+  border-color: rgba(255,69,58,0.2);
+}
+#page-precificacao .roas-card.rcard-green {
+  background: linear-gradient(135deg, #071510, #080F0A);
+  border-color: rgba(0,177,79,0.2);
+}
+#page-precificacao .roas-card::before {
+  content: '';
+  position: absolute; top: 0; left: 0; right: 0; height: 1px;
+}
+#page-precificacao .roas-card.rcard-red::before { background: linear-gradient(90deg, transparent, rgba(255,69,58,0.6), transparent); }
+#page-precificacao .roas-card.rcard-green::before { background: linear-gradient(90deg, transparent, rgba(0,177,79,0.6), transparent); }
+#page-precificacao .roas-label { font-size: 11px; font-weight: 700; letter-spacing: 0.5px; text-transform: uppercase; margin-bottom: 14px; display: flex; align-items: center; gap: 8px; }
+#page-precificacao .roas-label.red { color: #FF453A; }
+#page-precificacao .roas-label.green { color: var(--green-light); }
+#page-precificacao .roas-big { font-size: 56px; font-weight: 900; letter-spacing: -2px; line-height: 1; margin-bottom: 14px; }
+#page-precificacao .roas-big.red { color: #FF453A; }
+#page-precificacao .roas-big.green { color: var(--green-light); }
+#page-precificacao .roas-desc {
+  background: rgba(255,255,255,0.03); border: 1px solid var(--border);
+  border-radius: 10px; padding: 12px;
+  font-size: 11px; color: var(--text2); line-height: 1.7;
+}
+#page-precificacao .roas-desc strong { color: var(--text); }
+#page-precificacao .info-box {
+  background: rgba(0,122,255,0.05); border: 1px solid rgba(0,122,255,0.15);
+  border-radius: 14px; padding: 14px; margin-top: 16px;
+}
+#page-precificacao .info-box strong { font-size: 12px; color: #60A5FA; display: block; margin-bottom: 6px; }
+#page-precificacao .info-box p { font-size: 11px; color: var(--text2); line-height: 1.7; }
+#page-precificacao .table-card { margin-top: 20px; }
+#page-precificacao .table-wrap { overflow-x: auto; margin-top: 12px; border-radius: 14px; overflow: hidden; border: 1px solid var(--border); }
+#page-precificacao table { width: 100%; border-collapse: collapse; font-size: 13px; }
+#page-precificacao thead tr { background: var(--card2); }
+#page-precificacao th { padding: 12px 16px; text-align: left; font-weight: 700; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text3); }
+#page-precificacao td { padding: 12px 16px; border-bottom: 1px solid var(--border); color: var(--text2); }
+#page-precificacao tr:last-child td { border-bottom: none; }
+#page-precificacao .tr-active td { background: rgba(238,77,45,0.06); color: var(--text); }
+#page-precificacao .faixa-tag {
+  display: inline-block; padding: 4px 10px; border-radius: 8px;
+  font-size: 11px; font-weight: 700;
+  background: var(--orange-glow); color: var(--orange-light);
+  border: 1px solid rgba(238,77,45,0.2);
+}
+#page-precificacao .table-note { font-size: 11px; color: var(--text3); margin-top: 10px; line-height: 1.6; }
+#page-precificacao .footer { text-align: center; padding: 32px 0 8px; }
+#page-precificacao .footer p { font-size: 12px; color: var(--text3); }
+#page-precificacao .footer strong { color: var(--orange-light); }
+#page-precificacao .footer-links { display: flex; justify-content: center; gap: 10px; flex-wrap: wrap; margin: 14px 0; }
+#page-precificacao .footer-note { font-size: 11px; color: var(--text3); font-style: italic; }
+#page-precificacao .divider { height: 1px; background: var(--border); margin: 14px 0; }
+@keyframes pfPulse { 0%,100% { opacity:1; } 50% { opacity:0.6; } }#page-precificacao .loading { animation: pulse 1s infinite; }
+
+/* overrides tema claro para as caixas que eram dark */
+#page-precificacao .hero{background:linear-gradient(135deg,#fff7f5,#fff);border-color:rgba(238,77,45,.22)}
+#page-precificacao .roas-card.rcard-red{background:linear-gradient(135deg,#fef2f2,#fff);border-color:rgba(220,38,38,.2)}
+#page-precificacao .roas-card.rcard-green{background:linear-gradient(135deg,#f0fdf4,#fff);border-color:rgba(5,150,105,.2)}
+#page-precificacao .roas-desc{background:#f9fafb;border-color:var(--border)}
+#page-precificacao .info-box{background:#eff6ff;border-color:rgba(37,99,235,.15)}
+#page-precificacao .mode-btn .mode-icon{background:#f1f1f4}
+#page-precificacao .mode-btn.on .mode-icon{background:rgba(238,77,45,.12)}
+#page-precificacao thead tr{background:#f4f4f5}
+#page-precificacao .card{box-shadow:var(--sh1)}
+#page-precificacao .main-grid{margin-bottom:20px}
+
 /* ── 3D SCENE ── */
 #auth-3d-canvas{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:0}
 .auth-left .auth-lc{z-index:2}
@@ -588,6 +932,7 @@ body{background:radial-gradient(1100px 480px at 85% -8%,#fdeee8 0%,transparent 6
     <div class="nav-sec">Ferramentas</div>
     <button class="nav-it" id="nav-upload" onclick="goPage('upload')"><span class="nav-ico">⬆️</span> Novo Upload</button>
     <button class="nav-it" id="nav-produtos" onclick="goPage('produtos')"><span class="nav-ico">💸</span> Custo dos Produtos</button>
+    <button class="nav-it" id="nav-precificacao" onclick="goPage('precificacao')"><span class="nav-ico">🏷️</span> Precificação</button>
     <button class="nav-it" id="nav-estoque" onclick="goPage('estoque')"><span class="nav-ico">📦</span> Estoque</button>
     <button class="nav-it" id="nav-ads" onclick="goPage('ads')"><span class="nav-ico">📣</span> Análise de ADS</button>
     <div class="nav-sep" id="nav-sep-admin" style="display:none"></div>
@@ -599,6 +944,7 @@ body{background:radial-gradient(1100px 480px at 85% -8%,#fdeee8 0%,transparent 6
     <button class="bn-it" id="bnav-mes" onclick="goPage('mes')"><span class="bn-ico">📅</span><span class="bn-lbl">Por Mês</span></button>
     <button class="bn-it" id="bnav-upload" onclick="goPage('upload')"><span class="bn-ico">⬆️</span><span class="bn-lbl">Upload</span></button>
     <button class="bn-it" id="bnav-produtos" onclick="goPage('produtos')"><span class="bn-ico">💸</span><span class="bn-lbl">Produtos</span></button>
+    <button class="bn-it" id="bnav-precificacao" onclick="goPage('precificacao')"><span class="bn-ico">🏷️</span><span class="bn-lbl">Preço</span></button>
     <button class="bn-it" id="bnav-estoque" onclick="goPage('estoque')"><span class="bn-ico">📦</span><span class="bn-lbl">Estoque</span></button>
     <button class="bn-it" id="bnav-ads" onclick="goPage('ads')"><span class="bn-ico">📣</span><span class="bn-lbl">ADS</span></button>
     <button class="bn-it" id="bnav-admin" onclick="goPage('admin')" style="display:none"><span class="bn-ico">🛡️</span><span class="bn-lbl">Admin</span></button>
@@ -683,6 +1029,214 @@ body{background:radial-gradient(1100px 480px at 85% -8%,#fdeee8 0%,transparent 6
         <div class="spin-wrap"><div class="spin"></div><p>Carregando produtos...</p></div>
       </div>
     </div>
+
+    <!-- PRECIFICAÇÃO -->
+    <div id="page-precificacao" class="page">
+      <div class="pg-hdr">
+        <h1>Precificação</h1>
+        <p>Calcule o preço ideal de venda e garanta sua margem de lucro — já com as taxas da Shopee 2026</p>
+      </div>
+<div class="main-grid">
+
+    <!-- LEFT: CONFIG -->
+    <div class="card">
+      <div class="card-title"><span>⚙️</span> Configurações</div>
+
+      <!-- Seller type -->
+      <div class="field-label" style="margin-bottom:8px">Tipo de Vendedor</div>
+      <div class="seg" style="margin-bottom:16px">
+        <button class="seg-btn on" id="btn-cnpj" onclick="pfSetSellerType('cnpj')">CNPJ</button>
+        <button class="seg-btn" id="btn-cpf" onclick="pfSetSellerType('cpf')">CPF</button>
+      </div>
+
+      <div id="cpf-extra-wrap" style="display:none">
+        <label class="check-item" for="cpf-extra">
+          <input type="checkbox" id="cpf-extra" onchange="pfCalc()">
+          <label for="cpf-extra">+450 pedidos nos últimos 90 dias <strong style="color:var(--orange-light)">(+R$3)</strong></label>
+        </label>
+      </div>
+
+      <label class="check-item" for="campanha">
+        <input type="checkbox" id="campanha" onchange="pfCalc()">
+        <label for="campanha">Participando de Campanha de Destaque <strong style="color:var(--orange-light)">(+2,5%)</strong></label>
+      </label>
+
+      <div class="divider"></div>
+
+      <div class="field">
+        <div class="field-label">Imposto <small>• MEI = deixar 0</small></div>
+        <div class="input-wrap">
+          <input type="number" id="imposto" placeholder="0" min="0" max="100" step="0.1" value="0" class="has-suffix" oninput="pfCalc()">
+          <span class="input-suffix">%</span>
+        </div>
+      </div>
+
+      <div class="field">
+        <div class="field-label">Custo do Produto</div>
+        <div class="input-wrap">
+          <span class="input-prefix">R$</span>
+          <input type="number" id="custo-produto" placeholder="0,00" min="0" step="0.01" class="has-prefix" oninput="pfCalc()">
+        </div>
+      </div>
+
+      <div class="field">
+        <div class="field-label">Custo da Embalagem</div>
+        <div class="input-wrap">
+          <span class="input-prefix">R$</span>
+          <input type="number" id="custo-embalagem" placeholder="0,00" min="0" step="0.01" class="has-prefix" oninput="pfCalc()">
+        </div>
+      </div>
+
+      <div class="divider"></div>
+
+      <!-- Modes -->
+      <div class="field-label" style="margin-bottom:10px">Modo de Cálculo</div>
+      <div class="modes">
+        <button class="mode-btn on" id="mode-reais" onclick="pfSetMode('reverse_reais')">
+          <span class="mode-icon">💰</span>
+          <span>Quero receber <strong>R$</strong> de lucro</span>
+        </button>
+        <button class="mode-btn" id="mode-percent" onclick="pfSetMode('reverse_percent')">
+          <span class="mode-icon">📊</span>
+          <span>Quero <strong>%</strong> de margem</span>
+        </button>
+        <button class="mode-btn" id="mode-direct" onclick="pfSetMode('direct')">
+          <span class="mode-icon">🏷</span>
+          <span>Tenho o <strong>preço de venda</strong></span>
+        </button>
+      </div>
+
+      <!-- Main input -->
+      <div class="main-input-block">
+        <div class="field-label" id="main-label">Lucro líquido desejado</div>
+        <div class="input-wrap">
+          <span class="input-prefix" id="main-prefix">R$</span>
+          <input type="number" id="main-input" placeholder="0" min="0" step="0.01" class="has-prefix" oninput="pfCalc()">
+        </div>
+      </div>
+
+    </div>
+
+    <!-- RIGHT: RESULT -->
+    <div class="card">
+      <div class="card-title"><span>📊</span> Resultado</div>
+
+      <div class="mode-tag reverse" id="mode-tag">🔄 CÁLCULO REVERSO</div>
+
+      <div class="hero">
+        <div class="hero-eyebrow" id="hero-eyebrow">Preço de venda necessário</div>
+        <div class="hero-value" id="hero-value">R$ —</div>
+        <div class="hero-sub" id="hero-sub">Anuncie por este valor</div>
+      </div>
+
+      <div class="section-title">Detalhamento por venda</div>
+
+      <div class="brow">
+        <span class="bl">📦 Preço de venda</span>
+        <span class="bv" id="bd-preco">—</span>
+      </div>
+      <div class="brow">
+        <span class="bl" id="bd-com-label">📉 Comissão (20%)</span>
+        <span class="bv red" id="bd-comissao">—</span>
+      </div>
+      <div class="brow">
+        <span class="bl">🏷 Taxa por item</span>
+        <span class="bv red" id="bd-taxa">—</span>
+      </div>
+      <div class="brow" id="bd-cpf-row" style="display:none">
+        <span class="bl">👤 Taxa CPF adicional</span>
+        <span class="bv red" id="bd-cpf">—</span>
+      </div>
+      <div class="brow" id="bd-camp-row" style="display:none">
+        <span class="bl">🎯 Campanha (2,5%)</span>
+        <span class="bv red" id="bd-camp">—</span>
+      </div>
+      <div class="brow" id="bd-imp-row" style="display:none">
+        <span class="bl" id="bd-imp-label">💼 Imposto</span>
+        <span class="bv red" id="bd-imp">—</span>
+      </div>
+
+      <div class="total-row blue-row">
+        <span>💵 Valor líquido (após taxas)</span>
+        <span class="tv blue" id="bd-net">—</span>
+      </div>
+
+      <div id="custos-section">
+        <div class="brow" id="bd-cprod-row" style="display:none">
+          <span class="bl">📦 Custo do produto</span>
+          <span class="bv red" id="bd-cprod">—</span>
+        </div>
+        <div class="brow" id="bd-cemb-row" style="display:none">
+          <span class="bl">📦 Custo da embalagem</span>
+          <span class="bv red" id="bd-cemb">—</span>
+        </div>
+        <div class="total-row green-row" id="bd-lucro-row" style="display:none; margin-top:6px;">
+          <span>💰 Lucro Líquido</span>
+          <span class="tv green" id="bd-lucro">—</span>
+        </div>
+        <div class="total-row orange-row" id="bd-margem-row" style="display:none; margin-top:6px;">
+          <span>📊 Margem de Lucro</span>
+          <span class="tv orange" id="bd-margem">—</span>
+        </div>
+      </div>
+
+      <div class="warn">
+        <span>⚠️</span>
+        <span>Não inclui custos de frete. A margem é calculada como: <strong style="color:var(--text)">Lucro Líquido ÷ Preço de Venda × 100</strong></span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ROAS -->
+  <div id="roas-section" style="display:none">
+    <div class="card">
+      <div class="card-title"><span>📢</span> Análise de ROAS para Anúncios Shopee Ads</div>
+      <div class="roas-wrap">
+        <div class="roas-card rcard-red">
+          <div class="roas-label red">⚖️ Breakeven (Ponto Zero)</div>
+          <div class="roas-big red" id="roas-be">—</div>
+          <div class="roas-desc" id="roas-be-desc">—</div>
+        </div>
+        <div class="roas-card rcard-green">
+          <div class="roas-label green">🎯 ROAS Ideal (Lucrativo)</div>
+          <div class="roas-big green" id="roas-id">—</div>
+          <div class="roas-desc" id="roas-id-desc">—</div>
+        </div>
+      </div>
+      <div class="info-box">
+        <strong>💡 O que é ROAS?</strong>
+        <p><strong>ROAS (Return on Ad Spend)</strong> é o retorno sobre investimento em anúncios — quantos reais você precisa faturar para cada R$ 1,00 investido.<br><br>
+        <strong>Exemplo:</strong> ROAS 3.0x = para cada R$ 1,00 gasto em ads, você precisa vender R$ 3,00 para cobrir o custo.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- TABLE -->
+  <div class="card table-card">
+    <div class="card-title"><span>📑</span> Tabela de Comissões Shopee 2026</div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Faixa de Preço</th>
+            <th>Comissão</th>
+            <th>Taxa por Item</th>
+            <th>Taxa CPF Extra*</th>
+            <th>Total Máximo</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr id="faixa-1"><td><span class="faixa-tag">Até R$ 79,99</span></td><td>20%</td><td>R$ 4,00</td><td>R$ 3,00</td><td>20% + R$ 7,00</td></tr>
+          <tr id="faixa-2"><td><span class="faixa-tag">R$ 80 a R$ 99,99</span></td><td>14%</td><td>R$ 16,00</td><td>R$ 3,00</td><td>14% + R$ 19,00</td></tr>
+          <tr id="faixa-3"><td><span class="faixa-tag">R$ 100 a R$ 199,99</span></td><td>14%</td><td>R$ 20,00</td><td>R$ 3,00</td><td>14% + R$ 23,00</td></tr>
+          <tr id="faixa-4"><td><span class="faixa-tag">Acima de R$ 200</span></td><td>14%</td><td>R$ 26,00</td><td>R$ 3,00</td><td>14% + R$ 29,00</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="table-note">*Taxa CPF Extra aplicada somente para vendedores CPF com +450 pedidos nos últimos 90 dias. Campanhas de Destaque adicionam +2,5%.</p>
+  </div>
+
+      </div>
 
     <!-- ADS -->
     <div id="page-ads" class="page">
@@ -1002,6 +1556,7 @@ const PAGE_TITLES = {
   mes:       'Análise por Mês',
   upload:    'Novo Upload',
   produtos:  'Custo dos Produtos',
+  precificacao: 'Precificação',
   estoque:   'Estoque & Reposição',
   ads:       'Análise de ADS',
   admin:     'Administração'
@@ -1012,7 +1567,7 @@ function goPage(p) {
   document.querySelectorAll('.page').forEach(el => el.classList.remove('active'));
   document.getElementById('page-' + p).classList.add('active');
 
-  ['dashboard','mes','upload','produtos','estoque','ads','admin'].forEach(id => {
+  ['dashboard','mes','upload','produtos','precificacao','estoque','ads','admin'].forEach(id => {
     const nv  = document.getElementById('nav-' + id);
     const bnv = document.getElementById('bnav-' + id);
     if (nv)  nv.classList.toggle('active',  id === p);
@@ -3284,5 +3839,205 @@ window.addEventListener('load', () => {
 });
 
 </script>
+
+<script>
+/* Calculadora de Precificação — isolada em IIFE para não colidir com o app */
+(function(){
+
+let sellerType = 'cnpj', calcMode = 'reverse_reais';
+
+const fmt = v => 'R$ ' + Math.abs(v).toFixed(2).replace('.', ',');
+const fmtPct = v => v.toFixed(2).replace('.', ',') + '%';
+
+function getCommissionData(p) {
+  if (p <= 79.99)  return { percent: 0.20, fixedFee: 4,  faixa: 1 };
+  if (p <= 99.99)  return { percent: 0.14, fixedFee: 16, faixa: 2 };
+  if (p <= 199.99) return { percent: 0.14, fixedFee: 20, faixa: 3 };
+  return { percent: 0.14, fixedFee: 26, faixa: 4 };
+}
+
+function getCpfFee(p) {
+  if (p >= 12) return 3; if (p >= 10) return 2.5;
+  if (p >= 8)  return 2; if (p >= 6)  return 1.5;
+  if (p >= 4)  return 1; return 0.5;
+}
+
+function cfg() {
+  return {
+    hasCpfExtra: sellerType === 'cpf' && document.getElementById('cpf-extra').checked,
+    campanha:    document.getElementById('campanha').checked,
+    imp:         parseFloat(document.getElementById('imposto').value) || 0,
+    cp:          parseFloat(document.getElementById('custo-produto').value) || 0,
+    ce:          parseFloat(document.getElementById('custo-embalagem').value) || 0,
+  };
+}
+
+function net(price, c) {
+  const com = getCommissionData(price);
+  const comV  = price * com.percent;
+  const campV = c.campanha ? price * 0.025 : 0;
+  const impV  = price * (c.imp / 100);
+  const cpfV  = c.hasCpfExtra ? getCpfFee(price) : 0;
+  const netV  = price - comV - com.fixedFee - cpfV - campV - impV;
+  const lucro = netV - c.cp - c.ce;
+  return {
+    price, comPct: com.percent, comV, fixedFee: com.fixedFee,
+    cpfV, campV, impV, netV: Math.max(netV, 0),
+    lucro, margem: price > 0 ? (lucro / price) * 100 : 0, faixa: com.faixa,
+  };
+}
+
+function fromProfit(desired, c) {
+  const dn = desired + c.cp + c.ce;
+  let p = dn * 1.5;
+  for (let i = 0; i < 50; i++) {
+    const com = getCommissionData(p);
+    let tp = com.percent + c.imp / 100; if (c.campanha) tp += 0.025;
+    let ff = com.fixedFee; if (c.hasCpfExtra) ff += getCpfFee(p);
+    const diff = dn - (p * (1 - tp) - ff);
+    if (Math.abs(diff) < 0.01) break;
+    p += diff / (1 - tp);
+    if (p < 0) p = dn;
+  }
+  return Math.max(p, 0);
+}
+
+function fromMargin(pct, c) {
+  const total = c.cp + c.ce;
+  const md = pct / 100;
+  let p = total > 0 ? total * 2 : 50;
+  for (let i = 0; i < 50; i++) {
+    const com = getCommissionData(p);
+    let tp = com.percent + c.imp / 100; if (c.campanha) tp += 0.025;
+    let ff = com.fixedFee; if (c.hasCpfExtra) ff += getCpfFee(p);
+    const nv = p * (1 - tp) - ff;
+    const margemAtual = p > 0 ? (nv - total) / p : 0;
+    const diff = md - margemAtual;
+    if (Math.abs(diff) < 0.0001) break;
+    p += diff * p * 2;
+    if (p < 0) p = total * 2;
+  }
+  return Math.max(p, 0);
+}
+
+function set(id, val) { const el = document.getElementById(id); if (el) el.textContent = val; }
+function show(id, v)  { const el = document.getElementById(id); if (el) el.style.display = v ? 'flex' : 'none'; }
+
+function calc() {
+  const c = cfg();
+  const input = parseFloat(document.getElementById('main-input').value) || 0;
+  let r;
+  if (calcMode === 'reverse_reais')   r = net(fromProfit(input, c), c);
+  else if (calcMode === 'reverse_percent') r = net(fromMargin(input, c), c);
+  else r = net(input, c);
+
+  const isRev = calcMode !== 'direct';
+
+  // Hero
+  set('hero-eyebrow', isRev ? 'Preço de venda necessário' : 'Lucro líquido por venda');
+  set('hero-value', fmt(isRev ? r.price : r.lucro));
+  set('hero-sub', isRev ? 'Anuncie por este valor para obter o lucro desejado' : 'Este é seu lucro após todas as taxas e custos');
+
+  // Breakdown
+  set('bd-preco', fmt(r.price));
+  set('bd-com-label', '📉 Comissão (' + (r.comPct * 100).toFixed(0) + '%)');
+  set('bd-comissao', '− ' + fmt(r.comV));
+  set('bd-taxa', '− ' + fmt(r.fixedFee));
+  set('bd-net', fmt(r.netV));
+
+  show('bd-cpf-row',  c.hasCpfExtra); if (c.hasCpfExtra) set('bd-cpf', '− ' + fmt(r.cpfV));
+  show('bd-camp-row', c.campanha);    if (c.campanha) set('bd-camp', '− ' + fmt(r.campV));
+  show('bd-imp-row',  c.imp > 0);
+  if (c.imp > 0) {
+    set('bd-imp-label', '💼 Imposto (' + c.imp.toFixed(1) + '%)');
+    set('bd-imp', '− ' + fmt(r.impV));
+  }
+
+  const hasCustos = c.cp > 0 || c.ce > 0;
+  show('bd-cprod-row', c.cp > 0); if (c.cp > 0) set('bd-cprod', '− ' + fmt(c.cp));
+  show('bd-cemb-row',  c.ce > 0); if (c.ce > 0) set('bd-cemb', '− ' + fmt(c.ce));
+  show('bd-lucro-row',  hasCustos);
+  show('bd-margem-row', hasCustos);
+  if (hasCustos) {
+    const lel = document.getElementById('bd-lucro');
+    lel.textContent = fmt(r.lucro);
+    lel.className = 'tv ' + (r.lucro >= 0 ? 'green' : 'red');
+    const mel = document.getElementById('bd-margem');
+    mel.textContent = fmtPct(r.margem);
+    mel.className = 'tv ' + (r.margem >= 0 ? 'orange' : 'red');
+  }
+
+  // Faixa ativa
+  for (let i = 1; i <= 4; i++)
+    document.getElementById('faixa-' + i).className = r.faixa === i ? 'tr-active' : '';
+
+  // ROAS
+  const roasEl = document.getElementById('roas-section');
+  if (r.price > 0 && r.lucro > 0) {
+    roasEl.style.display = 'block';
+    const be = r.price / r.lucro;
+    const id = be * 4;
+    set('roas-be', be.toFixed(2) + 'x');
+    set('roas-id', id.toFixed(2) + 'x');
+    document.getElementById('roas-be-desc').innerHTML =
+      '<strong>ROAS mínimo para não ter prejuízo.</strong> Abaixo disso você perde dinheiro em cada venda com anúncio.<br><br>' +
+      'R$ ' + r.price.toFixed(2).replace('.',',') + ' ÷ R$ ' + r.lucro.toFixed(2).replace('.',',') + ' = <strong>' + be.toFixed(2) + 'x</strong>';
+    document.getElementById('roas-id-desc').innerHTML =
+      '<strong>ROAS recomendado para negócio sustentável.</strong> Com este ROAS você mantém boa margem mesmo investindo em ads.<br><br>' +
+      be.toFixed(2) + 'x × 4 = <strong>' + id.toFixed(2) + 'x</strong>';
+  } else {
+    roasEl.style.display = 'none';
+  }
+}
+
+function setSellerType(t) {
+  sellerType = t;
+  document.getElementById('btn-cnpj').className = 'seg-btn' + (t === 'cnpj' ? ' on' : '');
+  document.getElementById('btn-cpf').className  = 'seg-btn' + (t === 'cpf'  ? ' on' : '');
+  document.getElementById('cpf-extra-wrap').style.display = t === 'cpf' ? 'block' : 'none';
+  if (t === 'cnpj') document.getElementById('cpf-extra').checked = false;
+  calc();
+}
+
+function setMode(m) {
+  calcMode = m;
+  ['reais','percent','direct'].forEach(x => {
+    document.getElementById('mode-' + x).className = 'mode-btn' + (m === 'reverse_' + x || m === x ? ' on' : '');
+  });
+  document.getElementById('mode-reais').className   = 'mode-btn' + (m === 'reverse_reais'    ? ' on' : '');
+  document.getElementById('mode-percent').className = 'mode-btn' + (m === 'reverse_percent'  ? ' on' : '');
+  document.getElementById('mode-direct').className  = 'mode-btn' + (m === 'direct'           ? ' on' : '');
+
+  const tag = document.getElementById('mode-tag');
+  const lbl = document.getElementById('main-label');
+  const pfx = document.getElementById('main-prefix');
+  const inp = document.getElementById('main-input');
+
+  if (m === 'reverse_reais') {
+    tag.textContent = '🔄 CÁLCULO REVERSO';
+    tag.className = 'mode-tag reverse';
+    lbl.textContent = 'Lucro líquido desejado';
+    pfx.textContent = 'R$'; inp.className = 'has-prefix';
+  } else if (m === 'reverse_percent') {
+    tag.textContent = '🔄 CÁLCULO REVERSO';
+    tag.className = 'mode-tag reverse';
+    lbl.textContent = 'Margem de lucro desejada';
+    pfx.textContent = '%'; inp.className = 'has-prefix';
+  } else {
+    tag.textContent = '📊 CÁLCULO DIRETO';
+    tag.className = 'mode-tag direct';
+    lbl.textContent = 'Preço de venda';
+    pfx.textContent = 'R$'; inp.className = 'has-prefix';
+  }
+  inp.value = '';
+  calc();
+}
+
+  window.pfCalc = calc;
+  window.pfSetMode = setMode;
+  window.pfSetSellerType = setSellerType;
+})();
+</script>
+
 </body>
 </html>
