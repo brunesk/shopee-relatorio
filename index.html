@@ -1058,7 +1058,7 @@ body{background:radial-gradient(1100px 480px at 85% -8%,#fdeee8 0%,transparent 6
 
       <label class="check-item" for="campanha">
         <input type="checkbox" id="campanha" onchange="pfCalc()">
-        <label for="campanha">Participando de Campanha de Destaque <strong style="color:var(--orange-light)">(+2,5%)</strong></label>
+        <label for="campanha">Participando de Campanha de Destaque <strong style="color:var(--orange-light)">(+3,5%)</strong></label>
       </label>
 
       <div class="divider"></div>
@@ -1148,7 +1148,7 @@ body{background:radial-gradient(1100px 480px at 85% -8%,#fdeee8 0%,transparent 6
         <span class="bv red" id="bd-cpf">—</span>
       </div>
       <div class="brow" id="bd-camp-row" style="display:none">
-        <span class="bl">🎯 Campanha (2,5%)</span>
+        <span class="bl">🎯 Campanha (3,5%)</span>
         <span class="bv red" id="bd-camp">—</span>
       </div>
       <div class="brow" id="bd-imp-row" style="display:none">
@@ -1233,7 +1233,7 @@ body{background:radial-gradient(1100px 480px at 85% -8%,#fdeee8 0%,transparent 6
         </tbody>
       </table>
     </div>
-    <p class="table-note">*Taxa CPF Extra aplicada somente para vendedores CPF com +450 pedidos nos últimos 90 dias. Campanhas de Destaque adicionam +2,5%.</p>
+    <p class="table-note">*Taxa CPF Extra aplicada somente para vendedores CPF com +450 pedidos nos últimos 90 dias. Campanhas de Destaque adicionam +3,5%.</p>
   </div>
 
       </div>
@@ -3875,7 +3875,7 @@ function cfg() {
 function net(price, c) {
   const com = getCommissionData(price);
   const comV  = price * com.percent;
-  const campV = c.campanha ? price * 0.025 : 0;
+  const campV = c.campanha ? price * 0.035 : 0;
   const impV  = price * (c.imp / 100);
   const cpfV  = c.hasCpfExtra ? getCpfFee(price) : 0;
   const netV  = price - comV - com.fixedFee - cpfV - campV - impV;
@@ -3892,7 +3892,7 @@ function fromProfit(desired, c) {
   let p = dn * 1.5;
   for (let i = 0; i < 50; i++) {
     const com = getCommissionData(p);
-    let tp = com.percent + c.imp / 100; if (c.campanha) tp += 0.025;
+    let tp = com.percent + c.imp / 100; if (c.campanha) tp += 0.035;
     let ff = com.fixedFee; if (c.hasCpfExtra) ff += getCpfFee(p);
     const diff = dn - (p * (1 - tp) - ff);
     if (Math.abs(diff) < 0.01) break;
@@ -3908,7 +3908,7 @@ function fromMargin(pct, c) {
   let p = total > 0 ? total * 2 : 50;
   for (let i = 0; i < 50; i++) {
     const com = getCommissionData(p);
-    let tp = com.percent + c.imp / 100; if (c.campanha) tp += 0.025;
+    let tp = com.percent + c.imp / 100; if (c.campanha) tp += 0.035;
     let ff = com.fixedFee; if (c.hasCpfExtra) ff += getCpfFee(p);
     const nv = p * (1 - tp) - ff;
     const margemAtual = p > 0 ? (nv - total) / p : 0;
