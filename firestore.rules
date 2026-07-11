@@ -34,5 +34,15 @@ service cloud.firestore {
           || (request.auth != null && request.auth.uid == uid && licencaAtiva());
       }
     }
+
+    // Sugestões: aluno cria a própria (amarrada ao seu uid) e lê só as dela.
+    // Admin lê todas e muda o status. Ninguém edita/apaga a não ser o admin.
+    match /sugestoes/{id} {
+      allow create: if request.auth != null
+                    && request.resource.data.uid == request.auth.uid;
+      allow read:   if ehAdmin()
+                    || (request.auth != null && resource.data.uid == request.auth.uid);
+      allow update, delete: if ehAdmin();
+    }
   }
 }

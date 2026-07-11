@@ -804,6 +804,9 @@ body{background:radial-gradient(1100px 480px at 85% -8%,#fdeee8 0%,transparent 6
 #page-precificacao .card{box-shadow:var(--sh1)}
 #page-precificacao .main-grid{margin-bottom:20px}
 
+.sug-ta{width:100%;background:#fff;border:1.5px solid var(--s200);border-radius:12px;padding:13px 15px;color:var(--s800);font-family:var(--ff-body);font-size:14.5px;line-height:1.5;outline:none;resize:vertical;transition:border-color .2s,box-shadow .2s}
+.sug-ta:focus{border-color:var(--or);box-shadow:0 0 0 3px rgba(238,77,45,.1)}
+.sug-txt{white-space:pre-wrap;word-break:break-word}
 /* ── 3D SCENE ── */
 #auth-3d-canvas{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:0}
 .auth-left .auth-lc{z-index:2}
@@ -935,6 +938,7 @@ body{background:radial-gradient(1100px 480px at 85% -8%,#fdeee8 0%,transparent 6
     <button class="nav-it" id="nav-precificacao" onclick="goPage('precificacao')"><span class="nav-ico">🏷️</span> Precificação</button>
     <button class="nav-it" id="nav-estoque" onclick="goPage('estoque')"><span class="nav-ico">📦</span> Estoque</button>
     <button class="nav-it" id="nav-ads" onclick="goPage('ads')"><span class="nav-ico">📣</span> Análise de ADS</button>
+    <button class="nav-it" id="nav-sugestoes" onclick="goPage('sugestoes')"><span class="nav-ico">💡</span> Sugestões</button>
     <div class="nav-sep" id="nav-sep-admin" style="display:none"></div>
     <button class="nav-it" id="nav-admin" onclick="goPage('admin')" style="display:none"><span class="nav-ico">🛡️</span> Administração</button>
   </nav>
@@ -947,6 +951,7 @@ body{background:radial-gradient(1100px 480px at 85% -8%,#fdeee8 0%,transparent 6
     <button class="bn-it" id="bnav-precificacao" onclick="goPage('precificacao')"><span class="bn-ico">🏷️</span><span class="bn-lbl">Preço</span></button>
     <button class="bn-it" id="bnav-estoque" onclick="goPage('estoque')"><span class="bn-ico">📦</span><span class="bn-lbl">Estoque</span></button>
     <button class="bn-it" id="bnav-ads" onclick="goPage('ads')"><span class="bn-ico">📣</span><span class="bn-lbl">ADS</span></button>
+    <button class="bn-it" id="bnav-sugestoes" onclick="goPage('sugestoes')"><span class="bn-ico">💡</span><span class="bn-lbl">Ideias</span></button>
     <button class="bn-it" id="bnav-admin" onclick="goPage('admin')" style="display:none"><span class="bn-ico">🛡️</span><span class="bn-lbl">Admin</span></button>
   </div>
 
@@ -1263,6 +1268,25 @@ body{background:radial-gradient(1100px 480px at 85% -8%,#fdeee8 0%,transparent 6
       </div>
     </div>
 
+    <!-- SUGESTÕES -->
+    <div id="page-sugestoes" class="page">
+      <div class="pg-hdr">
+        <h1>💡 Sugestões</h1>
+        <p>Sentiu falta de algo ou tem uma ideia pra melhorar a plataforma? Manda pra gente — sua opinião ajuda a construir a ferramenta.</p>
+      </div>
+      <div class="sec" style="max-width:660px">
+        <div class="sec-hd"><div class="sec-ttl"><div class="sec-ico">✍️</div>Deixe sua sugestão</div></div>
+        <textarea id="sug-input" class="sug-ta" rows="4" placeholder="Ex: seria bom poder exportar o relatório em PDF... senti falta de um gráfico de... gostaria de..."></textarea>
+        <div style="display:flex;justify-content:flex-end;margin-top:12px">
+          <button id="sug-btn" class="btn-pri" onclick="enviarSugestao()">Enviar sugestão</button>
+        </div>
+      </div>
+      <div class="sec" style="max-width:660px">
+        <div class="sec-hd"><div class="sec-ttl"><div class="sec-ico">📨</div>Minhas sugestões enviadas</div></div>
+        <div id="sug-list"><p class="note">Carregando...</p></div>
+      </div>
+    </div>
+
     <!-- ADMIN -->
     <div id="page-admin" class="page">
       <div class="pg-hdr">
@@ -1272,6 +1296,7 @@ body{background:radial-gradient(1100px 480px at 85% -8%,#fdeee8 0%,transparent 6
       <div id="admin-body">
         <div class="empty"><div class="empty-ico">⏳</div><div class="empty-ttl">Carregando...</div></div>
       </div>
+      <div id="admin-sugestoes"></div>
     </div>
 
   </main>
@@ -1559,6 +1584,7 @@ const PAGE_TITLES = {
   precificacao: 'Precificação',
   estoque:   'Estoque & Reposição',
   ads:       'Análise de ADS',
+  sugestoes: 'Sugestões',
   admin:     'Administração'
 };
 
@@ -1567,7 +1593,7 @@ function goPage(p) {
   document.querySelectorAll('.page').forEach(el => el.classList.remove('active'));
   document.getElementById('page-' + p).classList.add('active');
 
-  ['dashboard','mes','upload','produtos','precificacao','estoque','ads','admin'].forEach(id => {
+  ['dashboard','mes','upload','produtos','precificacao','estoque','ads','sugestoes','admin'].forEach(id => {
     const nv  = document.getElementById('nav-' + id);
     const bnv = document.getElementById('bnav-' + id);
     if (nv)  nv.classList.toggle('active',  id === p);
@@ -1585,7 +1611,8 @@ function renderCurrentPage() {
   else if (currentPage === 'produtos') renderProdutos();
   else if (currentPage === 'estoque') renderEstoque();
   else if (currentPage === 'ads') renderAds();
-  else if (currentPage === 'admin') renderAdmin();
+  else if (currentPage === 'sugestoes') renderSugestoes();
+  else if (currentPage === 'admin') { renderAdmin(); renderAdminSugestoes(); }
 }
 
 // ── UTILS ─────────────────────────────────────────────
@@ -3437,6 +3464,96 @@ function updateCusto(name, val) {
   }
 
   scheduleSave();
+}
+
+// ── SUGESTÕES ─────────────────────────────────────────
+async function enviarSugestao() {
+  const ta = document.getElementById('sug-input');
+  const txt = (ta.value || '').trim();
+  const btn = document.getElementById('sug-btn');
+  if (txt.length < 3) { showToast('Escreva sua sugestão antes de enviar.', 'err'); return; }
+  btn.disabled = true; btn.textContent = 'Enviando...';
+  try {
+    await db.collection('sugestoes').add({
+      uid: currentUser.uid,
+      email: currentUser.email || '',
+      texto: txt,
+      status: 'nova',
+      criadoEm: firebase.firestore.FieldValue.serverTimestamp()
+    });
+    ta.value = '';
+    showToast('✅ Sugestão enviada! Obrigado 💛', 'ok');
+    renderSugestoes();
+  } catch(e) {
+    console.error('enviarSugestao', e);
+    showToast('Não foi possível enviar. Verifique sua internet.', 'err');
+  }
+  btn.disabled = false; btn.textContent = 'Enviar sugestão';
+}
+
+async function renderSugestoes() {
+  const list = document.getElementById('sug-list');
+  if (!list || !currentUser) return;
+  try {
+    const snap = await db.collection('sugestoes').where('uid', '==', currentUser.uid).get();
+    const items = []; snap.forEach(d => items.push({ id: d.id, ...d.data() }));
+    items.sort((a,b) => (b.criadoEm && b.criadoEm.seconds || 0) - (a.criadoEm && a.criadoEm.seconds || 0));
+    if (!items.length) { list.innerHTML = '<p class="note" style="padding:14px 0">Você ainda não enviou nenhuma sugestão. Que tal a primeira? 😉</p>'; return; }
+    list.innerHTML = items.map(sg => {
+      const data = sg.criadoEm && sg.criadoEm.toDate ? sg.criadoEm.toDate().toLocaleDateString('pt-BR') : 'agora';
+      const badge = sg.status === 'feita' ? '<span class="pill pg">🎉 Implementada</span>'
+                  : sg.status === 'lida' ? '<span class="pill pg">✓ Vista pelo Bruno</span>'
+                  : '<span class="pill py">Enviada</span>';
+      return '<div style="padding:14px;border:1px solid var(--s200);border-radius:12px;margin-bottom:10px">'
+        + '<div style="display:flex;justify-content:space-between;gap:10px;align-items:center;margin-bottom:7px"><span style="font-size:11px;color:var(--s400)">' + data + '</span>' + badge + '</div>'
+        + '<div class="sug-txt" style="font-size:14px;color:var(--s700);line-height:1.5">' + escAttr(sg.texto || '') + '</div></div>';
+    }).join('');
+  } catch(e) {
+    console.error('renderSugestoes', e);
+    list.innerHTML = '<p class="note">Não foi possível carregar suas sugestões agora.</p>';
+  }
+}
+
+async function renderAdminSugestoes() {
+  const box = document.getElementById('admin-sugestoes');
+  if (!box) return;
+  box.innerHTML = '<div class="sec"><div class="spin-wrap"><div class="spin"></div></div></div>';
+  try {
+    const snap = await db.collection('sugestoes').orderBy('criadoEm', 'desc').limit(300).get();
+    const items = []; snap.forEach(d => items.push({ id: d.id, ...d.data() }));
+    const novas = items.filter(x => x.status !== 'lida' && x.status !== 'feita').length;
+    if (!items.length) {
+      box.innerHTML = '<div class="sec"><div class="sec-hd"><div class="sec-ttl"><div class="sec-ico">💡</div>Sugestões dos alunos</div></div><p style="color:var(--s400);font-size:13px">Nenhuma sugestão recebida ainda.</p></div>';
+      return;
+    }
+    const bsty = 'background:var(--s100);border:none;border-radius:8px;padding:5px 11px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;color:var(--s600)';
+    const rows = items.map(sg => {
+      const data = sg.criadoEm && sg.criadoEm.toDate ? sg.criadoEm.toDate().toLocaleString('pt-BR') : '—';
+      const badge = sg.status === 'feita' ? '<span class="pill pg">🎉 Implementada</span>'
+                  : sg.status === 'lida' ? '<span class="pill pg">✓ Lida</span>'
+                  : '<span class="pill py">Nova</span>';
+      return '<div style="padding:14px 0;border-bottom:1px solid var(--s100)">'
+        + '<div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:6px">'
+        + '<span style="font-size:12.5px;font-weight:700;color:var(--s700)">' + (sg.email || '(sem email)') + '</span>'
+        + '<span style="font-size:11px;color:var(--s400)">' + data + '</span></div>'
+        + '<div class="sug-txt" style="font-size:14px;color:var(--s800);line-height:1.55;margin-bottom:9px">' + escAttr(sg.texto || '') + '</div>'
+        + '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">' + badge
+        + '<button style="' + bsty + '" onclick="marcarSugestao(\'' + sg.id + '\',\'lida\')">Marcar lida</button>'
+        + '<button style="' + bsty + '" onclick="marcarSugestao(\'' + sg.id + '\',\'feita\')">Implementada</button>'
+        + '<button style="' + bsty + '" onclick="marcarSugestao(\'' + sg.id + '\',\'nova\')">Reabrir</button></div></div>';
+    }).join('');
+    box.innerHTML = '<div class="sec"><div class="sec-hd"><div class="sec-ttl"><div class="sec-ico">💡</div>Sugestões dos alunos</div>'
+      + '<span style="font-size:12px;font-weight:700;color:' + (novas > 0 ? 'var(--or)' : 'var(--s400)') + '">' + items.length + ' total · ' + novas + ' novas</span></div>'
+      + rows + '</div>';
+  } catch(e) {
+    console.error('renderAdminSugestoes', e);
+    box.innerHTML = '<div class="sec"><p style="color:var(--re)">Erro ao carregar sugestões: ' + e.message + '</p></div>';
+  }
+}
+
+async function marcarSugestao(id, status) {
+  try { await db.collection('sugestoes').doc(id).update({ status }); renderAdminSugestoes(); }
+  catch(e) { showToast('Erro: ' + e.message, 'err'); }
 }
 
 // ── ADMIN ─────────────────────────────────────────────
