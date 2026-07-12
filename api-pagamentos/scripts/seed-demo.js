@@ -39,16 +39,19 @@ function processarPlanilha(rows, monthKeyOverride) {
   const validos = rows.filter(r => String(r['Status do pedido'] || '').trim() !== 'Cancelado' && String(r['Status do pedido'] || '').trim() !== '')
   const canc = rows.filter(r => String(r['Status do pedido'] || '').trim() === 'Cancelado')
 
-  let sub = 0, frt = 0, dsc = 0, com = 0, svc = 0, trx = 0
+  let subCheio = 0, bruto = 0, com = 0, svc = 0, trx = 0, frt = 0
   for (const r of validos) {
-    sub += pn(r['Subtotal do produto'])
-    frt += pn(r['Taxa de envio pagas pelo comprador'])
-    dsc += somaDescontoVendedor(r)
+    subCheio += pn(r['Subtotal do produto'])
+    bruto    += pn(r['Total global'])
     com += pn(r['Taxa de comissão líquida'])
     svc += pn(r['Taxa de serviço líquida'])
     trx += pn(r['Taxa de transação'])
+    frt += pn(r['Taxa de envio pagas pelo comprador'])
   }
-  const liquido = sub + frt - dsc - com - svc - trx
+  if (bruto <= 0 && subCheio > 0) bruto = subCheio
+  const ofertas = Math.max(0, subCheio - bruto)
+  const liquido = bruto - com - svc - trx
+  const ratio   = subCheio > 0 ? bruto / subCheio : 1
 
   const datas = rows.map(r => { const d = new Date(r['Data de criação do pedido']); return isNaN(d) ? null : d }).filter(Boolean).sort((a, b) => a - b)
   const refDate = datas[Math.floor(datas.length / 2)] || new Date()
@@ -61,7 +64,7 @@ function processarPlanilha(rows, monthKeyOverride) {
     prodMap[n].qty += Math.max(1, pn(r['Quantidade']))
     prodMap[n].valor += pn(r['Subtotal do produto'])
   }
-  const produtos = Object.entries(prodMap).map(([name, d]) => ({ name, qty: Math.round(d.qty), valor: d.valor }))
+  const produtos = Object.entries(prodMap).map(([name, d]) => ({ name, qty: Math.round(d.qty), valor: +(d.valor * ratio).toFixed(2) }))
 
   const ufMap = {}
   for (const r of validos) {
@@ -70,7 +73,7 @@ function processarPlanilha(rows, monthKeyOverride) {
     ufMap[u].n++
     ufMap[u].valor += pn(r['Subtotal do produto'])
   }
-  const ufs = Object.entries(ufMap).map(([uf, d]) => ({ uf, n: d.n, valor: d.valor }))
+  const ufs = Object.entries(ufMap).map(([uf, d]) => ({ uf, n: d.n, valor: +(d.valor * ratio).toFixed(2) }))
 
   const stMap = {}
   for (const r of rows) {
@@ -79,7 +82,7 @@ function processarPlanilha(rows, monthKeyOverride) {
     stMap[st].n++
     stMap[st].valor += pn(r['Subtotal do produto'])
   }
-  const status = Object.entries(stMap).map(([st, d]) => ({ status: st, n: d.n, valor: d.valor }))
+  const status = Object.entries(stMap).map(([st, d]) => ({ status: st, n: d.n, valor: +(d.valor * ratio).toFixed(2) }))
 
   const d1 = datas.length ? datas[0].toISOString().slice(0, 10) : ''
   const d2 = datas.length ? datas[datas.length - 1].toISOString().slice(0, 10) : ''
@@ -88,9 +91,10 @@ function processarPlanilha(rows, monthKeyOverride) {
     monthKey, arquivo: path.basename(xlsxPath),
     periodoInicio: d1, periodoFim: d2,
     pedidos: validos.length, cancelados: canc.length,
-    bruto: sub, frete: frt, descontos: dsc,
+    bruto, sub: bruto, subtotalCheio: subCheio, ofertas,
+    frete: frt, descontos: ofertas,
     comissao: com, servico: svc, transacao: trx,
-    sub, liquido, adsGasto: 0,
+    liquido, adsGasto: 0,
     produtos, ufs, status,
     uploadedAt: admin.firestore.FieldValue.serverTimestamp(),
   }
@@ -101,7 +105,7 @@ function variar(doc, monthKey, fator) {
   const v = JSON.parse(JSON.stringify(doc))
   v.monthKey = monthKey
   v.arquivo = 'Order.all.' + monthKey.replace('-', '') + '.xlsx'
-  for (const k of ['bruto', 'frete', 'descontos', 'comissao', 'servico', 'transacao', 'sub', 'liquido']) v[k] = +(v[k] * fator).toFixed(2)
+  for (const k of ['bruto', 'frete', 'descontos', 'ofertas', 'subtotalCheio', 'comissao', 'servico', 'transacao', 'sub', 'liquido']) v[k] = +(v[k] * fator).toFixed(2)
   v.pedidos = Math.round(v.pedidos * fator)
   v.cancelados = Math.round(v.cancelados * fator)
   v.produtos = v.produtos.map(p => ({ ...p, qty: Math.max(1, Math.round(p.qty * fator)), valor: +(p.valor * fator).toFixed(2) }))

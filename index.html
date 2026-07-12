@@ -1772,7 +1772,7 @@ function renderDashboard() {
   keys.forEach(k => {
     const m = allMonths[k];
     agC.com += m.comissao || 0; agC.svc += m.servico || 0; agC.trx += m.transacao || 0;
-    agC.dsc += m.descontos || 0; agC.ads += m.adsGasto || 0;
+    agC.dsc += (m.ofertas != null ? m.ofertas : (m.descontos||0)); agC.ads += m.adsGasto || 0;
     agC.cp  += (m.produtos || []).reduce((s, pr) => s + (savedCustos[pr.name] || 0) * pr.qty, 0);
     baseFat += m.bruto || 0;
   });
@@ -1785,7 +1785,7 @@ function renderDashboard() {
   const dinheiroBars = costBar('Comissão Shopee', agC.com, '#ef4444')
     + costBar('Taxa de serviço', agC.svc, '#f97316')
     + costBar('Taxa de transação', agC.trx, '#f59e0b')
-    + costBar('Descontos concedidos', agC.dsc, '#a855f7')
+    + costBar('Ofertas e campanhas', agC.dsc, '#a855f7')
     + costBar('Investimento em ADS', agC.ads, '#3b82f6')
     + costBar('Custo dos produtos', agC.cp, '#ec4899')
     + `<div style="display:flex;align-items:center;gap:12px;margin-top:14px;padding-top:14px;border-top:2px solid var(--s150)">
@@ -2153,7 +2153,7 @@ function renderMesDetail(key) {
   const custoProd = (m.produtos || []).reduce((s, p) => s + (savedCustos[p.name] || 0) * p.qty, 0);
   const lucroApos = (m.liquido || 0) - custoProd;
   const lucroFinal = lucroApos - (m.adsGasto || 0);
-  const taxas = (m.descontos||0) + (m.comissao||0) + (m.servico||0) + (m.transacao||0);
+  const taxas = (m.comissao||0) + (m.servico||0) + (m.transacao||0);
   const txPct = m.bruto > 0 ? taxas/m.bruto*100 : 0;
   const ticket = m.pedidos > 0 ? (m.bruto||0)/m.pedidos : 0;
 
@@ -2236,13 +2236,13 @@ function renderMesDetail(key) {
     <div class="sec">
       <div class="sec-hd"><div class="sec-ttl"><div class="sec-ico">📋</div>Detalhamento financeiro</div></div>
       <table class="bkd">
-        <tr><td class="btl">Subtotal dos produtos<small>Valor dos itens vendidos</small></td><td class="btv" style="color:var(--gr)">+ ${fmt(m.sub||0)}</td></tr>
-        <tr><td class="btl">Frete pago pelos compradores</td><td class="btv" style="color:var(--gr)">+ ${fmt(m.frete||0)}</td></tr>
-        <tr><td class="btl" style="color:var(--s400)">Descontos do vendedor</td><td class="btv" style="color:var(--re)">${(m.descontos||0)>0?'- '+fmt(m.descontos||0):'R$ 0,00'}</td></tr>
+        <tr><td class="btl">Preço cheio dos produtos<small>Valor de tabela, antes de ofertas</small></td><td class="btv" style="color:var(--s600)">${fmt(m.subtotalCheio!=null?m.subtotalCheio:(m.sub||0))}</td></tr>
+        <tr><td class="btl" style="color:var(--s400)">Ofertas, cupons e campanhas<small>Ofertas relâmpago, cupons e ações comerciais</small></td><td class="btv" style="color:var(--re)">${(m.ofertas!=null?m.ofertas:(m.descontos||0))>0?'- '+fmt(m.ofertas!=null?m.ofertas:(m.descontos||0)):'R$ 0,00'}</td></tr>
+        <tr class="bttot" style="border-top:1px solid var(--s200)!important"><td class="btl">💵 Faturamento real<small>O que os clientes realmente pagaram</small></td><td class="btv" style="color:var(--gr)">${fmt(m.bruto||0)}</td></tr>
         <tr><td class="btl" style="color:var(--s400)">Taxa de comissão Shopee</td><td class="btv" style="color:var(--re)">- ${fmt(m.comissao||0)}</td></tr>
         <tr><td class="btl" style="color:var(--s400)">Taxa de serviço Shopee</td><td class="btv" style="color:var(--re)">- ${fmt(m.servico||0)}</td></tr>
         <tr><td class="btl" style="color:var(--s400)">Taxa de transação</td><td class="btv" style="color:var(--re)">${(m.transacao||0)>0?'- '+fmt(m.transacao||0):'R$ 0,00'}</td></tr>
-        <tr class="bttot"><td class="btl">💰 Líquido estimado (após taxas Shopee)</td><td class="btv" style="color:var(--gr)">${fmt(m.liquido||0)}</td></tr>
+        <tr class="bttot"><td class="btl">💰 Líquido (repasse Shopee)<small>Após todas as taxas</small></td><td class="btv" style="color:var(--gr)">${fmt(m.liquido||0)}</td></tr>
       </table>
     </div>
 
@@ -2408,27 +2408,26 @@ async function processarESalvar() {
     const validos = rows.filter(r => String(r['Status do pedido']||'').trim() !== 'Cancelado' && String(r['Status do pedido']||'').trim() !== '');
     const canc    = rows.filter(r => String(r['Status do pedido']||'').trim() === 'Cancelado');
 
-    // A Shopee exporta duas colunas com o nome "Desconto do vendedor" — o SheetJS
-    // desambigua com sufixo "_1", "_2" etc. Somamos TODAS as variantes encontradas
-    // em vez de depender de um sufixo fixo (evita perder a 2ª coluna silenciosamente).
-    function somaDescontoVendedor(r) {
-      let s = 0;
-      for (const k in r) {
-        if (k === 'Desconto do vendedor' || k.startsWith('Desconto do vendedor_')) s += pn(r[k]);
-      }
-      return s;
-    }
-
-    let sub=0,frt=0,dsc=0,com=0,svc=0,trx=0;
+    // ── FATURAMENTO REAL via "Total global" ──
+    // "Total global" é a base de repasse que a própria Shopee calcula — já reflete
+    // ofertas relâmpago, cupons e campanhas. Vem por-pedido (na linha principal;
+    // 0 nas linhas seguintes de pedidos com vários itens), então a SOMA no mês dá o
+    // faturamento real. O "Subtotal do produto" é o preço cheio (antes das ofertas),
+    // usado só para exibir e para ratear o valor por produto/estado.
+    let subCheio=0, bruto=0, com=0, svc=0, trx=0, frt=0;
     for (const r of validos) {
-      sub += pn(r['Subtotal do produto']);
-      frt += pn(r['Taxa de envio pagas pelo comprador']);
-      dsc += somaDescontoVendedor(r);
+      subCheio += pn(r['Subtotal do produto']);
+      bruto    += pn(r['Total global']);
       com += pn(r['Taxa de comissão líquida']);
       svc += pn(r['Taxa de serviço líquida']);
       trx += pn(r['Taxa de transação']);
+      frt += pn(r['Taxa de envio pagas pelo comprador']);
     }
-    const liquido = sub + frt - dsc - com - svc - trx;
+    // Fallback: exports antigos sem "Total global" caem no subtotal (sem ofertas)
+    if (bruto <= 0 && subCheio > 0) bruto = subCheio;
+    const ofertas = Math.max(0, subCheio - bruto);       // descontos + ofertas + campanhas
+    const liquido = bruto - com - svc - trx;             // repasse Shopee (após taxas)
+    const ratio   = subCheio > 0 ? bruto / subCheio : 1; // rateio preço-cheio -> real
 
     // Detect month key
     const datas = rows.map(r => pd(r['Data de criação do pedido'])).filter(Boolean).sort((a,b)=>a-b);
@@ -2445,7 +2444,7 @@ async function processarESalvar() {
       prodMap[n].qty   += Math.max(1, pn(r['Quantidade']));
       prodMap[n].valor += pn(r['Subtotal do produto']);
     }
-    const produtos = Object.entries(prodMap).map(([name,d]) => ({ name, qty: Math.round(d.qty), valor: d.valor }));
+    const produtos = Object.entries(prodMap).map(([name,d]) => ({ name, qty: Math.round(d.qty), valor: +(d.valor * ratio).toFixed(2) }));
 
     // Aggregate UFs
     const ufMap = {};
@@ -2455,7 +2454,7 @@ async function processarESalvar() {
       ufMap[u].n++;
       ufMap[u].valor += pn(r['Subtotal do produto']);
     }
-    const ufs = Object.entries(ufMap).map(([uf,d]) => ({ uf, n:d.n, valor:d.valor }));
+    const ufs = Object.entries(ufMap).map(([uf,d]) => ({ uf, n:d.n, valor: +(d.valor * ratio).toFixed(2) }));
 
     // Aggregate status
     const stMap = {};
@@ -2465,14 +2464,14 @@ async function processarESalvar() {
       stMap[s].n++;
       stMap[s].valor += pn(r['Subtotal do produto']);
     }
-    const status = Object.entries(stMap).map(([status,d]) => ({ status, n:d.n, valor:d.valor }));
+    const status = Object.entries(stMap).map(([status,d]) => ({ status, n:d.n, valor: +(d.valor * ratio).toFixed(2) }));
 
     const existing = allMonths[monthKey];
     if (existing) {
       const ok = confirm(
         `${monthFull(monthKey)} já tem dados salvos:\n` +
         `   • Atual: ${existing.pedidos || 0} pedidos · ${fmt(existing.bruto || 0)} bruto\n` +
-        `   • Novo arquivo: ${validos.length} pedidos · ${fmt(sub)} bruto\n\n` +
+        `   • Novo arquivo: ${validos.length} pedidos · ${fmt(bruto)} bruto\n\n` +
         `Substituir pelos dados do novo arquivo?\n(O gasto de ADS já lançado será mantido.)`
       );
       if (!ok) { btn.textContent = 'Processar e Salvar →'; btn.disabled = false; return; }
@@ -2482,9 +2481,10 @@ async function processarESalvar() {
       monthKey, arquivo: fileName,
       periodoInicio: d1str, periodoFim: d2str,
       pedidos: validos.length, cancelados: canc.length,
-      bruto: sub, frete: frt, descontos: dsc,
+      bruto, sub: bruto, subtotalCheio: subCheio, ofertas,
+      frete: frt, descontos: ofertas,
       comissao: com, servico: svc, transacao: trx,
-      sub, liquido, adsGasto: existing?.adsGasto || 0,
+      liquido, adsGasto: existing?.adsGasto || 0,
       produtos, ufs, status,
       uploadedAt: firebase.firestore.FieldValue.serverTimestamp()
     };
@@ -3669,7 +3669,7 @@ async function adminOpenUser(uid, email) {
 
     // ── Tabela de meses (com ADS e lucro real) ──
     const rows = months.map(m => {
-      const taxas = (m.descontos||0)+(m.comissao||0)+(m.servico||0)+(m.transacao||0);
+      const taxas = (m.comissao||0)+(m.servico||0)+(m.transacao||0);
       const custoProd = (m.produtos || []).reduce((sm, pr) => sm + (custos[pr.name] || 0) * pr.qty, 0);
       const lucro = (m.liquido||0) - custoProd - (m.adsGasto||0);
       return `<tr>
