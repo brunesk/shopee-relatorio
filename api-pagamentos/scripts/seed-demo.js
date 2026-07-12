@@ -41,14 +41,15 @@ function processarPlanilha(rows, monthKeyOverride) {
 
   let subCheio = 0, bruto = 0, com = 0, svc = 0, trx = 0, frt = 0
   for (const r of validos) {
-    subCheio += pn(r['Subtotal do produto'])
-    bruto    += pn(r['Total global'])
+    const subLinha = pn(r['Subtotal do produto'])
+    const tgLinha  = pn(r['Total global'])
+    subCheio += subLinha
+    bruto += tgLinha > 0 ? tgLinha : subLinha
     com += pn(r['Taxa de comissão líquida'])
     svc += pn(r['Taxa de serviço líquida'])
     trx += pn(r['Taxa de transação'])
     frt += pn(r['Taxa de envio pagas pelo comprador'])
   }
-  if (bruto <= 0 && subCheio > 0) bruto = subCheio
   const ofertas = Math.max(0, subCheio - bruto)
   const liquido = bruto - com - svc - trx
   const ratio   = subCheio > 0 ? bruto / subCheio : 1
