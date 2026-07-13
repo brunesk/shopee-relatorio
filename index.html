@@ -2286,11 +2286,41 @@ function renderMesDetail(key) {
       <p class="note">🔒 Pedidos processados no seu dispositivo • Dados salvos com segurança</p>
     </div>
 
-    <div style="text-align:center;margin-bottom:24px">
+    <div style="text-align:center;margin-bottom:24px;display:flex;gap:10px;justify-content:center;flex-wrap:wrap">
       <button onclick="window.print()" style="background:linear-gradient(135deg,var(--or),#ff7043);color:#fff;border:none;padding:14px 32px;border-radius:12px;font-size:14px;font-weight:800;cursor:pointer;box-shadow:0 4px 14px rgba(238,77,45,.3);font-family:inherit">🖨️ Salvar como PDF</button>
+      <button onclick="excluirMes('${key}')" style="background:#fff;color:var(--re);border:1.5px solid #fecaca;padding:14px 26px;border-radius:12px;font-size:14px;font-weight:800;cursor:pointer;font-family:inherit;transition:all .15s" onmouseover="this.style.background='#fef2f2'" onmouseout="this.style.background='#fff'">🗑️ Excluir mês</button>
     </div>
   `;
   animateKpis();
+}
+
+async function excluirMes(key) {
+  const m = allMonths[key];
+  if (!m) return;
+  const ok = confirm(
+    `Excluir ${monthFull(key)} permanentemente?\n\n` +
+    `   • ${m.pedidos || 0} pedidos · ${fmt(m.bruto || 0)} de faturamento\n\n` +
+    `Essa ação não pode ser desfeita. Você pode re-subir a planilha do mês depois, se quiser.`
+  );
+  if (!ok) return;
+  try {
+    await db.collection('shopee_users').doc(currentUser.uid).collection('months').doc(key).delete();
+    delete allMonths[key];
+    rebuildAllProds();
+
+    // Atualiza sumário no doc principal (mesmo cálculo do saveMonth)
+    const monthCount   = Object.keys(allMonths).length;
+    const totalBruto   = Object.values(allMonths).reduce((s, mm) => s + (mm.bruto   || 0), 0);
+    const totalLiquido = Object.values(allMonths).reduce((s, mm) => s + (mm.liquido || 0), 0);
+    db.collection('shopee_users').doc(currentUser.uid).set({ monthCount, totalBruto, totalLiquido }, { merge: true });
+
+    showToast('🗑️ ' + monthFull(key) + ' excluído.', 'ok');
+    selectedMesKey = null;
+    renderMes();
+  } catch(e) {
+    console.error('excluirMes', e);
+    showToast('Não foi possível excluir. Verifique sua internet.', 'err');
+  }
 }
 
 let adsTimer = {};
