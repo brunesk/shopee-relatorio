@@ -2133,7 +2133,12 @@ function renderMes() {
     `<button class="mp ${k===selectedMesKey?'active':''}" onclick="selectMes('${k}')">${monthLabel(k)}</button>`
   ).join('');
 
-  body.innerHTML = `<div class="month-pills">${pills}</div><div id="mes-detail"></div>`;
+  body.innerHTML = `
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:22px">
+      <div class="month-pills" style="margin-bottom:0">${pills}</div>
+      <button id="btn-excluir-mes-topo" onclick="excluirMes(selectedMesKey)" style="background:#fff;color:var(--re);border:1.5px solid #fecaca;padding:9px 16px;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;white-space:nowrap;flex-shrink:0;transition:all .15s" onmouseover="this.style.background='#fef2f2'" onmouseout="this.style.background='#fff'">🗑️ Excluir mês</button>
+    </div>
+    <div id="mes-detail"></div>`;
   renderMesDetail(selectedMesKey);
 }
 
