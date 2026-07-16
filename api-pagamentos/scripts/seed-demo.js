@@ -61,11 +61,13 @@ function processarPlanilha(rows, monthKeyOverride) {
   const prodMap = {}
   for (const r of validos) {
     const n = String(r['Nome do Produto'] || 'Sem nome').trim()
-    if (!prodMap[n]) prodMap[n] = { qty: 0, valor: 0 }
-    prodMap[n].qty += Math.max(1, pn(r['Quantidade']))
-    prodMap[n].valor += pn(r['Subtotal do produto'])
+    const v = String(r['Nome da variação'] || '').trim()
+    const k = n + '\x01' + v
+    if (!prodMap[k]) prodMap[k] = { name: n, variacao: v, qty: 0, valor: 0 }
+    prodMap[k].qty += Math.max(1, pn(r['Quantidade']))
+    prodMap[k].valor += pn(r['Subtotal do produto'])
   }
-  const produtos = Object.entries(prodMap).map(([name, d]) => ({ name, qty: Math.round(d.qty), valor: +(d.valor * ratio).toFixed(2) }))
+  const produtos = Object.values(prodMap).map(d => ({ name: d.name, variacao: d.variacao, qty: Math.round(d.qty), valor: +(d.valor * ratio).toFixed(2) }))
 
   const ufMap = {}
   for (const r of validos) {
@@ -161,10 +163,20 @@ async function main() {
   }
 
   // 4. custos de produto de exemplo (40% do valor médio unitário) + email p/ admin
+  // Mesma lógica do app: produto com múltiplas variações ganha custo por variação
+  const variantIdx = {}
+  for (const p of maio.produtos) {
+    if (!variantIdx[p.name]) variantIdx[p.name] = new Set()
+    if (p.variacao) variantIdx[p.name].add(p.variacao)
+  }
+  const custoKeyFor = (name, variacao) => {
+    const temMultiplas = variantIdx[name] && variantIdx[name].size > 1
+    return (temMultiplas && variacao) ? name + ' — ' + variacao : name
+  }
   const custos = {}
   for (const p of maio.produtos) {
     const unit = p.qty > 0 ? p.valor / p.qty : 0
-    custos[p.name] = +(unit * 0.4).toFixed(2)
+    custos[custoKeyFor(p.name, p.variacao)] = +(unit * 0.4).toFixed(2)
   }
   const monthCount = 3
   const totalBruto = maio.bruto + abril.bruto + marco.bruto

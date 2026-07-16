@@ -1328,7 +1328,8 @@ let allMonths   = {};   // { 'YYYY-MM': monthDoc }
 let savedCustos = {};   // { productName: unitCost }
 let savedEstoque = {};  // { productName: {qtd, cor, fornecedor} }
 let savedMeta    = {};  // { lucroMensal }
-let allProds    = {};   // { productName: {qty, valor} } aggregated across all months
+let allProds    = {};   // { custoKey: {qty, valor, name, variacao} } aggregated across all months
+let variantIndex = {};  // { productName: Set(variações distintas) } — recalculado junto com allProds
 let fileData    = null;
 let fileName    = '';
 let saveTimer   = null;
@@ -1465,13 +1466,44 @@ async function loadAllData() {
   } catch(e) { console.error('loadAllData:', e); }
 }
 
+// Produtos com mais de uma variação distinta (ex: tamanhos, cores) precisam de
+// custo por variação — o custo de material muda bastante entre elas. Produtos com
+// variação única continuam usando o nome puro como chave (não perde custo já salvo).
+function buildVariantIndex() {
+  const idx = {};
+  Object.values(allMonths).forEach(m => (m.produtos || []).forEach(p => {
+    if (!idx[p.name]) idx[p.name] = new Set();
+    if (p.variacao) idx[p.name].add(p.variacao);
+  }));
+  return idx;
+}
+
+function custoKeyFor(name, variacao, idx) {
+  const useIdx = idx || variantIndex;
+  const temMultiplas = useIdx[name] && useIdx[name].size > 1;
+  return (temMultiplas && variacao) ? name + ' — ' + variacao : name;
+}
+
+// Mesma lógica de buildVariantIndex, mas para uma lista de meses arbitrária
+// (usado pelo Admin, que olha os meses de OUTRO usuário, não os do savedCustos local)
+function buildVariantIndexFrom(months) {
+  const idx = {};
+  months.forEach(m => (m.produtos || []).forEach(p => {
+    if (!idx[p.name]) idx[p.name] = new Set();
+    if (p.variacao) idx[p.name].add(p.variacao);
+  }));
+  return idx;
+}
+
 function rebuildAllProds() {
   allProds = {};
+  variantIndex = buildVariantIndex();
   Object.values(allMonths).forEach(m => {
     (m.produtos || []).forEach(p => {
-      if (!allProds[p.name]) allProds[p.name] = { qty: 0, valor: 0 };
-      allProds[p.name].qty   += p.qty;
-      allProds[p.name].valor += p.valor;
+      const key = custoKeyFor(p.name, p.variacao);
+      if (!allProds[key]) allProds[key] = { qty: 0, valor: 0, name: p.name, variacao: p.variacao || '' };
+      allProds[key].qty   += p.qty;
+      allProds[key].valor += p.valor;
     });
   });
 }
@@ -1671,7 +1703,7 @@ function animateKpis() {
 }
 
 function calcLucroMes(m) {
-  const custoProd = (m.produtos || []).reduce((s, p) => s + (savedCustos[p.name] || 0) * p.qty, 0);
+  const custoProd = (m.produtos || []).reduce((s, p) => s + (savedCustos[custoKeyFor(p.name, p.variacao)] || 0) * p.qty, 0);
   return (m.liquido || 0) - custoProd - (m.adsGasto || 0);
 }
 
@@ -1773,7 +1805,7 @@ function renderDashboard() {
     const m = allMonths[k];
     agC.com += m.comissao || 0; agC.svc += m.servico || 0; agC.trx += m.transacao || 0;
     agC.dsc += (m.ofertas != null ? m.ofertas : (m.descontos||0)); agC.ads += m.adsGasto || 0;
-    agC.cp  += (m.produtos || []).reduce((s, pr) => s + (savedCustos[pr.name] || 0) * pr.qty, 0);
+    agC.cp  += (m.produtos || []).reduce((s, pr) => s + (savedCustos[custoKeyFor(pr.name, pr.variacao)] || 0) * pr.qty, 0);
     baseFat += m.bruto || 0;
   });
   const maxRef = Math.max(agC.com, agC.svc, agC.trx, agC.dsc, agC.ads, agC.cp, totLucro, 1);
@@ -1867,7 +1899,7 @@ function renderDashboard() {
   // ── Tabela histórico ──
   const rows = [...keys].reverse().map(k => {
     const m = allMonths[k];
-    const custoProd = (m.produtos || []).reduce((s, pr) => s + (savedCustos[pr.name] || 0) * pr.qty, 0);
+    const custoProd = (m.produtos || []).reduce((s, pr) => s + (savedCustos[custoKeyFor(pr.name, pr.variacao)] || 0) * pr.qty, 0);
     const ads = m.adsGasto || 0; const lc = calcLucroMes(m);
     const ticket = (m.pedidos || 0) > 0 ? (m.bruto || 0) / m.pedidos : 0;
     const margem = (m.bruto || 0) > 0 ? lc / m.bruto * 100 : null;
@@ -2155,7 +2187,7 @@ function renderMesDetail(key) {
   const det = document.getElementById('mes-detail');
   if (!m || !det) return;
 
-  const custoProd = (m.produtos || []).reduce((s, p) => s + (savedCustos[p.name] || 0) * p.qty, 0);
+  const custoProd = (m.produtos || []).reduce((s, p) => s + (savedCustos[custoKeyFor(p.name, p.variacao)] || 0) * p.qty, 0);
   const lucroApos = (m.liquido || 0) - custoProd;
   const lucroFinal = lucroApos - (m.adsGasto || 0);
   const taxas = (m.comissao||0) + (m.servico||0) + (m.transacao||0);
@@ -2182,7 +2214,10 @@ function renderMesDetail(key) {
       <div class="rnk ${rc[i]}">${i+1}</div>
       <div style="flex:1;min-width:0">
         <div style="font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${p.name}</div>
-        <div style="font-size:11px;color:var(--s400)">${Math.round(p.qty)} unidades</div>
+        <div style="font-size:11px;color:var(--s400);display:flex;align-items:center;gap:6px">
+          ${p.variacao ? `<span class="badge-30" style="background:#eff6ff;color:#2563eb">${p.variacao}</span>` : ''}
+          <span>${Math.round(p.qty)} unidades</span>
+        </div>
       </div>
       <div style="font-size:14px;font-weight:800;color:var(--gr);white-space:nowrap">${fmt(p.valor)}</div>
     </div>`).join('');
@@ -2342,7 +2377,7 @@ function updateAds(key, val) {
     lbAds.className   = 'lb-val ' + (ads > 0 ? 'neg' : '');
   }
 
-  const custoProd = (allMonths[key].produtos || []).reduce((s,p) => s + (savedCustos[p.name]||0)*p.qty, 0);
+  const custoProd = (allMonths[key].produtos || []).reduce((s,p) => s + (savedCustos[custoKeyFor(p.name, p.variacao)]||0)*p.qty, 0);
   const lucro     = (allMonths[key].liquido||0) - custoProd - ads;
 
   if (lbFinal) {
@@ -2475,14 +2510,19 @@ async function processarESalvar() {
     const d2str = datas.length ? datas[datas.length-1].toISOString().slice(0,10) : '';
 
     // Aggregate products
+    // Agrupa por produto + variação (ex: tamanho, cor) — sempre separados aqui, mesmo
+    // que hoje só exista 1 variação. A decisão de exibir custo por variação ou não
+    // é feita depois (custoKeyFor), olhando o histórico completo de todos os meses.
     const prodMap = {};
     for (const r of validos) {
       const n = String(r['Nome do Produto']||'Sem nome').trim();
-      if (!prodMap[n]) prodMap[n] = { qty:0, valor:0 };
-      prodMap[n].qty   += Math.max(1, pn(r['Quantidade']));
-      prodMap[n].valor += pn(r['Subtotal do produto']);
+      const v = String(r['Nome da variação']||'').trim();
+      const k = n + '' + v;
+      if (!prodMap[k]) prodMap[k] = { name:n, variacao:v, qty:0, valor:0 };
+      prodMap[k].qty   += Math.max(1, pn(r['Quantidade']));
+      prodMap[k].valor += pn(r['Subtotal do produto']);
     }
-    const produtos = Object.entries(prodMap).map(([name,d]) => ({ name, qty: Math.round(d.qty), valor: +(d.valor * ratio).toFixed(2) }));
+    const produtos = Object.values(prodMap).map(d => ({ name: d.name, variacao: d.variacao, qty: Math.round(d.qty), valor: +(d.valor * ratio).toFixed(2) }));
 
     // Aggregate UFs
     const ufMap = {};
@@ -2561,16 +2601,21 @@ function renderProdutos() {
   }
 
   const rc = ['r1','r2','r3'];
-  const rows = prods.map(([name,d],i) => {
-    const saved = savedCustos[name] || 0;
+  const rows = prods.map(([key,d],i) => {
+    const saved = savedCustos[key] || 0;
     const cost  = saved > 0 ? saved.toFixed(2) : '';
+    const temVariacao = key !== d.name; // custoKey só difere do nome quando há múltiplas variações
+    const keyEsc = key.replace(/'/g,"\\'").replace(/"/g,'\\"');
     return `<tr>
       <td>
         <div style="display:flex;align-items:center;gap:10px">
           <div class="rnk ${i<3?rc[i]:'rn'}">${i+1}</div>
           <div style="min-width:0">
-            <div style="font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:260px">${name}</div>
-            <div style="font-size:11px;color:var(--s400)">${Math.round(d.qty)} un. vendidas no total</div>
+            <div style="font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:260px">${d.name}</div>
+            <div style="font-size:11px;color:var(--s400);display:flex;align-items:center;gap:6px">
+              ${temVariacao ? `<span class="badge-30" style="background:#eff6ff;color:#2563eb">${d.variacao}</span>` : ''}
+              <span>${Math.round(d.qty)} un. vendidas no total</span>
+            </div>
           </div>
         </div>
       </td>
@@ -2578,7 +2623,7 @@ function renderProdutos() {
       <td>
         <input class="cost-inp" id="ci_${i}" type="number" min="0" step="0.01"
                placeholder="0,00" value="${cost}"
-               oninput="updateCusto('${name.replace(/'/g,"\\'").replace(/"/g,'\\"')}', this.value)">
+               oninput="updateCusto('${keyEsc}', this.value)">
       </td>
       <td id="ct_${i}" style="font-weight:700;color:var(--re)">${saved>0?'- '+fmt(d.qty*saved):'—'}</td>
     </tr>`;
@@ -2590,7 +2635,7 @@ function renderProdutos() {
         <div class="sec-ttl"><div class="sec-ico">💸</div>Custo unitário por produto</div>
         <div class="ads-ok" id="custos-ok">✓ Salvo</div>
       </div>
-      <p style="font-size:13px;color:var(--s500);margin-bottom:18px">Insira o <strong>custo unitário</strong> de cada produto. Os valores são salvos automaticamente e aplicados ao cálculo de lucro de todos os meses.</p>
+      <p style="font-size:13px;color:var(--s500);margin-bottom:18px">Insira o <strong>custo unitário</strong> de cada produto. Os valores são salvos automaticamente e aplicados ao cálculo de lucro de todos os meses. <strong>Anúncios com várias variações</strong> (tamanho, cor etc.) aparecem <strong>separados por variação</strong> — o custo de material costuma mudar bastante entre elas.</p>
       <div style="overflow-x:auto">
         <table class="tbl" style="font-size:13px">
           <thead><tr>
@@ -2787,13 +2832,17 @@ function renderEstoque() {
   const rows = prods.map(([name, d], i) => {
     const e = savedEstoque[name] || {};
     const repo = computeRepo(name);
+    const temVariacao = name !== d.name;
     return `<tr>
       <td>
         <div style="display:flex;align-items:center;gap:10px">
           <div class="rnk ${i<3?['r1','r2','r3'][i]:'rn'}">${i+1}</div>
           <div style="min-width:0;flex:1">
-            <div style="font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:230px">${name}</div>
-            <div style="font-size:11px;color:var(--s400)">vende ~${Math.round(repo.vm)}/mês · ${Math.round(d.qty)} vendidas</div>
+            <div style="font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:230px">${d.name}</div>
+            <div style="font-size:11px;color:var(--s400);display:flex;align-items:center;gap:6px">
+              ${temVariacao ? `<span class="badge-30" style="background:#eff6ff;color:#2563eb">${d.variacao}</span>` : ''}
+              <span>vende ~${Math.round(repo.vm)}/mês · ${Math.round(d.qty)} vendidas</span>
+            </div>
             <div id="est-cmp-${i}" style="margin-top:5px;max-width:150px">${htmlCmp(e)}</div>
           </div>
         </div>
@@ -3699,6 +3748,7 @@ async function adminOpenUser(uid, email) {
     const udata   = udoc.exists ? udoc.data() : {};
     const custos  = udata.custos  || {};
     const estoque = udata.estoque || {};
+    const alunoIdx = buildVariantIndexFrom(months);
 
     if (!months.length && !Object.keys(estoque).length) {
       det.innerHTML = `<div class="sec"><div class="sec-hd"><div class="sec-ttl"><div class="sec-ico">📊</div>${email}</div></div><p style="color:var(--s400)">Nenhum dado enviado ainda.</p></div>`;
@@ -3708,7 +3758,7 @@ async function adminOpenUser(uid, email) {
     // ── Tabela de meses (com ADS e lucro real) ──
     const rows = months.map(m => {
       const taxas = (m.comissao||0)+(m.servico||0)+(m.transacao||0);
-      const custoProd = (m.produtos || []).reduce((sm, pr) => sm + (custos[pr.name] || 0) * pr.qty, 0);
+      const custoProd = (m.produtos || []).reduce((sm, pr) => sm + (custos[custoKeyFor(pr.name, pr.variacao, alunoIdx)] || 0) * pr.qty, 0);
       const lucro = (m.liquido||0) - custoProd - (m.adsGasto||0);
       return `<tr>
         <td style="font-weight:700">${monthFull(m.monthKey||m.key)}</td>
@@ -3729,23 +3779,24 @@ async function adminOpenUser(uid, email) {
     // ── Produtos mais vendidos (agregado de todos os meses) ──
     const agg = {};
     months.forEach(m => (m.produtos||[]).forEach(pr => {
-      if (!agg[pr.name]) agg[pr.name] = { qty:0, valor:0 };
-      agg[pr.name].qty   += pr.qty;
-      agg[pr.name].valor += pr.valor;
+      const key = custoKeyFor(pr.name, pr.variacao, alunoIdx);
+      if (!agg[key]) agg[key] = { qty:0, valor:0, label: pr.variacao ? pr.name + ' — ' + pr.variacao : pr.name };
+      agg[key].qty   += pr.qty;
+      agg[key].valor += pr.valor;
     }));
     const topProds = Object.entries(agg).sort((a,b)=>b[1].qty-a[1].qty).slice(0,10);
-    const prodRows = topProds.map(([name,d],i) => {
-      const e = estoque[name] || {};
+    const prodRows = topProds.map(([key,d],i) => {
+      const e = estoque[key] || estoque[d.label] || {};
       return `<tr>
         <td>
           <div style="display:flex;align-items:center;gap:10px">
             <div class="rnk ${i<3?['r1','r2','r3'][i]:'rn'}">${i+1}</div>
-            <div style="font-size:12.5px;font-weight:600;max-width:230px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${name}</div>
+            <div style="font-size:12.5px;font-weight:600;max-width:230px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${d.label}</div>
           </div>
         </td>
         <td style="text-align:right;font-weight:700;color:var(--bl)">${Math.round(d.qty)}</td>
         <td style="text-align:right;font-weight:700;color:var(--gr)">${fmt(d.valor)}</td>
-        <td style="text-align:right;color:${(custos[name]||0)>0?'var(--re)':'var(--s400)'}">${(custos[name]||0)>0?fmt(custos[name]):'—'}</td>
+        <td style="text-align:right;color:${(custos[key]||0)>0?'var(--re)':'var(--s400)'}">${(custos[key]||0)>0?fmt(custos[key]):'—'}</td>
         <td style="text-align:right">${e.qtd!=null?e.qtd:'—'}</td>
         <td style="text-align:right;color:var(--s600);font-size:12px">${e.fornecedor||'—'}</td>
       </tr>`;
