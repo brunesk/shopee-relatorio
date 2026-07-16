@@ -2585,11 +2585,19 @@ async function processarESalvar() {
 }
 
 // ── PRODUTOS ──────────────────────────────────────────
+// Hash curto e estável para usar como id de elemento (a chave pode ter acentos,
+// vírgulas, espaços — inseguro usar direto num atributo id)
+function keyHash(k) {
+  let h = 0;
+  for (let i = 0; i < k.length; i++) h = (h * 31 + k.charCodeAt(i)) | 0;
+  return 'h' + (h >>> 0).toString(36);
+}
+
 function renderProdutos() {
   const body = document.getElementById('produtos-body');
-  const prods = Object.entries(allProds).sort((a,b) => b[1].qty - a[1].qty);
+  const entries = Object.entries(allProds); // [custoKey, {qty, valor, name, variacao}]
 
-  if (!prods.length) {
+  if (!entries.length) {
     body.innerHTML = `
       <div class="empty">
         <div class="empty-ico">📦</div>
@@ -2600,34 +2608,77 @@ function renderProdutos() {
     return;
   }
 
-  const rc = ['r1','r2','r3'];
-  const rows = prods.map(([key,d],i) => {
+  // Agrupa por produto principal — cada variação fica "dentro" do seu produto
+  const groups = {};
+  entries.forEach(([key, d]) => {
+    if (!groups[d.name]) groups[d.name] = { name: d.name, totalQty: 0, totalValor: 0, variants: [] };
+    groups[d.name].totalQty   += d.qty;
+    groups[d.name].totalValor += d.valor;
+    groups[d.name].variants.push({ key, variacao: d.variacao, qty: d.qty, valor: d.valor });
+  });
+  Object.values(groups).forEach(g => g.variants.sort((a,b) => b.qty - a.qty));
+  const groupArr = Object.values(groups).sort((a,b) => b.totalValor - a.totalValor);
+
+  const custoField = (key, qty) => {
     const saved = savedCustos[key] || 0;
     const cost  = saved > 0 ? saved.toFixed(2) : '';
-    const temVariacao = key !== d.name; // custoKey só difere do nome quando há múltiplas variações
-    const keyEsc = key.replace(/'/g,"\\'").replace(/"/g,'\\"');
-    return `<tr>
-      <td>
-        <div style="display:flex;align-items:center;gap:10px">
-          <div class="rnk ${i<3?rc[i]:'rn'}">${i+1}</div>
-          <div style="min-width:0">
-            <div style="font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:260px">${d.name}</div>
-            <div style="font-size:11px;color:var(--s400);display:flex;align-items:center;gap:6px">
-              ${temVariacao ? `<span class="badge-30" style="background:#eff6ff;color:#2563eb">${d.variacao}</span>` : ''}
-              <span>${Math.round(d.qty)} un. vendidas no total</span>
-            </div>
-          </div>
-        </div>
-      </td>
-      <td>${fmt(d.valor)}</td>
-      <td>
-        <input class="cost-inp" id="ci_${i}" type="number" min="0" step="0.01"
+    const h     = keyHash(key);
+    const keyEsc = key.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+    return `<td style="white-space:nowrap">
+        <input class="cost-inp" type="number" min="0" step="0.01"
                placeholder="0,00" value="${cost}"
                oninput="updateCusto('${keyEsc}', this.value)">
       </td>
-      <td id="ct_${i}" style="font-weight:700;color:var(--re)">${saved>0?'- '+fmt(d.qty*saved):'—'}</td>
-    </tr>`;
-  }).join('');
+      <td id="ct_${h}" style="font-weight:700;color:var(--re);white-space:nowrap">${saved>0?'- '+fmt(qty*saved):'—'}</td>`;
+  };
+
+  const rc = ['r1','r2','r3'];
+  let rows = '';
+  groupArr.forEach((g, gi) => {
+    const rankHtml = `<div class="rnk ${gi<3?rc[gi]:'rn'}" style="flex-shrink:0">${gi+1}</div>`;
+    if (g.variants.length === 1 && !g.variants[0].variacao) {
+      // Produto sem variação — linha simples, igual antes
+      const v = g.variants[0];
+      rows += `<tr>
+        <td>
+          <div style="display:flex;align-items:center;gap:10px">
+            ${rankHtml}
+            <div style="min-width:0">
+              <div style="font-size:13.5px;font-weight:600;line-height:1.4;word-break:break-word">${g.name}</div>
+              <div style="font-size:11px;color:var(--s400);margin-top:2px">${Math.round(v.qty)} un. vendidas no total</div>
+            </div>
+          </div>
+        </td>
+        <td style="white-space:nowrap">${fmt(v.valor)}</td>
+        ${custoField(v.key, v.qty)}
+      </tr>`;
+    } else {
+      // Produto com variações — cabeçalho do produto + variações indentadas abaixo
+      rows += `<tr style="background:var(--s50)">
+        <td colspan="4" style="padding-top:16px;padding-bottom:10px">
+          <div style="display:flex;align-items:center;gap:10px">
+            ${rankHtml}
+            <div style="min-width:0;flex:1">
+              <div style="font-size:14px;font-weight:800;line-height:1.4;word-break:break-word">${g.name}</div>
+              <div style="font-size:11px;color:var(--s500);margin-top:2px">${g.variants.length} variações · ${Math.round(g.totalQty)} un. vendidas no total · ${fmt(g.totalValor)}</div>
+            </div>
+          </div>
+        </td>
+      </tr>`;
+      g.variants.forEach(v => {
+        rows += `<tr>
+          <td style="padding-left:16px;border-left:3px solid var(--s200)">
+            <div style="padding-left:38px">
+              <span class="badge-30" style="background:#eff6ff;color:#2563eb;font-size:11.5px">${v.variacao || '(sem variação informada)'}</span>
+              <div style="font-size:11px;color:var(--s400);margin-top:4px">${Math.round(v.qty)} un. vendidas</div>
+            </div>
+          </td>
+          <td style="white-space:nowrap">${fmt(v.valor)}</td>
+          ${custoField(v.key, v.qty)}
+        </tr>`;
+      });
+    }
+  });
 
   body.innerHTML = `
     <div class="sec">
@@ -2635,9 +2686,9 @@ function renderProdutos() {
         <div class="sec-ttl"><div class="sec-ico">💸</div>Custo unitário por produto</div>
         <div class="ads-ok" id="custos-ok">✓ Salvo</div>
       </div>
-      <p style="font-size:13px;color:var(--s500);margin-bottom:18px">Insira o <strong>custo unitário</strong> de cada produto. Os valores são salvos automaticamente e aplicados ao cálculo de lucro de todos os meses. <strong>Anúncios com várias variações</strong> (tamanho, cor etc.) aparecem <strong>separados por variação</strong> — o custo de material costuma mudar bastante entre elas.</p>
+      <p style="font-size:13px;color:var(--s500);margin-bottom:18px">Insira o <strong>custo unitário</strong> de cada produto. Os valores são salvos automaticamente e aplicados ao cálculo de lucro de todos os meses. <strong>Anúncios com várias variações</strong> (tamanho, cor etc.) mostram o produto principal e, logo abaixo, cada variação com seu próprio campo de custo.</p>
       <div style="overflow-x:auto">
-        <table class="tbl" style="font-size:13px">
+        <table class="tbl" style="font-size:13px;table-layout:auto">
           <thead><tr>
             <th style="text-align:left">Produto</th>
             <th>Faturamento total</th>
@@ -2838,8 +2889,8 @@ function renderEstoque() {
         <div style="display:flex;align-items:center;gap:10px">
           <div class="rnk ${i<3?['r1','r2','r3'][i]:'rn'}">${i+1}</div>
           <div style="min-width:0;flex:1">
-            <div style="font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:230px">${d.name}</div>
-            <div style="font-size:11px;color:var(--s400);display:flex;align-items:center;gap:6px">
+            <div style="font-size:13px;font-weight:600;line-height:1.4;word-break:break-word">${d.name}</div>
+            <div style="font-size:11px;color:var(--s400);display:flex;align-items:center;gap:6px;flex-wrap:wrap">
               ${temVariacao ? `<span class="badge-30" style="background:#eff6ff;color:#2563eb">${d.variacao}</span>` : ''}
               <span>vende ~${Math.round(repo.vm)}/mês · ${Math.round(d.qty)} vendidas</span>
             </div>
@@ -3534,20 +3585,15 @@ function renderAdsDash(body) {
     </div>`;
 }
 
-function updateCusto(name, val) {
+function updateCusto(key, val) {
   const cost = parseFloat(val) || 0;
-  savedCustos[name] = cost;
+  savedCustos[key] = cost;
 
-  // Update row total
-  const prods = Object.entries(allProds).sort((a,b) => b[1].qty - a[1].qty);
-  const idx   = prods.findIndex(([n]) => n === name);
-  if (idx >= 0) {
-    const ct = document.getElementById('ct_' + idx);
-    const qty = allProds[name]?.qty || 0;
-    if (ct) {
-      ct.textContent = cost > 0 ? '- ' + fmt(qty * cost) : '—';
-      ct.style.color = cost > 0 ? 'var(--re)' : 'var(--s400)';
-    }
+  const ct = document.getElementById('ct_' + keyHash(key));
+  const qty = allProds[key]?.qty || 0;
+  if (ct) {
+    ct.textContent = cost > 0 ? '- ' + fmt(qty * cost) : '—';
+    ct.style.color = cost > 0 ? 'var(--re)' : 'var(--s400)';
   }
 
   scheduleSave();
@@ -3791,7 +3837,7 @@ async function adminOpenUser(uid, email) {
         <td>
           <div style="display:flex;align-items:center;gap:10px">
             <div class="rnk ${i<3?['r1','r2','r3'][i]:'rn'}">${i+1}</div>
-            <div style="font-size:12.5px;font-weight:600;max-width:230px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${d.label}</div>
+            <div style="font-size:12.5px;font-weight:600;line-height:1.4;word-break:break-word">${d.label}</div>
           </div>
         </td>
         <td style="text-align:right;font-weight:700;color:var(--bl)">${Math.round(d.qty)}</td>
