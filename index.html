@@ -3443,45 +3443,6 @@ function renderAdsDash(body) {
       <div class="prio-list">${prioCards}</div>
     </div>`:''}
 
-    <!-- ═ 3. TODOS OS ANÚNCIOS ═ -->
-    <div class="sec">
-      <div class="sec-hd">
-        <div class="sec-ttl"><div class="sec-ico">📋</div>Todos os anúncios</div>
-        <span style="font-size:12px;color:var(--s400)">ordenado por gasto · a coluna "Ação" diz o que fazer com a meta de ROAS</span>
-      </div>
-      <div style="overflow-x:auto">
-        <table class="tbl">
-          <thead><tr>
-            <th style="text-align:left">Anúncio</th>
-            <th>Nota</th>
-            <th>Impressões</th>
-            <th>CTR</th>
-            <th>Conv.</th>
-            <th>Gasto</th>
-            <th>Vendas (GMV)</th>
-            <th>ROAS real</th>
-            ${hasMeta?'<th>Meta ROAS</th>':''}
-            <th>Ação</th>
-          </tr></thead>
-          <tbody>${rows}</tbody>
-        </table>
-      </div>
-      <p class="note">Zona ideal: ROAS real entre 20x e 25x · abaixo de 10x é fraco · acima de 25x está deixando volume na mesa</p>
-    </div>
-
-    <!-- ═ 4. TOP 10 ═ -->
-    ${top10.length?`<div class="sec">
-      <div class="sec-hd"><div class="sec-ttl"><div class="sec-ico">📈</div>Top 10 anúncios por vendas</div>
-      <span style="font-size:12px;color:var(--s400)">🟢 ≥20x · 🟡 15–20x · 🟠 10–15x · 🔴 &lt;10x</span></div>
-      <div class="ads-hbar-wrap">${hbars}</div>
-    </div>`:''}
-
-    <!-- ═ 5. ANÁLISE DETALHADA ═ -->
-    <div class="sec">
-      <div class="sec-hd"><div class="sec-ttl"><div class="sec-ico">💡</div>Análise detalhada</div><span style="font-size:12px;color:var(--s400)">${insights.length} pontos encontrados</span></div>
-      <div class="insight-list">${insCards}</div>
-    </div>
-
     <!-- ═ 6. CENTRAL DE APRENDIZADO (recolhida) ═ -->
     <div class="sec" style="padding:0;overflow:hidden">
       <div class="sec-hd" style="padding:16px 20px 14px;margin-bottom:0;border-bottom:1px solid var(--s150)">
@@ -3605,7 +3566,46 @@ function renderAdsDash(body) {
           </div>
         </div>
       </div>
-    </div>`;
+    </div>    <!-- ═ 3. TODOS OS ANÚNCIOS ═ -->
+    <div class="sec">
+      <div class="sec-hd">
+        <div class="sec-ttl"><div class="sec-ico">📋</div>Todos os anúncios</div>
+        <span style="font-size:12px;color:var(--s400)">ordenado por gasto · a coluna "Ação" diz o que fazer com a meta de ROAS</span>
+      </div>
+      <div style="overflow-x:auto">
+        <table class="tbl">
+          <thead><tr>
+            <th style="text-align:left">Anúncio</th>
+            <th>Nota</th>
+            <th>Impressões</th>
+            <th>CTR</th>
+            <th>Conv.</th>
+            <th>Gasto</th>
+            <th>Vendas (GMV)</th>
+            <th>ROAS real</th>
+            ${hasMeta?'<th>Meta ROAS</th>':''}
+            <th>Ação</th>
+          </tr></thead>
+          <tbody>${rows}</tbody>
+        </table>
+      </div>
+      <p class="note">Zona ideal: ROAS real entre 20x e 25x · abaixo de 10x é fraco · acima de 25x está deixando volume na mesa</p>
+    </div>
+
+    <!-- ═ 4. TOP 10 ═ -->
+    ${top10.length?`<div class="sec">
+      <div class="sec-hd"><div class="sec-ttl"><div class="sec-ico">📈</div>Top 10 anúncios por vendas</div>
+      <span style="font-size:12px;color:var(--s400)">🟢 ≥20x · 🟡 15–20x · 🟠 10–15x · 🔴 &lt;10x</span></div>
+      <div class="ads-hbar-wrap">${hbars}</div>
+    </div>`:''}
+
+    <!-- ═ 5. ANÁLISE DETALHADA ═ -->
+    <div class="sec">
+      <div class="sec-hd"><div class="sec-ttl"><div class="sec-ico">💡</div>Análise detalhada</div><span style="font-size:12px;color:var(--s400)">${insights.length} pontos encontrados</span></div>
+      <div class="insight-list">${insCards}</div>
+    </div>
+
+`;
 }
 function updateCusto(key, val) {
   const cost = parseFloat(val) || 0;
