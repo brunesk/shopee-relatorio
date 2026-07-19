@@ -195,7 +195,25 @@ body{font-family:var(--ff-body);background:#f0f0ee;color:var(--s800);min-height:
 .ads-reload{font-size:12px;font-weight:700;color:var(--s500);background:var(--s100);border:none;border-radius:8px;padding:8px 14px;cursor:pointer;display:inline-flex;align-items:center;gap:6px;transition:all .15s}
 .ads-reload:hover{background:var(--s200);color:var(--s800)}
 /* insight cards — full border, no side-stripe */
-.insight-list{display:flex;flex-direction:column;gap:8px}
+.insight-list{display:grid;grid-template-columns:repeat(auto-fit,minmax(360px,1fr));gap:10px}
+@media(max-width:760px){.insight-list{grid-template-columns:1fr}}
+.ads-hero{background:#fff;border:1px solid var(--s200);border-radius:var(--r);box-shadow:var(--sh1);overflow:hidden;margin-bottom:16px}
+.ads-hero-top{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;padding:14px 22px;border-bottom:1px solid var(--s150);background:var(--s50)}
+.ads-hero-main{display:flex;align-items:center;gap:22px;flex-wrap:wrap;padding:22px}
+.ads-hero-stats{display:flex;gap:10px;flex-wrap:wrap;margin-left:auto}
+.ahs{min-width:118px;background:var(--s50);border:1px solid var(--s200);border-radius:12px;padding:12px 16px}
+.ahs-val{font-family:var(--ff-mono);font-size:19px;font-weight:700;color:var(--s900);white-space:nowrap;line-height:1.2}
+.ahs-lbl{font-size:10px;color:var(--s400);font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-top:4px;white-space:nowrap}
+.learn-item{border-top:1px solid var(--s150)}
+.learn-item:first-child{border-top:none}
+.learn-head{display:flex;align-items:center;gap:12px;padding:15px 20px;cursor:pointer;user-select:none;transition:background .15s}
+.learn-head:hover{background:var(--s50)}
+.learn-arrow{font-size:11px;color:var(--or);transition:transform .2s;flex-shrink:0}
+.learn-arrow.open{transform:rotate(90deg)}
+.learn-ttl{font-size:13.5px;font-weight:700;color:var(--s800);flex:1}
+.learn-sub{font-size:12px;color:var(--s400)}
+.learn-body{display:none;padding:4px 20px 20px}
+.learn-body.open{display:block}
 .insight-card{border-radius:14px;padding:16px 18px;display:flex;gap:14px;align-items:flex-start}
 .ic-critico{background:#fef2f2;border:1.5px solid #fca5a5}
 .ic-atencao{background:#fffbeb;border:1.5px solid #fde68a}
@@ -3393,164 +3411,43 @@ function renderAdsDash(body) {
   const roasKpiIco = roasGeral>=20?'🏆':roasGeral>=15?'✅':roasGeral>=10?'📊':'⚠️';
 
   body.innerHTML = `
-    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:22px">
-      <div style="display:flex;flex-direction:column;gap:4px">
-        ${loja?`<div style="font-size:17px;font-weight:800;color:var(--s900)">${loja}</div>`:''}
-        ${periodo?`<div class="ads-period" style="align-self:flex-start">📅 ${periodo}</div>`:''}
-      </div>
-      <button class="ads-reload" onclick="adsData=null;saveAdsLocal();renderAds()">↩ Outro arquivo</button>
-    </div>
-
-    <div class="nota-wrap">
-      <div class="nota-grade" style="background:${nota.bg};color:${nota.cor}">${nota.nota}</div>
-      <div class="nota-info">
-        <h3>${nota.texto}</h3>
-        <p>${nota.sub}</p>
-      </div>
-      <div class="nota-stats">
-        <div class="ns-item">
-          <div class="ns-val" style="color:${roasKpiCor}">${roasGeral.toFixed(1)}x</div>
-          <div class="ns-lbl">ROAS Geral</div>
+    <!-- ═ 1. VEREDITO ═ -->
+    <div class="ads-hero">
+      <div class="ads-hero-top">
+        <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+          ${loja?`<span style="font-size:15px;font-weight:800;color:var(--s900)">${loja}</span>`:''}
+          ${periodo?`<span class="ads-period">📅 ${periodo}</span>`:''}
+          <span style="font-size:12px;color:var(--s400)">${ads.length} anúncios analisados</span>
         </div>
-        <div class="ns-item">
-          <div class="ns-val" style="color:${lucroEst>=0?'var(--gr)':'var(--re)'}">${lucroEst>=0?'+':''}${fmt(lucroEst)}</div>
-          <div class="ns-lbl">Retorno líq. ADS</div>
+        <button class="ads-reload" onclick="adsData=null;saveAdsLocal();renderAds()">↩ Analisar outro arquivo</button>
+      </div>
+      <div class="ads-hero-main">
+        <div class="nota-grade" style="background:${nota.bg};color:${nota.cor}">${nota.nota}</div>
+        <div style="min-width:200px;max-width:340px">
+          <div style="font-size:16px;font-weight:900;color:var(--s900);line-height:1.3">${nota.texto}</div>
+          <div style="font-size:12px;color:var(--s500);line-height:1.55;margin-top:5px">${nota.sub}</div>
         </div>
-        <div class="ns-item">
-          <div class="ns-val">${ads.filter(a=>a.despesas>0).length}</div>
-          <div class="ns-lbl">Anúncios ativos</div>
+        <div class="ads-hero-stats">
+          <div class="ahs"><div class="ahs-val" style="color:${roasKpiCor}">${roasGeral.toFixed(1)}x</div><div class="ahs-lbl">ROAS geral</div></div>
+          <div class="ahs"><div class="ahs-val">${fmt(totGasto)}</div><div class="ahs-lbl">Investido</div></div>
+          <div class="ahs"><div class="ahs-val">${fmt(totGMV)}</div><div class="ahs-lbl">Vendas via ADS</div></div>
+          <div class="ahs"><div class="ahs-val" style="color:${lucroEst>=0?'var(--gr)':'var(--re)'}">${lucroEst>=0?'+':'−'} ${fmt(lucroEst)}</div><div class="ahs-lbl">Retorno líquido</div></div>
+          <div class="ahs"><div class="ahs-val">${cpcGeral>0?'R$ '+cpcGeral.toFixed(2):'—'}</div><div class="ahs-lbl">CPC · CTR ${ctrGeral.toFixed(1)}%</div></div>
         </div>
       </div>
     </div>
 
-    <div class="kpi-grid">
-      <div class="kpi orange"><div class="kpi-ico">💸</div><div class="kpi-lbl">Total Investido</div><div class="kpi-val">${fmt(totGasto)}</div><div class="kpi-sub">gasto com anúncios</div></div>
-      <div class="kpi green"><div class="kpi-ico">🛍️</div><div class="kpi-lbl">Vendas via ADS</div><div class="kpi-val">${fmt(totGMV)}</div><div class="kpi-sub">${totItens.toLocaleString('pt-BR')} itens vendidos</div></div>
-      <div class="kpi ${roasKpiCl}"><div class="kpi-ico">${roasKpiIco}</div><div class="kpi-lbl">ROAS Geral</div><div class="kpi-val" style="color:${roasKpiCor}">${roasGeral.toFixed(0)}x</div><div class="kpi-sub">zona ideal: 20–25x</div></div>
-      <div class="kpi blue"><div class="kpi-ico">🖱️</div><div class="kpi-lbl">CPC Médio</div><div class="kpi-val">${cpcGeral>0?'R$ '+cpcGeral.toFixed(2):'—'}</div><div class="kpi-sub">CTR geral: ${ctrGeral.toFixed(2)}%</div></div>
-    </div>
-
-    <div class="strat-section">
-      <div class="strat-head" onclick="this.querySelector('.strat-arr').classList.toggle('open');this.nextElementSibling.classList.toggle('open')">
-        <div class="strat-ico">📊</div>
-        <div style="flex:1">
-          <div class="strat-lbl">Como funciona a estratégia de ADS na Shopee</div>
-          <div class="strat-sub">GMV Max com Meta de ROAS · clique para recolher</div>
-        </div>
-        <span class="strat-arr open">▶</span>
-      </div>
-      <div class="strat-body open">
-        <div class="strat-pillars">
-          <div class="strat-pillar">
-            <div class="strat-pillar-ico">💰</div>
-            <div class="strat-pillar-ttl">Orçamento: sempre ilimitado</div>
-            <div class="strat-pillar-txt">A Shopee controla o gasto pela Meta de ROAS, não pelo orçamento. Com orçamento ilimitado, o algoritmo nunca para de exibir por falta de verba — você nunca perde uma venda desnecessariamente.</div>
-          </div>
-          <div class="strat-pillar">
-            <div class="strat-pillar-ico">🎯</div>
-            <div class="strat-pillar-ttl">Meta de ROAS: o único controle</div>
-            <div class="strat-pillar-txt">Meta alta → Shopee exibe só em bids muito qualificados → menos impressões, menos gasto, ROAS real alto.<br>Meta baixa → Shopee exibe mais amplamente → mais volume de vendas, gasto maior.</div>
-          </div>
-          <div class="strat-pillar">
-            <div class="strat-pillar-ico">🟢</div>
-            <div class="strat-pillar-ttl">Zona ideal: ROAS 20–25x</div>
-            <div class="strat-pillar-txt">Equilíbrio perfeito entre eficiência e volume. Abaixo de 20x há perda de margem. Acima de 25x o algoritmo está seletivo demais e você deixa vendas na mesa.</div>
-          </div>
-          <div class="strat-pillar">
-            <div class="strat-pillar-ico">🔄</div>
-            <div class="strat-pillar-ttl">Ciclo semanal de otimização</div>
-            <div class="strat-pillar-txt">Revise cada anúncio individualmente a cada 7 dias. Ajuste a Meta de ROAS anúncio por anúncio com base no ROAS real da semana. Aguarde 7 dias antes de avaliar o resultado de cada ajuste.</div>
-          </div>
-        </div>
-        <div class="strat-steps">
-          <div style="font-size:11px;font-weight:800;color:var(--s400);margin-bottom:6px;text-transform:uppercase;letter-spacing:.06em">Passo a passo semanal</div>
-          <div class="strat-step"><div class="strat-step-n">1</div><span>Exporte o relatório de ADS da Shopee referente aos últimos 7 dias</span></div>
-          <div class="strat-step"><div class="strat-step-n">2</div><span>Faça o upload aqui para ver o diagnóstico e a ação recomendada de cada anúncio</span></div>
-          <div class="strat-step"><div class="strat-step-n">3</div><span>No Seller Center: Anúncios CPC → edite o anúncio → altere a Meta de ROAS conforme indicado</span></div>
-          <div class="strat-step"><div class="strat-step-n">4</div><span>Aguarde 7 dias e repita — otimização contínua é o que escala os resultados ao longo do tempo</span></div>
-        </div>
-      </div>
-    </div>
-
+    <!-- ═ 2. O QUE FAZER AGORA ═ -->
     ${prioridades.length?`<div class="sec">
-      <div class="sec-hd"><div class="sec-ttl"><div class="sec-ico">🎯</div>O que fazer agora</div></div>
+      <div class="sec-hd"><div class="sec-ttl"><div class="sec-ico">🎯</div>O que fazer agora</div><span style="font-size:12px;color:var(--s400)">ações prioritárias da semana</span></div>
       <div class="prio-list">${prioCards}</div>
     </div>`:''}
 
-    <div class="sec">
-      <div class="sec-hd"><div class="sec-ttl"><div class="sec-ico">💡</div>Análise detalhada</div></div>
-      <div class="insight-list">${insCards}</div>
-    </div>
-
-    ${top10.length?`<div class="sec">
-      <div class="sec-hd"><div class="sec-ttl"><div class="sec-ico">📈</div>Top 10 Anúncios por Vendas (GMV)</div></div>
-      <div class="ads-hbar-wrap">${hbars}</div>
-      <p class="note">Cor: 🟢 ROAS ≥ 20x (zona ideal) · 🟡 ROAS 15–20x (bom) · 🟠 ROAS 10–15x (razoável) · 🔴 ROAS < 10x (fraco)</p>
-    </div>`:''}
-
-    <div class="sec">
-      <div class="sec-hd"><div class="sec-ttl"><div class="sec-ico">🧭</div>Guia de ações — o que fazer em cada situação</div></div>
-      <div class="acao-grid">
-
-        <div class="acao-card ac-baixar">
-          <div>
-            <span class="acao-badge ab-baixar">↓ Baixar meta</span>
-            <div class="acao-card-when" style="color:#1d4ed8">Quando ROAS real > 25x</div>
-          </div>
-          <div class="acao-card-body"><strong>O que fazer:</strong> Reduzir a Meta de ROAS em ~10% no Seller Center.<br><em>Anúncios CPC → editar anúncio → alterar Meta de ROAS</em></div>
-          <div class="acao-card-example">
-            📌 <strong>Exemplo:</strong> Meta atual 35 → Nova meta 32<br>
-            🎯 <strong>Resultado:</strong> ROAS cai de ~29x para ~24x, volume sobe<br>
-            ⏱️ Reavalie em 7 dias
-          </div>
-        </div>
-
-        <div class="acao-card ac-manter">
-          <div>
-            <span class="acao-badge ab-manter">✓ Manter</span>
-            <div class="acao-card-when" style="color:#15803d">Quando ROAS real 20–25x — Zona ideal</div>
-          </div>
-          <div class="acao-card-body"><strong>O que fazer:</strong> Não altere nada. Esse anúncio está no ponto de equilíbrio perfeito entre eficiência e volume de vendas.</div>
-          <div class="acao-card-example">
-            ✅ Você está na zona ideal<br>
-            💡 Foque em melhorar foto e título do produto<br>
-            ⏱️ Reavalie em 7 dias
-          </div>
-        </div>
-
-        <div class="acao-card ac-ajustar">
-          <div>
-            <span class="acao-badge ab-ajustar">↑ Ajustar</span>
-            <div class="acao-card-when" style="color:#b45309">Quando ROAS real entre 10x e 20x</div>
-          </div>
-          <div class="acao-card-body"><strong>O que fazer:</strong> Aumentar a Meta de ROAS em ~15% no Seller Center para melhorar a eficiência gradualmente.</div>
-          <div class="acao-card-example">
-            📌 <strong>Exemplo:</strong> Meta atual 20 → Nova meta 23<br>
-            🎯 <strong>Resultado:</strong> ROAS sobe, gasto cai levemente<br>
-            ⏱️ Reavalie em 7 dias
-          </div>
-        </div>
-
-        <div class="acao-card ac-elevar">
-          <div>
-            <span class="acao-badge ab-elevar">↑ Elevar meta</span>
-            <div class="acao-card-when" style="color:#b91c1c">Quando ROAS real &lt; 10x</div>
-          </div>
-          <div class="acao-card-body"><strong>O que fazer:</strong> Aumentar a Meta de ROAS em ~30% imediatamente. Se não melhorar em 14 dias, considere pausar o anúncio.</div>
-          <div class="acao-card-example">
-            📌 <strong>Exemplo:</strong> Meta atual 10 → Nova meta 13<br>
-            🎯 <strong>Resultado:</strong> Gasto cai, ROAS sobe gradualmente<br>
-            ⏱️ Reavalie em 7 dias (prazo: 14 dias)
-          </div>
-        </div>
-
-      </div>
-    </div>
-
+    <!-- ═ 3. TODOS OS ANÚNCIOS ═ -->
     <div class="sec">
       <div class="sec-hd">
-        <div class="sec-ttl"><div class="sec-ico">📋</div>Todos os Anúncios</div>
-        <span style="font-size:12px;color:var(--s400)">${ads.length} anúncios · ordenado por gasto</span>
+        <div class="sec-ttl"><div class="sec-ico">📋</div>Todos os anúncios</div>
+        <span style="font-size:12px;color:var(--s400)">ordenado por gasto · a coluna "Ação" diz o que fazer com a meta de ROAS</span>
       </div>
       <div style="overflow-x:auto">
         <table class="tbl">
@@ -3569,22 +3466,147 @@ function renderAdsDash(body) {
           <tbody>${rows}</tbody>
         </table>
       </div>
-      <p class="note">ROAS real: retorno efetivo · Meta ROAS: alvo configurado na Shopee · Zona ideal: ROAS real 20–25x</p>
+      <p class="note">Zona ideal: ROAS real entre 20x e 25x · abaixo de 10x é fraco · acima de 25x está deixando volume na mesa</p>
     </div>
 
+    <!-- ═ 4. TOP 10 ═ -->
+    ${top10.length?`<div class="sec">
+      <div class="sec-hd"><div class="sec-ttl"><div class="sec-ico">📈</div>Top 10 anúncios por vendas</div>
+      <span style="font-size:12px;color:var(--s400)">🟢 ≥20x · 🟡 15–20x · 🟠 10–15x · 🔴 &lt;10x</span></div>
+      <div class="ads-hbar-wrap">${hbars}</div>
+    </div>`:''}
+
+    <!-- ═ 5. ANÁLISE DETALHADA ═ -->
     <div class="sec">
-      <div class="sec-hd"><div class="sec-ttl"><div class="sec-ico">📖</div>Glossário — o que significa cada métrica</div></div>
-      <div class="gloss-grid">
-        <div class="gloss-item"><div class="gloss-term">ROAS real</div><div class="gloss-def">Retorno efetivo sobre o que foi gasto. ROAS 20x = para cada R$1 investido, R$20 em vendas</div><div class="gloss-ref">Zona ideal: 20–25x · < 10x fraco</div></div>
-        <div class="gloss-item"><div class="gloss-term">Meta de ROAS</div><div class="gloss-def">O alvo que você configura na Shopee. Meta alta = menos consumo + mais seletivo. Meta baixa = mais consumo + mais volume</div><div class="gloss-ref">Controla quanto o anúncio gasta</div></div>
-        <div class="gloss-item"><div class="gloss-term">Estratégia de escala</div><div class="gloss-def">ROAS real > 25x → baixar meta ~10% para ganhar volume. ROAS real 20–25x → manter. ROAS < 10x → elevar meta</div><div class="gloss-ref">Objetivo: maximizar lucro total</div></div>
-        <div class="gloss-item"><div class="gloss-term">CTR</div><div class="gloss-def">% de quem viu o anúncio e clicou. CTR baixo = foto ruim ou título fraco. Impacta diretamente o custo por clique</div><div class="gloss-ref">≥ 2% bom · < 1% precisa melhorar</div></div>
-        <div class="gloss-item"><div class="gloss-term">GMV</div><div class="gloss-def">Volume total de vendas geradas pelo anúncio. É o faturamento bruto atribuído a cada anúncio CPC</div><div class="gloss-ref">Quanto mais, melhor</div></div>
-        <div class="gloss-item"><div class="gloss-term">ACOS</div><div class="gloss-def">% do faturamento gasto em ADS. ACOS 5% = gastou R$5 de ADS para vender R$100. Inverso do ROAS</div><div class="gloss-ref">ACOS = 100 ÷ ROAS</div></div>
+      <div class="sec-hd"><div class="sec-ttl"><div class="sec-ico">💡</div>Análise detalhada</div><span style="font-size:12px;color:var(--s400)">${insights.length} pontos encontrados</span></div>
+      <div class="insight-list">${insCards}</div>
+    </div>
+
+    <!-- ═ 6. CENTRAL DE APRENDIZADO (recolhida) ═ -->
+    <div class="sec" style="padding:0;overflow:hidden">
+      <div class="sec-hd" style="padding:16px 20px 14px;margin-bottom:0;border-bottom:1px solid var(--s150)">
+        <div class="sec-ttl"><div class="sec-ico">📚</div>Central de aprendizado</div>
+        <span style="font-size:12px;color:var(--s400)">clique para expandir cada guia</span>
+      </div>
+
+      <div class="learn-item">
+        <div class="learn-head" onclick="this.querySelector('.learn-arrow').classList.toggle('open');this.nextElementSibling.classList.toggle('open')">
+          <span class="learn-arrow">▶</span>
+          <span class="learn-ttl">📊 Como funciona a estratégia de ADS na Shopee</span>
+          <span class="learn-sub">GMV Max · Meta de ROAS</span>
+        </div>
+        <div class="learn-body">
+          <div class="strat-pillars" style="margin-top:10px">
+            <div class="strat-pillar">
+              <div class="strat-pillar-ico">💰</div>
+              <div class="strat-pillar-ttl">Orçamento: sempre ilimitado</div>
+              <div class="strat-pillar-txt">A Shopee controla o gasto pela Meta de ROAS, não pelo orçamento. Com orçamento ilimitado, o algoritmo nunca para de exibir por falta de verba — você nunca perde uma venda desnecessariamente.</div>
+            </div>
+            <div class="strat-pillar">
+              <div class="strat-pillar-ico">🎯</div>
+              <div class="strat-pillar-ttl">Meta de ROAS: o único controle</div>
+              <div class="strat-pillar-txt">Meta alta → Shopee exibe só em bids muito qualificados → menos impressões, menos gasto, ROAS real alto.<br>Meta baixa → Shopee exibe mais amplamente → mais volume de vendas, gasto maior.</div>
+            </div>
+            <div class="strat-pillar">
+              <div class="strat-pillar-ico">🟢</div>
+              <div class="strat-pillar-ttl">Zona ideal: ROAS 20–25x</div>
+              <div class="strat-pillar-txt">Equilíbrio perfeito entre eficiência e volume. Abaixo de 20x há perda de margem. Acima de 25x o algoritmo está seletivo demais e você deixa vendas na mesa.</div>
+            </div>
+            <div class="strat-pillar">
+              <div class="strat-pillar-ico">🔄</div>
+              <div class="strat-pillar-ttl">Ciclo semanal de otimização</div>
+              <div class="strat-pillar-txt">Revise cada anúncio individualmente a cada 7 dias. Ajuste a Meta de ROAS anúncio por anúncio com base no ROAS real da semana. Aguarde 7 dias antes de avaliar o resultado de cada ajuste.</div>
+            </div>
+          </div>
+          <div class="strat-steps">
+            <div style="font-size:11px;font-weight:800;color:var(--s400);margin-bottom:6px;text-transform:uppercase;letter-spacing:.06em">Passo a passo semanal</div>
+            <div class="strat-step"><div class="strat-step-n">1</div><span>Exporte o relatório de ADS da Shopee referente aos últimos 7 dias</span></div>
+            <div class="strat-step"><div class="strat-step-n">2</div><span>Faça o upload aqui para ver o diagnóstico e a ação recomendada de cada anúncio</span></div>
+            <div class="strat-step"><div class="strat-step-n">3</div><span>No Seller Center: Anúncios CPC → edite o anúncio → altere a Meta de ROAS conforme indicado</span></div>
+            <div class="strat-step"><div class="strat-step-n">4</div><span>Aguarde 7 dias e repita — otimização contínua é o que escala os resultados ao longo do tempo</span></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="learn-item">
+        <div class="learn-head" onclick="this.querySelector('.learn-arrow').classList.toggle('open');this.nextElementSibling.classList.toggle('open')">
+          <span class="learn-arrow">▶</span>
+          <span class="learn-ttl">🧭 Guia de ações — o que fazer em cada situação</span>
+          <span class="learn-sub">baixar · manter · ajustar · elevar</span>
+        </div>
+        <div class="learn-body">
+          <div class="acao-grid" style="margin-top:10px">
+            <div class="acao-card ac-baixar">
+              <div>
+                <span class="acao-badge ab-baixar">↓ Baixar meta</span>
+                <div class="acao-card-when" style="color:#1d4ed8">Quando ROAS real > 25x</div>
+              </div>
+              <div class="acao-card-body"><strong>O que fazer:</strong> Reduzir a Meta de ROAS em ~10% no Seller Center.<br><em>Anúncios CPC → editar anúncio → alterar Meta de ROAS</em></div>
+              <div class="acao-card-example">
+                📌 <strong>Exemplo:</strong> Meta atual 35 → Nova meta 32<br>
+                🎯 <strong>Resultado:</strong> ROAS cai de ~29x para ~24x, volume sobe<br>
+                ⏱️ Reavalie em 7 dias
+              </div>
+            </div>
+            <div class="acao-card ac-manter">
+              <div>
+                <span class="acao-badge ab-manter">✓ Manter</span>
+                <div class="acao-card-when" style="color:#15803d">Quando ROAS real 20–25x — Zona ideal</div>
+              </div>
+              <div class="acao-card-body"><strong>O que fazer:</strong> Não altere nada. Esse anúncio está no ponto de equilíbrio perfeito entre eficiência e volume de vendas.</div>
+              <div class="acao-card-example">
+                ✅ Você está na zona ideal<br>
+                💡 Foque em melhorar foto e título do produto<br>
+                ⏱️ Reavalie em 7 dias
+              </div>
+            </div>
+            <div class="acao-card ac-ajustar">
+              <div>
+                <span class="acao-badge ab-ajustar">↑ Ajustar</span>
+                <div class="acao-card-when" style="color:#b45309">Quando ROAS real entre 10x e 20x</div>
+              </div>
+              <div class="acao-card-body"><strong>O que fazer:</strong> Aumentar a Meta de ROAS em ~15% no Seller Center para melhorar a eficiência gradualmente.</div>
+              <div class="acao-card-example">
+                📌 <strong>Exemplo:</strong> Meta atual 20 → Nova meta 23<br>
+                🎯 <strong>Resultado:</strong> ROAS sobe, gasto cai levemente<br>
+                ⏱️ Reavalie em 7 dias
+              </div>
+            </div>
+            <div class="acao-card ac-elevar">
+              <div>
+                <span class="acao-badge ab-elevar">↑ Elevar meta</span>
+                <div class="acao-card-when" style="color:#b91c1c">Quando ROAS real &lt; 10x</div>
+              </div>
+              <div class="acao-card-body"><strong>O que fazer:</strong> Aumentar a Meta de ROAS em ~30% imediatamente. Se não melhorar em 14 dias, considere pausar o anúncio.</div>
+              <div class="acao-card-example">
+                📌 <strong>Exemplo:</strong> Meta atual 10 → Nova meta 13<br>
+                🎯 <strong>Resultado:</strong> Gasto cai, ROAS sobe gradualmente<br>
+                ⏱️ Reavalie em 7 dias (prazo: 14 dias)
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="learn-item">
+        <div class="learn-head" onclick="this.querySelector('.learn-arrow').classList.toggle('open');this.nextElementSibling.classList.toggle('open')">
+          <span class="learn-arrow">▶</span>
+          <span class="learn-ttl">📖 Glossário — o que significa cada métrica</span>
+          <span class="learn-sub">ROAS · CTR · GMV · ACOS</span>
+        </div>
+        <div class="learn-body">
+          <div class="gloss-grid" style="margin-top:10px">
+            <div class="gloss-item"><div class="gloss-term">ROAS real</div><div class="gloss-def">Retorno efetivo sobre o que foi gasto. ROAS 20x = para cada R$1 investido, R$20 em vendas</div><div class="gloss-ref">Zona ideal: 20–25x · < 10x fraco</div></div>
+            <div class="gloss-item"><div class="gloss-term">Meta de ROAS</div><div class="gloss-def">O alvo que você configura na Shopee. Meta alta = menos consumo + mais seletivo. Meta baixa = mais consumo + mais volume</div><div class="gloss-ref">Controla quanto o anúncio gasta</div></div>
+            <div class="gloss-item"><div class="gloss-term">Estratégia de escala</div><div class="gloss-def">ROAS real > 25x → baixar meta ~10% para ganhar volume. ROAS real 20–25x → manter. ROAS < 10x → elevar meta</div><div class="gloss-ref">Objetivo: maximizar lucro total</div></div>
+            <div class="gloss-item"><div class="gloss-term">CTR</div><div class="gloss-def">% de quem viu o anúncio e clicou. CTR baixo = foto ruim ou título fraco. Impacta diretamente o custo por clique</div><div class="gloss-ref">≥ 2% bom · < 1% precisa melhorar</div></div>
+            <div class="gloss-item"><div class="gloss-term">GMV</div><div class="gloss-def">Volume total de vendas geradas pelo anúncio. É o faturamento bruto atribuído a cada anúncio CPC</div><div class="gloss-ref">Quanto mais, melhor</div></div>
+            <div class="gloss-item"><div class="gloss-term">ACOS</div><div class="gloss-def">% do faturamento gasto em ADS. ACOS 5% = gastou R$5 de ADS para vender R$100. Inverso do ROAS</div><div class="gloss-ref">ACOS = 100 ÷ ROAS</div></div>
+          </div>
+        </div>
       </div>
     </div>`;
 }
-
 function updateCusto(key, val) {
   const cost = parseFloat(val) || 0;
   savedCustos[key] = cost;
